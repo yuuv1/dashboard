@@ -1,0 +1,13 @@
+
+/* ── PWA banners ── */
+.sw-toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%) translateY(80px);
+  display:flex;align-items:center;gap:10px;z-index:9998;opacity:0;pointer-events:none;
+  background:rgba(255,255,255,.95);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:13px;
+  padding:11px 15px;font-size:12.5px;font-weight:600;color:var(--white);white-space:nowrap;
+  box-shadow:0 14px 40px rgba(23,29,72,.24);transition:opacity .3s,transform .3s;}
+.sw-toast.show{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:all;}
+.sw-x{color:var(--dim);cursor:pointer;font-size:12px;padding:2px 4px;border-radius:5px;}
+.sw-x:hover{color:var(--red);background:rgba(225,29,72,.1);}
+@media (max-width:520px){.sw-toast{left:8px;right:8px;transform:translateY(80px);white-space:normal;}
+  .sw-toast.show{transform:translateY(0);}}
