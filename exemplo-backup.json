@@ -1,0 +1,68 @@
+{
+  "profile": {
+    "name": "Trader",
+    "avatar": "",
+    "avatarData": "",
+    "logo": ""
+  },
+  "settings": {
+    "initialCapital": 1000,
+    "currentCapital": 960,
+    "usdRate": 5.0,
+    "stopLoss": 5,
+    "target": 2.5
+  },
+  "rainbow": {
+    "on": false,
+    "preset": "classic",
+    "fps": 30,
+    "colors": ["#ff0000","#ff7700","#ffff00","#00ee00","#0088ff","#8800ff","#ff00cc"]
+  },
+  "operations": [
+    {
+      "id": "1754160000000",
+      "date": "2026-08-02",
+      "time": "14:32",
+      "value": 50,
+      "usd": 10,
+      "result": "WIN",
+      "type": "CALL",
+      "reason": "Rompimento de resistência no M5 com volume alto",
+      "plan": "yes",
+      "img": "",
+      "yt": "",
+      "notes": "Boa entrada",
+      "createdAt": "2026-08-02T14:32:00.000Z"
+    },
+    {
+      "id": "1754163600000",
+      "date": "2026-08-02",
+      "time": "15:15",
+      "value": 30,
+      "usd": 6,
+      "result": "BREAK EVEN",
+      "type": "PUT",
+      "reason": "Reversão no suporte, mas preço ficou estável",
+      "plan": "yes",
+      "img": "",
+      "yt": "",
+      "notes": "Devolveu o valor da entrada",
+      "createdAt": "2026-08-02T15:15:00.000Z"
+    },
+    {
+      "id": "1754168400000",
+      "date": "2026-08-02",
+      "time": "16:40",
+      "value": 80,
+      "usd": 16,
+      "result": "LOSS",
+      "type": "CALL",
+      "reason": "Falso rompimento, parei no stop loss",
+      "plan": "no",
+      "img": "",
+      "yt": "",
+      "notes": "Erro de execução",
+      "createdAt": "2026-08-02T16:40:00.000Z"
+    }
+  ]
+}

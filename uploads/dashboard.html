@@ -658,7 +658,7 @@ input[type="file"].h{display:none!important;}
         <div class="fg"><label class="fl">Valor (USD) — automático</label><input class="fi" id="opValU" readonly style="opacity:.6;" placeholder="~$ 0.00"></div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;">
-        <div class="fg"><label class="fl">Resultado</label><select class="fi" id="opRes"><option value="">Selecione</option><option value="WIN">✅ WIN</option><option value="LOSS">❌ LOSS</option></select></div>
+        <div class="fg"><label class="fl">Resultado</label><select class="fi" id="opRes"><option value="">Selecione</option><option value="WIN">✅ WIN</option><option value="LOSS">❌ LOSS</option><option value="BREAK EVEN">⚖️ BREAK EVEN</option></select></div>
         <div class="fg"><label class="fl">Tipo</label><select class="fi" id="opType"><option value="">Selecione</option><option value="CALL">📈 CALL</option><option value="PUT">📉 PUT</option></select></div>
       </div>
       <div class="fg">
@@ -1013,7 +1013,10 @@ function saveOp(){
   const usd=value/(S.settings.usdRate||1);
   const op={id:curId||Date.now().toString(),date,time,value,usd,result,type,reason,plan,img,yt,notes,createdAt:new Date().toISOString()};
   if(curId){const i=S.operations.findIndex(o=>o.id===curId);if(i!==-1)S.operations[i]=op;toast('Operação atualizada!','s');}
-  else{S.operations.push(op);if(result==='WIN')S.settings.currentCapital=Math.max(0,S.settings.currentCapital+value*.8);else S.settings.currentCapital=Math.max(0,S.settings.currentCapital-value);toast('Operação registrada!','s');}
+  else{S.operations.push(op);if(result==='WIN')S.settings.currentCapital=Math.max(0,S.settings.currentCapital+value*.8);
+  else if(result==='LOSS')S.settings.currentCapital=Math.max(0,S.settings.currentCapital-value);
+  // BREAK EVEN: não altera o capital
+  toast('Operação registrada!','s');}
   save();closeMod('newOpModal');updateDash();renderOps();badge();
 }
 function delOp(){
@@ -1023,14 +1026,14 @@ function delOp(){
 }
 function openDet(id){
   const op=S.operations.find(o=>o.id===id);if(!op)return;curId=id;
-  const rc=op.result==='WIN'?'bwin':'bloss',tc=op.type==='CALL'?'bcall':'bput',pc=op.plan==='yes'?'byes':'bno';
+  const rc=op.result==='WIN'?'bwin':op.result==='LOSS'?'bloss':'bcall',tc=op.type==='CALL'?'bcall':'bput',pc=op.plan==='yes'?'byes':'bno';
   let ytHtml='';if(op.yt){const yid=ytId(op.yt);if(yid)ytHtml=`<div style="margin-top:9px;"><div style="font-size:10px;font-weight:700;color:var(--lgray);text-transform:uppercase;margin-bottom:4px;">🎬 Vídeo</div><iframe style="width:100%;aspect-ratio:16/9;border-radius:7px;border:none;" src="https://www.youtube.com/embed/${yid}" allowfullscreen></iframe></div>`;}
   let imgHtml='';if(op.img)imgHtml=`<div style="margin-top:9px;"><div style="font-size:10px;font-weight:700;color:var(--lgray);text-transform:uppercase;margin-bottom:4px;">🖼 Imagem</div><img style="max-width:100%;border-radius:7px;border:1px solid var(--border);" src="${op.img}" onerror="this.style.display='none'"></div>`;
-  document.getElementById('detTit').innerHTML=`Operação #${op.id.slice(-4)} <span class="badge ${rc}" style="margin-left:5px;">${op.result==='WIN'?'✅':'❌'} ${op.result}</span>`;
+  document.getElementById('detTit').innerHTML=`Operação #${op.id.slice(-4)} <span class="badge ${rc}" style="margin-left:5px;">${op.result==='WIN'?'✅':op.result==='LOSS'?'❌':'⚖️'} ${op.result}</span>`;
   document.getElementById('detBod').innerHTML=`
     <div class="drow"><span class="dkey">Data/Hora</span><span class="dval">${op.date} às ${op.time}</span></div>
     <div class="drow"><span class="dkey">Valor</span><span class="dval">${fmtBRL(op.value)} <span style="color:var(--lgray);font-size:11px;font-weight:400;">≈ $${op.usd.toFixed(2)}</span></span></div>
-    <div class="drow"><span class="dkey">Resultado</span><span class="dval"><span class="badge ${rc}">${op.result==='WIN'?'✅':'❌'} ${op.result}</span></span></div>
+    <div class="drow"><span class="dkey">Resultado</span><span class="dval"><span class="badge ${rc}">${op.result==='WIN'?'✅':op.result==='LOSS'?'❌':'⚖️'} ${op.result}</span></span></div>
     <div class="drow"><span class="dkey">Tipo</span><span class="dval"><span class="badge ${tc}">${op.type==='CALL'?'📈':'📉'} ${op.type}</span></span></div>
     <div class="drow"><span class="dkey">Seguiu o Plano</span><span class="dval"><span class="badge ${pc}">${op.plan==='yes'?'✅ Sim':'❌ Não'}</span></span></div>
     <div style="padding:7px 0;"><div style="font-size:10px;font-weight:700;color:var(--orange);text-transform:uppercase;margin-bottom:4px;">🎯 Motivo da Entrada</div><div style="font-size:13px;color:var(--white);line-height:1.6;background:#1a1a1a;border:1px solid rgba(235,80,2,.18);border-radius:7px;padding:9px;">${op.reason||'—'}</div></div>
