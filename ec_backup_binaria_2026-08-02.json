@@ -6,8 +6,8 @@
     "logo": ""
   },
   "settings": {
-    "initialCapital": 1000,
-    "currentCapital": 850,
+    "initialCapital": 335.38,
+    "currentCapital": 259.10,
     "usdRate": 5.0,
     "stopLoss": 5,
     "target": 2.5
