@@ -671,6 +671,33 @@ input[type="file"].h{display:none!important;}
         <div class="fg"><label class="fl">Link YouTube (opcional)</label><input class="fi" id="opYT" placeholder="https://youtube.com/..."></div>
       </div>
       <div class="fg" style="margin-bottom:0;"><label class="fl">Observações</label><input class="fi" id="opNotes" placeholder="Notas adicionais..."></div>
+
+      <!-- Gráfico Editável -->
+      <div class="fg" style="margin-top:12px;">
+        <label class="fl" style="color:#22d3ee;">📈 Gráfico da Operação (editável)</label>
+        
+        <div style="display:flex;gap:8px;margin-bottom:8px;">
+          <button type="button" class="btn-s xs" onclick="document.getElementById('opChartFile').click()">📁 Upload Gráfico</button>
+          <button type="button" class="btn-s xs" onclick="clearChartCanvas()">🗑️ Limpar</button>
+          <button type="button" class="btn-s xs" onclick="undoChartDraw()" id="btnUndoChart" disabled>↩️ Desfazer</button>
+        </div>
+        
+        <input type="file" id="opChartFile" class="h" accept="image/*" onchange="loadChartToCanvas(event)">
+        
+        <div style="position:relative; background:#0a0a0a; border:1px solid #333; border-radius:8px; overflow:hidden;">
+          <canvas id="opChartCanvas" width="480" height="280" style="width:100%; max-width:480px; height:auto; cursor:crosshair; display:block;"></canvas>
+          
+          <!-- Ferramentas de desenho -->
+          <div style="position:absolute; top:8px; right:8px; background:rgba(0,0,0,.75); border-radius:6px; padding:4px; display:flex; gap:4px; z-index:10;">
+            <button type="button" class="btn-s xs" onclick="setChartTool('pen')" id="tool-pen" style="padding:3px 6px; font-size:11px;">✏️</button>
+            <button type="button" class="btn-s xs" onclick="setChartTool('line')" id="tool-line" style="padding:3px 6px; font-size:11px;">📏</button>
+            <button type="button" class="btn-s xs" onclick="setChartTool('arrow')" id="tool-arrow" style="padding:3px 6px; font-size:11px;">➡️</button>
+            <button type="button" class="btn-s xs" onclick="setChartTool('text')" id="tool-text" style="padding:3px 6px; font-size:11px;">T</button>
+          </div>
+        </div>
+        
+        <div style="font-size:10px; color:#666; margin-top:4px;">Clique e arraste para desenhar. Use as ferramentas acima.</div>
+      </div>
     </div>
     <div class="mft"><button class="btn-s" onclick="closeMod('newOpModal')">Cancelar</button><button class="btn-o" onclick="saveOp()">💾 Salvar Operação</button></div>
   </div>
@@ -1011,7 +1038,8 @@ function saveOp(){
   if(!date||!value||isNaN(value)||!result||!type){toast('Preencha Data, Valor, Resultado e Tipo.','e');return;}
   if(!reason){toast('O Motivo da Entrada é obrigatório!','e');return;}
   const usd=value/(S.settings.usdRate||1);
-  const op={id:curId||Date.now().toString(),date,time,value,usd,result,type,reason,plan,img,yt,notes,createdAt:new Date().toISOString()};
+  const chartData = getChartDataURL();
+  const op={id:curId||Date.now().toString(),date,time,value,usd,result,type,reason,plan,img,yt,notes,chart:chartData,createdAt:new Date().toISOString()};
   if(curId){const i=S.operations.findIndex(o=>o.id===curId);if(i!==-1)S.operations[i]=op;toast('Operação atualizada!','s');}
   else{S.operations.push(op);if(result==='WIN')S.settings.currentCapital=Math.max(0,S.settings.currentCapital+value*.8);
   else if(result==='LOSS')S.settings.currentCapital=Math.max(0,S.settings.currentCapital-value);
@@ -1234,6 +1262,187 @@ function toast(msg,type='s'){
 }
 
 /* ══════════════════════════════════════
+   GRÁFICO EDITÁVEL (Canvas)
+══════════════════════════════════════ */
+let chartCanvas, chartCtx;
+let chartTool = 'pen';
+let chartDrawing = false;
+let chartHistory = [];
+let chartLastX = 0, chartLastY = 0;
+
+function initChartCanvas() {
+  chartCanvas = document.getElementById('opChartCanvas');
+  if (!chartCanvas) return;
+  
+  chartCtx = chartCanvas.getContext('2d', { alpha: true });
+  chartCtx.lineJoin = 'round';
+  chartCtx.lineCap = 'round';
+  chartCtx.strokeStyle = '#ff6b00';
+  chartCtx.lineWidth = 2.5;
+  
+  chartCanvas.addEventListener('mousedown', startChartDraw);
+  chartCanvas.addEventListener('mousemove', drawChart);
+  chartCanvas.addEventListener('mouseup', endChartDraw);
+  chartCanvas.addEventListener('mouseout', endChartDraw);
+  
+  chartCanvas.addEventListener('touchstart', handleChartTouch);
+  chartCanvas.addEventListener('touchmove', handleChartTouch);
+  chartCanvas.addEventListener('touchend', endChartDraw);
+  
+  chartCtx.fillStyle = '#0a0a0a';
+  chartCtx.fillRect(0, 0, chartCanvas.width, chartCanvas.height);
+}
+
+function startChartDraw(e) {
+  if (!chartCtx) return;
+  chartDrawing = true;
+  const rect = chartCanvas.getBoundingClientRect();
+  chartLastX = e.clientX - rect.left;
+  chartLastY = e.clientY - rect.top;
+  
+  chartHistory.push(chartCtx.getImageData(0, 0, chartCanvas.width, chartCanvas.height));
+  if (chartHistory.length > 10) chartHistory.shift();
+  document.getElementById('btnUndoChart').disabled = false;
+}
+
+function drawChart(e) {
+  if (!chartDrawing || !chartCtx) return;
+  const rect = chartCanvas.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+  
+  chartCtx.strokeStyle = chartTool === 'text' ? '#22d3ee' : '#ff6b00';
+  chartCtx.lineWidth = chartTool === 'arrow' ? 3 : 2.5;
+  
+  if (chartTool === 'pen') {
+    chartCtx.beginPath();
+    chartCtx.moveTo(chartLastX, chartLastY);
+    chartCtx.lineTo(x, y);
+    chartCtx.stroke();
+    chartLastX = x;
+    chartLastY = y;
+  } else if (chartTool === 'line') {
+    redrawChartFromHistory();
+    chartCtx.beginPath();
+    chartCtx.moveTo(chartLastX, chartLastY);
+    chartCtx.lineTo(x, y);
+    chartCtx.stroke();
+  } else if (chartTool === 'arrow') {
+    redrawChartFromHistory();
+    drawArrow(chartLastX, chartLastY, x, y);
+  }
+}
+
+function endChartDraw() { chartDrawing = false; }
+
+function redrawChartFromHistory() {
+  if (chartHistory.length === 0) return;
+  const last = chartHistory[chartHistory.length - 1];
+  chartCtx.putImageData(last, 0, 0);
+}
+
+function drawArrow(fromX, fromY, toX, toY) {
+  const headlen = 10;
+  const angle = Math.atan2(toY - fromY, toX - fromX);
+  chartCtx.beginPath();
+  chartCtx.moveTo(fromX, fromY);
+  chartCtx.lineTo(toX, toY);
+  chartCtx.stroke();
+  chartCtx.beginPath();
+  chartCtx.moveTo(toX, toY);
+  chartCtx.lineTo(toX - headlen * Math.cos(angle - Math.PI/6), toY - headlen * Math.sin(angle - Math.PI/6));
+  chartCtx.lineTo(toX - headlen * Math.cos(angle + Math.PI/6), toY - headlen * Math.sin(angle + Math.PI/6));
+  chartCtx.closePath();
+  chartCtx.fillStyle = '#ff6b00';
+  chartCtx.fill();
+}
+
+function setChartTool(tool) {
+  chartTool = tool;
+  document.querySelectorAll('[id^="tool-"]').forEach(btn => btn.classList.remove('active-preset'));
+  const activeBtn = document.getElementById('tool-' + tool);
+  if (activeBtn) activeBtn.classList.add('active-preset');
+  
+  if (tool === 'text') {
+    const text = prompt('Texto para adicionar no gráfico:');
+    if (text) {
+      const rect = chartCanvas.getBoundingClientRect();
+      chartCtx.font = 'bold 14px Inter, sans-serif';
+      chartCtx.fillStyle = '#22d3ee';
+      chartCtx.fillText(text, rect.width / 2 - 40, rect.height / 2);
+    }
+  }
+}
+
+function undoChartDraw() {
+  if (chartHistory.length === 0) return;
+  const previous = chartHistory.pop();
+  chartCtx.putImageData(previous, 0, 0);
+  if (chartHistory.length === 0) document.getElementById('btnUndoChart').disabled = true;
+}
+
+function clearChartCanvas() {
+  if (!chartCtx || !chartCanvas) return;
+  chartCtx.fillStyle = '#0a0a0a';
+  chartCtx.fillRect(0, 0, chartCanvas.width, chartCanvas.height);
+  chartHistory = [];
+  document.getElementById('btnUndoChart').disabled = true;
+}
+
+function loadChartToCanvas(event) {
+  const file = event.target.files[0];
+  if (!file || !chartCanvas || !chartCtx) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const img = new Image();
+    img.onload = function() {
+      chartCtx.fillStyle = '#0a0a0a';
+      chartCtx.fillRect(0, 0, chartCanvas.width, chartCanvas.height);
+      const ratio = Math.min(chartCanvas.width / img.width, chartCanvas.height / img.height);
+      const newW = img.width * ratio;
+      const newH = img.height * ratio;
+      const offsetX = (chartCanvas.width - newW) / 2;
+      const offsetY = (chartCanvas.height - newH) / 2;
+      chartCtx.drawImage(img, offsetX, offsetY, newW, newH);
+      chartHistory = [chartCtx.getImageData(0, 0, chartCanvas.width, chartCanvas.height)];
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function getChartDataURL() {
+  if (!chartCanvas) return null;
+  return chartCanvas.toDataURL('image/png');
+}
+
+function handleChartTouch(e) {
+  e.preventDefault();
+  const rect = chartCanvas.getBoundingClientRect();
+  const touch = e.touches[0];
+  const x = touch.clientX - rect.left;
+  const y = touch.clientY - rect.top;
+  
+  if (e.type === 'touchstart') {
+    chartDrawing = true;
+    chartLastX = x;
+    chartLastY = y;
+    chartHistory.push(chartCtx.getImageData(0, 0, chartCanvas.width, chartCanvas.height));
+  } else if (e.type === 'touchmove') {
+    if (!chartDrawing) return;
+    chartCtx.strokeStyle = chartTool === 'text' ? '#22d3ee' : '#ff6b00';
+    chartCtx.beginPath();
+    chartCtx.moveTo(chartLastX, chartLastY);
+    chartCtx.lineTo(x, y);
+    chartCtx.stroke();
+    chartLastX = x;
+    chartLastY = y;
+  } else if (e.type === 'touchend') {
+    chartDrawing = false;
+  }
+}
+
+/* ══════════════════════════════════════
    INIT
 ══════════════════════════════════════ */
 function init(){
@@ -1242,6 +1451,7 @@ function init(){
   updateDash();
   badge();
   if(S.rainbow.on) rbStart();
+  setTimeout(() => { initChartCanvas(); }, 300);
 }
 document.addEventListener('DOMContentLoaded',init);
 </script>
