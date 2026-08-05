@@ -1,0 +1,15 @@
+[
+  {"date": "2026-07-24", "time": "10:00", "pair": "GBP/JPY", "direction": "CALL", "entry": 24.00, "result": 20.88, "pct": 87,    "status": "WIN"},
+  {"date": "2026-07-24", "time": "12:14", "pair": "EUR/JPY", "direction": "PUT",  "entry": 10.00, "result": 8.50,  "pct": 85,    "status": "WIN"},
+  {"date": "2026-07-27", "time": "10:26", "pair": "EUR/GBP", "direction": "CALL", "entry": 26.56, "result": 0.00,  "pct": 0,     "status": "EMPATE"},
+  {"date": "2026-07-27", "time": "10:42", "pair": "EUR/GBP", "direction": "CALL", "entry": 26.56, "result": 26.56, "pct": -100,  "status": "LOSS"},
+  {"date": "2026-07-28", "time": "08:10", "pair": "EUR/USD", "direction": "CALL", "entry": 24.40, "result": 24.40, "pct": -100,  "status": "LOSS"},
+  {"date": "2026-07-29", "time": "09:58", "pair": "EUR/JPY", "direction": "PUT",  "entry": 22.00, "result": 19.14, "pct": 87,    "status": "WIN"},
+  {"date": "2026-07-29", "time": "10:21", "pair": "EUR/GBP", "direction": "PUT",  "entry": 19.14, "result": 19.14, "pct": -100,  "status": "LOSS"},
+  {"date": "2026-07-31", "time": "08:35", "pair": "USD/JPY", "direction": "PUT",  "entry": 22.00, "result": 22.00, "pct": -100,  "status": "LOSS"},
+  {"date": "2026-08-03", "time": "09:38", "pair": "GBP/USD", "direction": "PUT",  "entry": 22.00, "result": 19.36, "pct": 88,    "status": "WIN"},
+  {"date": "2026-08-03", "time": "09:48", "pair": "EUR/USD", "direction": "CALL", "entry": 19.36, "result": 19.36, "pct": -100,  "status": "LOSS"},
+  {"date": "2026-08-04", "time": "09:21", "pair": "EUR/USD", "direction": "CALL", "entry": 20.00, "result": 17.60, "pct": 88,    "status": "WIN"},
+  {"date": "2026-08-05", "time": "08:24", "pair": "GBP/JPY", "direction": "CALL", "entry": 21.00, "result": 18.06, "pct": 86,    "status": "WIN"},
+  {"date": "2026-08-05", "time": "09:35", "pair": "EUR/JPY", "direction": "PUT",  "entry": 18.06, "result": 15.53, "pct": 85.99, "status": "WIN"}
+]
