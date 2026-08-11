@@ -3,6 +3,9 @@
 Este repositório guarda **todos os backups das suas operações** do dashboard (EdgeControl),
 organizados **por dia**, e gera o arquivo `.json` que você importa de volta no app.
 
+> 🤖 **Para a IA que estiver te atendendo:** leia **`INSTRUCOES-PROXIMA-IA.md`**
+> (na pasta raiz) antes de registrar qualquer print — é o passo a passo completo.
+
 ---
 
 ## 🗂️ Estrutura

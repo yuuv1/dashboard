@@ -28,9 +28,11 @@ import time
 from datetime import datetime, date
 
 BASE = os.path.dirname(os.path.abspath(__file__))
+REPO_ROOT = os.path.dirname(BASE)          # pasta raiz do repositório (onde fica o edgecontrol-glass.html)
 DIAS = os.path.join(BASE, "dias")
 SNAPS = os.path.join(BASE, "snapshots")
 MASTER = os.path.join(BASE, "edgecontrol_master.json")
+MASTER_ROOT = os.path.join(REPO_ROOT, "edgecontrol_master.json")   # cópia na pasta raiz, fácil de achar
 RESUMO = os.path.join(BASE, "OPERACOES.md")
 CONFIG = os.path.join(BASE, "config.json")
 
@@ -321,6 +323,7 @@ def main():
     capital_final, passos = calcular_extrato(ops, capital_inicial)
     pack = montar_state(ops, shots, capital_inicial, capital_final)
     escrever_json(MASTER, pack)
+    escrever_json(MASTER_ROOT, pack)      # cópia na pasta raiz do repositório
     snap = os.path.join(SNAPS, f"edgecontrol_{date.today().isoformat()}.json")
     escrever_json(snap, pack)
     resumo_md(ops, shots, passos, capital_inicial, capital_final, esperado)
@@ -335,6 +338,7 @@ def main():
             log(f"  ⚠️ Conferência: calculado {fmt_brl(capital_final)} ≠ informado {fmt_brl(esperado)} "
                 f"(diferença {fmt_brl(esperado - capital_final)})")
     log(f"  📄 {MASTER}")
+    log(f"  📄 {MASTER_ROOT}   ← pasta raiz, pronto pra importar")
     log(f"  📄 {snap}")
     log(f"  📄 {RESUMO}")
 
