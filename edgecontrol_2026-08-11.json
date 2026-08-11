@@ -1,6 +1,6 @@
 {
   "__ec": 2,
-  "exportedAt": "2026-08-11T23:14:59.353167Z",
+  "exportedAt": "2026-08-11T23:32:41.342990Z",
   "state": {
     "profile": {
       "name": "Trader",
@@ -9,8 +9,8 @@
       "logo": ""
     },
     "settings": {
-      "initialCapital": 1000.0,
-      "currentCapital": 1047.1,
+      "initialCapital": 302.68,
+      "currentCapital": 349.78,
       "usdRate": 5.0,
       "stopLoss": 5,
       "target": 2.5

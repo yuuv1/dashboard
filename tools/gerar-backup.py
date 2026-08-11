@@ -26,8 +26,15 @@ from datetime import datetime
 # ─────────────────────────────────────────────────────────────
 ANO = 2026
 USD_RATE = 5.00          # cotação usada para o campo `usd` (derivado)
-CAPITAL_INICIAL = 1000.00
 SAIDA = "edgecontrol_2026-08-11.json"
+
+# Capital ATUAL informado pelo usuário (depois da última operação do print).
+# O capital inicial do ciclo é calculado de trás pra frente:
+#     inicial = atual - (ganhos - perdas)
+# Se preferir fixar o inicial no lugar, ponha o valor em CAPITAL_INICIAL
+# e deixe CAPITAL_ATUAL = None.
+CAPITAL_ATUAL = 349.78
+CAPITAL_INICIAL = None
 
 MES = {"jan": 1, "fev": 2, "mar": 3, "abr": 4, "mai": 5, "jun": 6,
        "jul": 7, "ago": 8, "set": 9, "out": 10, "nov": 11, "dez": 12}
@@ -67,8 +74,17 @@ def brl(v):
 
 
 def build():
+    # ── capital inicial do ciclo, calculado de trás pra frente ──
+    liquido = round(sum(liq for *_, liq, _ in BRUTO), 2)
+    if CAPITAL_INICIAL is not None:
+        inicial = CAPITAL_INICIAL
+        atual = round(inicial + liquido, 2)
+    else:
+        atual = CAPITAL_ATUAL
+        inicial = round(atual - liquido, 2)
+
     ops = []
-    capital = CAPITAL_INICIAL
+    capital = inicial
 
     for dia, mes, hora, par, direcao, stake, liq, payout in BRUTO:
         date = f"{ANO}-{MES[mes]:02d}-{dia:02d}"
@@ -121,7 +137,7 @@ def build():
     state = {
         "profile": {"name": "Trader", "avatar": "", "avatarData": "", "logo": ""},
         "settings": {
-            "initialCapital": CAPITAL_INICIAL,
+            "initialCapital": inicial,
             "currentCapital": round(capital, 2),
             "usdRate": USD_RATE,
             "stopLoss": 5,
@@ -148,9 +164,13 @@ def build():
     print(f"✓ {SAIDA}")
     print(f"  {len(ops)} operações | {len(w)}W / {len(l)}L (+1 empate)")
     print(f"  Ganhos {brl(g)} | Perdas {brl(p)} | Líquido {brl(g - p)}")
-    print(f"  Capital {brl(CAPITAL_INICIAL)} -> {brl(capital)}")
+    print(f"  Capital {brl(inicial)} -> {brl(capital)}  ({(capital / inicial - 1) * 100:+.2f}%)")
     print(f"  Assertividade {len(w) / (len(w) + len(l)) * 100:.1f}%  "
           f"| Profit factor {g / p:.2f}")
+    assert abs(capital - atual) < 0.01, f"capital final {capital} != informado {atual}"
+    print(f"  ✓ bate com o capital atual informado ({brl(atual)})")
+    print(f"  Risco por entrada: stake média {brl(sum(b[5] for b in BRUTO) / len(BRUTO))} "
+          f"= {sum(b[5] for b in BRUTO) / len(BRUTO) / inicial * 100:.1f}% da banca inicial")
 
 
 if __name__ == "__main__":

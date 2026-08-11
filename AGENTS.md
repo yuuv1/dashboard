@@ -27,7 +27,10 @@ decidido; não repita as perguntas.
    canto esquerdo (formato `11 Ago`) e vale para a linha em que aparece.
 2. **Editar `tools/gerar-backup.py`**: substituir a lista `BRUTO` pelos dados novos,
    em **ordem cronológica crescente** (o print vem do mais recente pro mais antigo —
-   inverta). Ajustar `ANO`, `SAIDA` e, se o usuário informar, `CAPITAL_INICIAL`/`USD_RATE`.
+   inverta). Ajustar `ANO`, `SAIDA`, `USD_RATE` e o capital (ver abaixo).
+   **Nunca invente o capital.** Se o usuário não disser nada, pergunte quanto ele tem
+   hoje — chutar um valor redondo (R$ 1.000) falseia percentual de banca, stop, target
+   e o gráfico de evolução.
 3. **Rodar** `python3 tools/gerar-backup.py`.
 4. **Validar** o JSON gerado (schema, ids únicos, ordem, `result`/`type`/`plan` válidos).
 5. **Salvar na raiz** do repositório como `edgecontrol_AAAA-MM-DD.json`
@@ -49,7 +52,8 @@ decidido; não repita as perguntas.
 | `plan` | `"yes"` (o print não traz esse dado) |
 | `usd` | `value / usdRate` |
 | `id` | timestamp em ms da data+hora da operação (determinístico, evita colisão) |
-| `currentCapital` | `initialCapital` + soma dos líquidos, calculado pelo script |
+| Capital | usuário informa o **atual**; o script calcula o inicial de trás pra frente: `inicial = atual − líquido`. Preencher `CAPITAL_ATUAL` e deixar `CAPITAL_INICIAL = None` |
+| `currentCapital` | fecha exatamente no valor informado (o script tem `assert`) |
 | Ordem em `operations` | cronológica **crescente** — o app usa `.reverse()` pra exibir e lê o último item pra calcular a streak |
 | Prints/imagens | `shots: []`, `img: ""` — a imagem do histórico não é anexada |
 | Linha ilegível | importar mesmo assim e marcar em `notes` com `⚠️` + avisar o usuário na resposta |
@@ -61,6 +65,10 @@ decidido; não repita as perguntas.
 - **LOSS guarda valor positivo.** O sinal vem do campo `result`; `value` é sempre `>= 0`.
 - **Não inverter a ordem.** O print é decrescente, o arquivo é crescente.
 - **Ano:** o print só mostra `11 Ago`. Use o ano corrente, salvo indicação contrária.
+- **Capital nunca é chutado.** O print mostra só as operações, não a banca. O usuário
+  informa o saldo atual e o inicial sai por subtração — nessa ordem, nunca ao contrário.
+- **Confira se a banca não fica negativa** ao longo do extrato. Se ficar, o capital
+  informado ou algum valor está errado — avise em vez de gerar o arquivo.
 
 ### Como o usuário importa
 
