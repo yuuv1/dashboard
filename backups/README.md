@@ -10,8 +10,9 @@ organizados **por dia**, e gera o arquivo `.json` que você importa de volta no 
 ```
 backups/
 ├── README.md                        ← este arquivo
+├── config.json                      ← capital inicial e valor de hoje (conferência da conta)
 ├── edgecontrol_master.json          ← BACKUP COMPLETO (importável no app) — atualizado a cada leva
-├── OPERACOES.md                     ← resumo legível de todas as operações (tabelas por dia)
+├── OPERACOES.md                     ← resumo legível + extrato do capital (tabelas por dia)
 ├── snapshots/                       ← cópias datadas do master a cada atualização
 │   └── edgecontrol_2026-08-11.json
 ├── dias/                            ← fonte da verdade: um pasta por dia
@@ -65,12 +66,34 @@ Manda o arquivo aqui que eu incorporo ele no sistema de dias.
 
 ---
 
-## 🧮 Como o script calcula o capital
+## 💰 A conta do capital (de onde saiu até hoje)
 
-`capital atual = capital inicial (padrão R$ 1.000,00) + Σ(WIN) − Σ(LOSS)`,
-aplicado na ordem cronológica das operações, igual ao app faz ao registrar.
+O gerador reproduz **exatamente a regra do app** (a mesma usada no `saveOp` e nos
+gráficos de capital): as operações são aplicadas **na ordem cronológica** e a cada uma
 
-Para mudar o capital inicial: `backups/gerar_backup.py` tem a constante `CAPITAL_INICIAL` no topo.
+```
+capital depois = capital antes + WIN − LOSS     (nunca fica negativo)
+```
+
+### `backups/config.json`
+
+| Campo | O que é |
+|---|---|
+| `capital_inicial` | De onde você saiu (ex.: `1000.00`). Se `null`, usa o padrão do app (R$ 1.000,00). |
+| `capital_atual_esperado` | O valor que você está **hoje** (ex.: `310.29`). O gerador confere se a conta fecha e avisa se não bater. |
+
+O `OPERACOES.md` traz o **extrato completo**: linha por linha, cada operação com
+"capital antes → capital depois", do início até o valor de hoje. Se o valor informado
+não bater com a conta, o gerador mostra a diferença e sugere qual teria que ser o
+capital inicial para fechar certo.
+
+---
+
+## 🧮 Resumo (como o script monta o JSON)
+
+`capital atual = capital inicial + Σ(WIN) − Σ(LOSS)` na ordem cronológica,
+com piso em zero — igual ao app. Os campos `initialCapital` e `currentCapital`
+do JSON são preenchidos com esse resultado.
 
 ---
 
