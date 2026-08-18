@@ -1217,7 +1217,7 @@ input[type="file"].h{display:none!important;}
             <div class="set-tit">💰 Configurações Financeiras</div>
             <div class="s2">
               <div class="fg"><label class="fl">Capital Inicial (R$)</label><input class="fi" id="sIniC" type="number" placeholder="1000.00" min="0" step="0.01"></div>
-              <div class="fg"><label class="fl">Capital Atual (R$)</label><input class="fi" id="sCurC" type="number" placeholder="1000.00" min="0" step="0.01" oninput="updSetPrev()"></div>
+              <div class="fg"><label class="fl">Capital Atual (R$)</label><input class="fi" id="sCurC" type="number" placeholder="1000.00" step="0.01" readonly title="Calculado automaticamente: Capital Inicial + lucros − perdas"><div style="font-size:10px;color:var(--dim);margin-top:4px;">Calculado automaticamente: Inicial + lucros − perdas</div></div>
               <div class="fg"><label class="fl">Cotação Dólar (USD)</label><input class="fi" id="sUsd" type="number" placeholder="5.00" min="0" step="0.01"></div>
               <div class="fg"><label class="fl">Stop Loss Diário (%)</label><input class="fi" id="sSL" type="number" placeholder="5" min="0" max="100" step="0.1" oninput="updSetPrev()"></div>
             </div>
@@ -1860,6 +1860,8 @@ function load(){
       if(!(S.metal.speed>0)) S.metal.speed=4.5;
       if(!S.theme) S.theme='default';
       if(!S.bg||typeof S.bg!=='object') S.bg={on:true,opacity:50};
+      if(!Array.isArray(S.operations)) S.operations=[];
+      recalcCapital();   // corrige capital dessincronizado de versões antigas
     }
   }catch(e){}
 }
@@ -1869,6 +1871,24 @@ function save(){
     const e=document.getElementById('sumSync');
     if(e) e.textContent=new Date().toLocaleString('pt-BR');
   }catch(e){}
+}
+
+/* ── Capital como valor DERIVADO (fonte única de verdade) ──
+   O "Capital Atual" deixa de ser um número salvo que acumula erros
+   e passa a ser sempre recalculado: inicial + (lucros) − (perdas). */
+function netOf(ops){ return (ops||[]).reduce((a,o)=>a+(o.result==='WIN'?o.value:-o.value),0); }
+function recalcCapital(){
+  S.settings.currentCapital=S.settings.initialCapital+netOf(S.operations);
+  const f=document.getElementById('sCurC');if(f) f.value=S.settings.currentCapital;
+  return S.settings.currentCapital;
+}
+/* ordena por data+hora (usado nos gráficos, para entradas lançadas
+   depois/fora de ordem aparecerem no lugar cronológico correto) */
+function sortOpsByDate(ops){
+  return [...(ops||[])].sort((a,b)=>{
+    const ka=(a.date||'')+(a.time||''), kb=(b.date||'')+(b.time||'');
+    return ka<kb?-1:ka>kb?1:0;
+  });
 }
 
 /* ══════════════════════════════════════
@@ -1965,12 +1985,12 @@ function saveSettings(){
   S.profile.avatar=document.getElementById('sAv').value.trim();
   S.profile.logo=document.getElementById('sLogo').value.trim();
   S.settings.initialCapital=parseFloat(document.getElementById('sIniC').value)||0;
-  S.settings.currentCapital=parseFloat(document.getElementById('sCurC').value)||0;
   S.settings.usdRate=parseFloat(document.getElementById('sUsd').value)||5;
   S.settings.stopLoss=parseFloat(document.getElementById('sSL').value)||5;
   S.settings.target=parseFloat(document.getElementById('sTgt').value)||2.5;
   const tog=document.getElementById('rbToggle');
   S.metal.on=tog?tog.checked:false;
+  recalcCapital();
   save();applyProfUI();updSum();mtApplyAll();
   toast('Configurações salvas!','s');
 }
@@ -2022,7 +2042,8 @@ function saveOp(){
   shots.forEach(async sid=>{const r=await IMGDB.get(sid);if(r&&!r.opId){r.opId=opId;IMGDB.put(r);}});
   const op={id:opId,date,time,value,usd,result,type,reason,plan,img,yt,notes,shots,createdAt:new Date().toISOString()};
   if(curId){const i=S.operations.findIndex(o=>o.id===curId);if(i!==-1)S.operations[i]=op;toast('Operação atualizada!','s');}
-  else{S.operations.push(op);if(result==='WIN')S.settings.currentCapital=Math.max(0,S.settings.currentCapital+value);else S.settings.currentCapital=Math.max(0,S.settings.currentCapital-value);toast('Operação registrada!','s');}
+  else{S.operations.push(op);toast('Operação registrada!','s');}
+  recalcCapital();
   draftShots=[];
   save();closeMod('newOpModal');updateDash();renderOps();badge();
 }
@@ -2031,6 +2052,7 @@ function delOp(){
   const _op=S.operations.find(o=>o.id===curId);
   if(_op&&_op.shots) _op.shots.forEach(sid=>{IMGDB.del(sid).catch(()=>{});revokeImgURL(sid);});
   S.operations=S.operations.filter(o=>o.id!==curId);
+  recalcCapital();
   save();closeMod('opDetMod');updateDash();renderOps();badge();toast('Operação excluída.','s');
 }
 function openDet(id){
@@ -2378,6 +2400,7 @@ function makeZip(files){
    DASHBOARD
 ══════════════════════════════════════ */
 function updateDash(){
+  recalcCapital();
   const s=S.settings,ops=S.operations;
   const today=new Date().toISOString().slice(0,10),tOps=ops.filter(o=>o.date===today);
   const profT=tOps.filter(o=>o.result==='WIN').reduce((a,o)=>a+o.value,0);
@@ -2447,8 +2470,8 @@ const CD={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:fal
 function dk(k){if(CH[k]){try{CH[k].destroy();}catch(e){}delete CH[k];}}
 function setCP(p){S.cp=p;const w=S.operations.filter(o=>o.result==='WIN').length,l=S.operations.filter(o=>o.result==='LOSS').length;buildCharts(S.operations,w,l);document.getElementById('btnW').className=p==='week'?'btn-o xs':'btn-s xs';document.getElementById('btnA').className=p==='all'?'btn-o xs':'btn-s xs';}
 function buildCharts(ops,wins,losses){
-  let cOps=[...ops];if(S.cp==='week'){const w=new Date();w.setDate(w.getDate()-7);cOps=ops.filter(o=>new Date(o.date)>=w);}
-  let cv=S.settings.initialCapital,ca=[cv];cOps.forEach(op=>{cv=op.result==='WIN'?cv+op.value:cv-op.value;ca.push(Math.max(0,cv));});
+  let cOps=sortOpsByDate(ops);if(S.cp==='week'){const w=new Date();w.setDate(w.getDate()-7);cOps=cOps.filter(o=>new Date(o.date)>=w);}
+  let cv=S.settings.initialCapital,ca=[cv];cOps.forEach(op=>{cv=op.result==='WIN'?cv+op.value:cv-op.value;ca.push(cv);});
   const isUp=ca[ca.length-1]>=ca[0],lc=isUp?PAL.up:PAL.down;
   dk('cap');const ctxC=document.getElementById('capChart').getContext('2d');const gC=ctxC.createLinearGradient(0,0,0,170);
   gC.addColorStop(0,isUp?PAL.upFill:PAL.downFill);gC.addColorStop(1,isUp?PAL.upFill0:PAL.downFill0);
@@ -2469,7 +2492,7 @@ function updateAn(){
   const tI=ops.reduce((a,o)=>a+o.value,0),tG=ops.filter(o=>o.result==='WIN').reduce((a,o)=>a+o.value,0),tL=ops.filter(o=>o.result==='LOSS').reduce((a,o)=>a+o.value,0),net=tG-tL;
   document.getElementById('anI').textContent=fmtBRL(tI);document.getElementById('anG').textContent=fmtBRL(tG);document.getElementById('anL').textContent=fmtBRL(tL);
   const ne=document.getElementById('anN');ne.textContent=(net>=0?'+':'')+fmtBRL(net);ne.style.color=net>=0?PAL.up:PAL.down;
-  let cv=S.settings.initialCapital,ca=[cv];ops.forEach(op=>{cv=op.result==='WIN'?cv+op.value:cv-op.value;ca.push(Math.max(0,cv));});
+  let cv=S.settings.initialCapital,ca=[cv];sortOpsByDate(ops).forEach(op=>{cv=op.result==='WIN'?cv+op.value:cv-op.value;ca.push(cv);});
   dk('anCap');const ctxAC=document.getElementById('anCapC').getContext('2d');const gAC=ctxAC.createLinearGradient(0,0,0,210);
   gAC.addColorStop(0,PAL.accentFill);gAC.addColorStop(.6,PAL.accentFill.replace(/[\d.]+\)$/,'.12)'));gAC.addColorStop(1,PAL.accentFill0);
   CH.anCap=new Chart(ctxAC,{type:'line',data:{labels:['Início',...ops.map((_,i)=>`Op${i+1}`)],datasets:[{data:ca,borderColor:PAL.accent,backgroundColor:gAC,borderWidth:2.5,fill:true,tension:.42,pointRadius:2,pointHoverRadius:6,pointBackgroundColor:'#fff',pointBorderColor:PAL.accent,pointBorderWidth:2}]},
