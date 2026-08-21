@@ -1391,7 +1391,7 @@ input[type="file"].h{display:none!important;}
     <div class="mbd">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
         <div class="fg"><label class="fl">Data</label><input class="fi" id="opDate" type="date"></div>
-        <div class="fg"><label class="fl">Horário</label><input class="fi" id="opTime" type="time"></div>
+        <div class="fg"><label class="fl">Horário <span style="font-weight:400;font-size:9px;color:var(--lgray);">(opcional)</span></label><input class="fi" id="opTime" type="time"></div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
         <div class="fg"><label class="fl" id="opValLbl">Resultado (R$)</label><input class="fi" id="opVal" type="number" placeholder="80.00" min="0" step="0.01" oninput="calcOpUsd()"><div style="font-size:9.5px;color:var(--dim);margin-top:4px;" id="opValHint">quanto voce ganhou ou perdeu nesta operacao</div></div>
@@ -1399,10 +1399,10 @@ input[type="file"].h{display:none!important;}
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
         <div class="fg"><label class="fl">Resultado</label><select class="fi" id="opRes" onchange="syncValLabel()"><option value="">Selecione</option><option value="WIN">✅ WIN</option><option value="LOSS">❌ LOSS</option></select></div>
-        <div class="fg"><label class="fl">Tipo</label><select class="fi" id="opType"><option value="">Selecione</option><option value="CALL">📈 CALL</option><option value="PUT">📉 PUT</option></select></div>
+        <div class="fg"><label class="fl">Tipo <span style="font-weight:400;font-size:9px;color:var(--lgray);">(opcional)</span></label><select class="fi" id="opType"><option value="">— não informado</option><option value="CALL">📈 CALL</option><option value="PUT">📉 PUT</option></select></div>
       </div>
       <div class="fg">
-        <label class="fl" style="color:var(--accent);">🎯 Motivo da Entrada <span style="font-weight:400;font-size:9px;color:var(--lgray);">(obrigatório)</span></label>
+        <label class="fl" style="color:var(--accent);">🎯 Motivo da Entrada <span style="font-weight:400;font-size:9px;color:var(--lgray);">(opcional)</span></label>
         <textarea class="fi" id="opReason" style="border-color:color-mix(in srgb, var(--accent) 28%, transparent);min-height:74px;" placeholder="Ex: Rompimento de resistência no M5, confluência EMA21 + RSI saindo de sobrevenda..."></textarea>
       </div>
       <div class="fg"><label class="fl">Seguiu o Plano?</label><select class="fi" id="opPlan"><option value="yes">✅ Sim, segui o plano</option><option value="no">❌ Não segui o plano</option></select></div>
@@ -2030,11 +2030,11 @@ function saveOp(){
   const date=document.getElementById('opDate').value,time=document.getElementById('opTime').value;
   const value=parseFloat(document.getElementById('opVal').value),result=document.getElementById('opRes').value;
   const type=document.getElementById('opType').value,reason=document.getElementById('opReason').value.trim();
-  const plan=document.getElementById('opPlan').value;
+  const plan=document.getElementById('opPlan').value||'yes';
   const yt=document.getElementById('opYT').value.trim(),notes=document.getElementById('opNotes').value.trim();
   const img='';
-  if(!date||!value||isNaN(value)||!result||!type){toast('Preencha Data, Valor, Resultado e Tipo.','e');return;}
-  if(!reason){toast('O Motivo da Entrada é obrigatório!','e');return;}
+  // só o essencial é obrigatório: data, valor e resultado (WIN/LOSS)
+  if(!date||!value||isNaN(value)||!result){toast('Preencha Data, Valor e Resultado.','e');return;}
   const usd=value/(S.settings.usdRate||1);
   const opId=curId||Date.now().toString();
   const shots=[...draftShots];
@@ -2057,7 +2057,7 @@ function delOp(){
 }
 function openDet(id){
   const op=S.operations.find(o=>o.id===id);if(!op)return;curId=id;
-  const rc=op.result==='WIN'?'bwin':'bloss',tc=op.type==='CALL'?'bcall':'bput',pc=op.plan==='yes'?'byes':'bno';
+  const rc=op.result==='WIN'?'bwin':'bloss',tc=op.type==='CALL'?'bcall':op.type==='PUT'?'bput':'bno',pc=op.plan==='yes'?'byes':'bno';
   let ytHtml='';if(op.yt){const yid=ytId(op.yt);if(yid)ytHtml=`<div style="margin-top:11px;"><div style="font-size:10px;font-weight:700;color:var(--lgray);text-transform:uppercase;margin-bottom:5px;">🎬 Vídeo</div><iframe style="width:100%;aspect-ratio:16/9;border-radius:12px;border:none;" src="https://www.youtube.com/embed/${yid}" allowfullscreen></iframe></div>`;}
   const nShots=(op.shots||[]).length;
   let imgHtml=`<div style="margin-top:11px;"><div style="font-size:10px;font-weight:700;color:var(--lgray);text-transform:uppercase;margin-bottom:5px;">📸 Prints ${nShots?`(${nShots})`:''}</div><div class="det-shots" id="detShots"></div></div>`;
@@ -2067,7 +2067,7 @@ function openDet(id){
     <div class="drow"><span class="dkey">Data/Hora</span><span class="dval">${op.date} às ${op.time}</span></div>
     <div class="drow"><span class="dkey">Valor</span><span class="dval">${fmtBRL(op.value)} <span style="color:var(--lgray);font-size:11px;font-weight:400;">≈ $${op.usd.toFixed(2)}</span></span></div>
     <div class="drow"><span class="dkey">Resultado</span><span class="dval"><span class="badge ${rc}">${op.result==='WIN'?'✅':'❌'} ${op.result}</span></span></div>
-    <div class="drow"><span class="dkey">Tipo</span><span class="dval"><span class="badge ${tc}">${op.type==='CALL'?'📈':'📉'} ${op.type}</span></span></div>
+    <div class="drow"><span class="dkey">Tipo</span><span class="dval">${op.type?`<span class="badge ${tc}">${op.type==='CALL'?'📈':'📉'} ${op.type}</span>`:'<span style="color:var(--dim);">—</span>'}</span></div>
     <div class="drow"><span class="dkey">Seguiu o Plano</span><span class="dval"><span class="badge ${pc}">${op.plan==='yes'?'✅ Sim':'❌ Não'}</span></span></div>
     <div style="padding:9px 0;"><div style="font-size:10px;font-weight:700;color:var(--accent);text-transform:uppercase;margin-bottom:5px;">🎯 Motivo da Entrada</div><div style="font-size:13px;color:var(--white);line-height:1.6;background:color-mix(in srgb, var(--accent) 7%, transparent);border:1px solid color-mix(in srgb, var(--accent) 18%, transparent);border-radius:12px;padding:11px;">${op.reason||'—'}</div></div>
     ${op.notes?`<div class="drow"><span class="dkey">Obs</span><span class="dval" style="font-size:12px;font-weight:400;">${op.notes}</span></div>`:''}
@@ -2095,7 +2095,7 @@ function renderOps(filt){
   if(!ops.length){tb.innerHTML=`<tr><td colspan="10" style="text-align:center;padding:28px;color:var(--lgray);"><div style="font-size:22px;margin-bottom:5px;">📋</div>Nenhuma operação.</td></tr>`;return;}
   tb.innerHTML=ops.map((op,i)=>{
     const rb=op.result==='WIN'?`<span class="badge bwin">✅ WIN</span>`:`<span class="badge bloss">❌ LOSS</span>`;
-    const tb2=op.type==='CALL'?`<span class="badge bcall">📈 CALL</span>`:`<span class="badge bput">📉 PUT</span>`;
+    const tb2=op.type==='CALL'?`<span class="badge bcall">📈 CALL</span>`:op.type==='PUT'?`<span class="badge bput">📉 PUT</span>`:`<span style="color:var(--dim);">—</span>`;
     const pb=op.plan==='yes'?`<span class="badge byes">✅</span>`:`<span class="badge bno">❌</span>`;
     const ns=(op.shots||[]).length;
     const med=[ns?`📸${ns}`:'',op.img?'🖼':'',op.yt?'🎬':''].filter(Boolean).join(' ')||'—';
