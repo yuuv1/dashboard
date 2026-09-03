@@ -1095,19 +1095,20 @@ tr.op-det-row td{padding:0 14px 14px;background:color-mix(in srgb, var(--accent)
   background:color-mix(in srgb, var(--accent) 13%, transparent);color:var(--accent);}
 
 /* ══ FAIXA DE RESULTADOS (ticker no topo) ══ */
-.ticker{flex-shrink:0;height:32px;margin:9px 0 0;position:relative;overflow:hidden;border-radius:12px;
+.ticker{flex-shrink:0;height:50px;margin:9px 0 0;position:relative;overflow:hidden;border-radius:12px;
   background:var(--card);border:1px solid var(--border);box-shadow:var(--sh),inset 0 1px 0 var(--glass-inset);}
 .ticker::before,.ticker::after{content:'';position:absolute;top:0;bottom:0;width:46px;z-index:2;pointer-events:none;}
 .ticker::before{left:0;background:linear-gradient(90deg,var(--bg),transparent);}
 .ticker::after{right:0;background:linear-gradient(-90deg,var(--bg),transparent);}
-.ticker-inner{display:inline-flex;align-items:center;height:100%;white-space:nowrap;will-change:transform;}
+.ticker-inner{display:inline-flex;align-items:center;height:100%;white-space:nowrap;will-change:transform;gap:10px;}
 .ticker-inner:hover{animation-play-state:paused;}
 @keyframes tkScroll{from{transform:translateX(0);}to{transform:translateX(-50%);}}
-.tk-item{display:inline-flex;align-items:center;gap:7px;padding:0 18px;font-size:11px;font-weight:600;color:var(--lgray);}
-.tk-item .tk-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.tk-item{display:inline-flex;align-items:center;gap:9px;padding:0 20px;height:38px;border-radius:11px;
+  font-size:22px;font-weight:700;line-height:1;color:#fff;flex-shrink:0;box-shadow:0 3px 10px rgba(0,0,0,.20);}
+.tk-item.win{background:var(--green);}
+.tk-item.loss{background:var(--red);}
+.tk-item.tk-empty{background:transparent;box-shadow:none;color:var(--lgray);font-size:14px;font-weight:600;}
 .tk-item .tk-v{font-weight:800;}
-.tk-item.win .tk-v{color:var(--green);}
-.tk-item.loss .tk-v{color:var(--red);}
 .tk-item .tk-mute{color:var(--dim);font-weight:500;}
 
 /* ══ PÁGINA DE GRÁFICOS ══ */
@@ -1775,9 +1776,7 @@ tr.op-det-row td{padding:0 14px 14px;background:color-mix(in srgb, var(--accent)
               <div style="font-size:11px;color:var(--lgray);line-height:1.6;margin-bottom:13px;">Exporte todos os seus dados em JSON. Importe para restaurar em qualquer dispositivo.</div>
               <div style="display:flex;flex-direction:column;gap:8px;">
                 <button class="btn-o" style="justify-content:center;padding:11px;font-size:12px;border-radius:11px;" onclick="exportData()">⬆ Exportar Dados (JSON)</button>
-                <button class="btn-s" style="justify-content:center;padding:11px;font-size:12px;border-radius:11px;" onclick="exportDerived()">🧬 Backup Derivado (Fib/OB 90% · Rejeição 100% · POC 20%)</button>
                 <div class="btn-s" style="justify-content:center;padding:11px;font-size:12px;border-radius:11px;cursor:pointer;" onclick="document.getElementById('impSet').click()">⬇ Importar Dados (JSON)</div>
-                <div style="margin-top:2px;font-size:10px;color:var(--lgray);line-height:1.5;">🧬 <strong>Backup derivado</strong>: gera um arquivo separado (o original permanece intacto) em que ~90% das operações recebem <em>Fibonacci + Order Block</em>, 100% recebem <em>Rejeição de Preço</em> e 20% recebem <em>POC</em>.</div>
                 <input type="file" id="impSet" class="h" accept=".json" onchange="importData(event)">
               </div>
               <div style="margin-top:11px;padding-top:11px;border-top:1px solid color-mix(in srgb, var(--accent) 15%, transparent);font-size:10px;color:var(--lgray);line-height:1.5;">⚠️ <strong>Atenção:</strong> Ao importar, os dados atuais serão substituídos.</div>
@@ -3494,13 +3493,13 @@ function renderTicker(){
   const ops=[...S.operations].sort((a,b)=>(b.date||'').localeCompare(a.date||'')||(b.time||'').localeCompare(a.time||'')).slice(0,40);
   let html='';
   if(!ops.length){
-    html='<span class="tk-item"><span class="tk-mute">Sem operações ainda — registre a primeira.</span></span>';
+    html='<span class="tk-item tk-empty">Sem operações ainda — registre a primeira.</span>';
   }else{
     const seg=ops.map(o=>{
       const w=o.result==='WIN';
       const dd=(o.date||'').slice(8,10)+'/'+(o.date||'').slice(5,7);
       const tg=(o.checks&&o.checks.length)?' · '+escHtml(o.checks.map(c=>c.label).join('+')):'';
-      return `<span class="tk-item ${w?'win':'loss'}"><span class="tk-dot" style="background:${w?'var(--green)':'var(--red)'}"></span>${dd} ${escHtml(o.type||'—')} · ${w?'WIN':'LOSS'} <span class="tk-v">${w?'+':'-'}${fmtBRL(o.value)}</span>${tg}</span>`;
+      return `<span class="tk-item ${w?'win':'loss'}">${dd} ${escHtml(o.type||'—')} · ${w?'WIN':'LOSS'} <span class="tk-v">${w?'+':'-'}${fmtBRL(o.value)}</span>${tg}</span>`;
     }).join('');
     html=seg+seg;
   }
@@ -3953,73 +3952,6 @@ async function exportData(){
   }catch(e){ toast('Falha ao exportar.','e'); }
 }
 
-/* ── Backup derivado: reamostragem por tipo (original preservado) ── */
-function derivCat(o){
-  const labels=((o&&o.checks)||[]).map(c=>(c&&c.label||'')).join(' ');
-  const L=labels.toLowerCase();
-  const has=(re)=>re.test(L);
-  if(has(/rejei|price.?reject|rejection|rompimento/)) return 'rej';
-  if(has(/\bpoc\b|point.?of.?control/)) return 'poc';
-  if(has(/fib|order.?block|ob\b/)) return 'fob';
-  return 'out';
-}
-function derivKeep(cat){
-  if(cat==='rej') return 1;      // 100% rejeição de preço
-  if(cat==='poc') return .2;     // 20% POC
-  if(cat==='fob') return .9;     // 90% Fib / Order Block
-  return 1;                       // outros tipos: preserva tudo
-}
-async function exportDerived(){
-  try{
-    toast('Gerando backup derivado…','w');
-    const ops=S.operations||[];
-    const kept=[],stats={fob:{n:0,k:0},rej:{n:0,k:0},poc:{n:0,k:0},out:{n:0,k:0}};
-    for(const o of ops){
-      const cat=derivCat(o);
-      stats[cat].n++;
-      if(Math.random()<derivKeep(cat)){ kept.push(o); stats[cat].k++; }
-    }
-    if(!kept.length){ toast('Nenhuma operação elegível para o derivado.','w'); return; }
-    const shots=await IMGDB.all();
-    const imgs={};
-    for(const r of shots){
-      if(r.size>8*1024*1024) continue;
-      imgs[r.id]={d:await blobToDataURL(r.blob),note:r.note||'',name:r.name||'',at:r.at||''};
-    }
-    const derived={...S,operations:kept};
-    const pack={__ec:2,exportedAt:new Date().toISOString(),derived:true,state:derived,shots:imgs};
-    const b=new Blob([JSON.stringify(pack)],{type:'application/json'});
-    const u=URL.createObjectURL(b),a=document.createElement('a');
-    a.href=u;a.download=`edgecontrol_derivado_${new Date().toISOString().slice(0,10)}.json`;a.click();
-    setTimeout(()=>URL.revokeObjectURL(u),1200);
-    toast(`Derivado: ${kept.length}/${ops.length} ops · Fib/OB ${stats.fob.k}/${stats.fob.n} · Rejeição ${stats.rej.k}/${stats.rej.n} · POC ${stats.poc.k}/${stats.poc.n}.`,'s');
-  }catch(e){ toast('Falha ao gerar derivado.','e'); }
-}
-/* ── Backup derivado (reamostragem por tipo; original preservado) ── */
-async function exportDerived(){
-  try{
-    toast('Gerando backup derivado…','w');
-    const src=gSorted(S.operations||[]);
-    const n=src.length;
-    if(!n){ toast('Nenhuma operação para derivar.','w'); return; }
-    const ops=src.map((op,i)=>{
-      const checks=(op.checks||[]).map(c=>({id:c.id,label:c.label}));
-      const has=l=>checks.some(c=>(c.label||'').toLowerCase().trim()===l.toLowerCase().trim());
-      const add=l=>{ if(!has(l)) checks.push({id:'derived-'+i+'-'+l.replace(/[^a-z0-9]/gi,'').toLowerCase(), label:l}); };
-      add('Rejeição de Preço');                 // 100%
-      if(i%10<9){ add('Fibonacci'); add('Order Block'); }  // 90%
-      if(i%5===0) add('POC');                   // 20%
-      return {...op,checks};
-    });
-    const derived={...S,operations:ops};
-    const pack={__ec:2,exportedAt:new Date().toISOString(),derived:true,state:derived,shots:{}};
-    const b=new Blob([JSON.stringify(pack)],{type:'application/json'});
-    const u=URL.createObjectURL(b),a=document.createElement('a');
-    a.href=u;a.download=`edgecontrol_derivado_${new Date().toISOString().slice(0,10)}.json`;a.click();
-    setTimeout(()=>URL.revokeObjectURL(u),1200);
-    toast(`Backup derivado gerado (${n} ops). Original intacto.`,'s');
-  }catch(e){ toast('Falha ao gerar derivado.','e'); }
-}
 function blobToDataURL(b){return new Promise(r=>{const f=new FileReader();f.onload=()=>r(f.result);f.readAsDataURL(b);});}
 function dataURLtoBlob(d){return fetch(d).then(r=>r.blob());}
 async function importData(ev){
