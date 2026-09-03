@@ -187,9 +187,7 @@ html,body{width:100vw;height:100vh;overflow:hidden;font-family:'Inter',sans-seri
 .dash-head{flex-shrink:0;padding:0 2px 9px;display:flex;align-items:flex-start;justify-content:space-between;}
 .pg-title{font-family:'Space Grotesk',sans-serif;font-size:21px;font-weight:800;letter-spacing:-.6px;}
 .pg-sub{font-size:10.5px;color:var(--lgray);margin-top:2px;opacity:.92;}
-.dash-body{flex:1;min-height:0;display:flex;flex-direction:column;gap:10px;overflow-y:auto;padding-right:2px;}
-.dash-top{flex:0 0 auto;height:100%;min-height:100%;display:flex;flex-direction:column;gap:10px;}
-.dash-charts{flex:0 0 auto;}
+.dash-body{flex:1;min-height:0;display:flex;flex-direction:column;gap:10px;}
 .r1{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;flex:2.6;min-height:0;}
 .r2{display:grid;grid-template-columns:1fr 1.35fr;gap:10px;flex:3.0;min-height:0;}
 .r3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;flex:2.4;min-height:0;}
@@ -298,6 +296,16 @@ html,body{width:100vw;height:100vh;overflow:hidden;font-family:'Inter',sans-seri
 .donut-legend{display:flex;gap:11px;flex-shrink:0;margin-top:7px;}
 .leg-item{display:flex;align-items:center;gap:4px;font-size:10.5px;color:var(--lgray);font-weight:500;}
 .leg-dot{width:8px;height:8px;border-radius:3px;}
+
+/* ══ SLOTS DE GRÁFICOS (rotação com fade dentro dos blocos) ══ */
+.slot-tools{display:flex;align-items:center;gap:7px;flex-shrink:0;}
+.slot-dots{display:flex;align-items:center;gap:5px;}
+.slot-dot{width:7px;height:7px;border-radius:50%;background:var(--dim);opacity:.4;cursor:pointer;border:none;padding:0;transition:all .22s;}
+.slot-dot:hover{opacity:.8;}
+.slot-dot.on{background:var(--accent);opacity:1;transform:scale(1.3);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 26%,transparent);}
+.slot-body{flex:1;min-height:0;position:relative;width:100%;}
+.slot-body.fade{animation:slotFade .6s cubic-bezier(.22,.9,.36,1);}
+@keyframes slotFade{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
 
 /* ══ RECENT OPS ══ */
 .rec-card{background:var(--card);backdrop-filter:blur(22px) saturate(170%);-webkit-backdrop-filter:blur(22px) saturate(170%);
@@ -1374,10 +1382,20 @@ tr.op-det-row td{padding:0 14px 14px;background:color-mix(in srgb, var(--accent)
       <div class="alert-strip"><div id="alertBar" style="display:none;" class="abar"></div></div>
       <div class="dash-head">
         <div><div class="pg-title">Overview</div><div class="pg-sub">Aqui está o resumo geral do seu capital e desempenho</div></div>
-        <button class="btn-s xs" onclick="updateDash()">🔄 Reset Dia</button>
+        <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap;justify-content:flex-end;">
+          <div class="gc-seg" id="gSeg">
+            <button data-p="week" onclick="gPeriod('week')">Semana</button>
+            <button data-p="month" onclick="gPeriod('month')">Mês</button>
+            <button data-p="all" onclick="gPeriod('all')">Tudo</button>
+          </div>
+          <button class="b-btn" onclick="gOffset(-1)" title="Período anterior">‹</button>
+          <span class="gc-range" id="gRange">—</span>
+          <button class="b-btn" id="gNext" onclick="gOffset(1)" title="Próximo período">›</button>
+          <button class="b-btn" id="gAutoBtn" onclick="gAutoToggle()" title="Alternar gráficos automaticamente com fade">🔁 Auto</button>
+          <button class="btn-s xs" onclick="updateDash()">🔄 Reset Dia</button>
+        </div>
       </div>
       <div class="dash-body">
-        <div class="dash-top">
         <!-- R1 -->
         <div class="r1">
           <div class="ov acc">
@@ -1432,66 +1450,43 @@ tr.op-det-row td{padding:0 14px 14px;background:color-mix(in srgb, var(--accent)
           </div>
           <div class="card">
             <div class="chd" style="margin-bottom:4px;">
-              <span class="ctit">Evolução do Capital</span>
-              <div style="display:flex;gap:5px;">
-                <button class="btn-s xs" id="btnW" onclick="setCP('week')">7d</button>
-                <button class="btn-o xs" id="btnA" onclick="setCP('all')">Tudo</button>
+              <span class="ctit" id="slotTitle_main">📈 Evolução do Capital</span>
+              <div class="slot-tools">
+                <div class="slot-dots" id="slotDots_main"></div>
+                <button class="gc-btn" id="slotPin_main" onclick="slotPin('main')" title="Manter este gráfico fixo">📌</button>
               </div>
             </div>
-            <div class="cbd" style="padding-top:0;">
-              <div class="chart-big" id="chartBig">R$ 0,00</div>
-              <div style="flex:1;min-height:0;position:relative;"><canvas id="capChart"></canvas></div>
+            <div class="cbd" style="padding-top:2px;">
+              <div class="slot-body" id="slotBody_main"><canvas></canvas></div>
             </div>
           </div>
         </div>
         <!-- R3 -->
         <div class="r3">
-          <div class="donut-card">
-            <div class="ctit" style="align-self:flex-start;margin-bottom:3px;">Assertividade</div>
-            <div class="donut-wrap"><div class="donut-canvas-box"><canvas id="wrChart"></canvas></div></div>
-            <div class="donut-legend">
-              <div class="leg-item"><div class="leg-dot" style="background:var(--green);"></div> Wins <strong id="lgW" style="color:var(--white);">0</strong></div>
-              <div class="leg-item"><div class="leg-dot" style="background:var(--red);"></div> Losses <strong id="lgL" style="color:var(--white);">0</strong></div>
+          <div class="donut-card" style="padding:10px 13px;">
+            <div class="chd" style="width:100%;padding:0;align-items:center;">
+              <span class="ctit" id="slotTitle_assert">🎯 Assertividade</span>
+              <div class="slot-tools">
+                <div class="slot-dots" id="slotDots_assert"></div>
+                <button class="gc-btn" id="slotPin_assert" onclick="slotPin('assert')" title="Manter este gráfico fixo">📌</button>
+              </div>
             </div>
+            <div class="slot-body" id="slotBody_assert"><canvas></canvas></div>
           </div>
-          <div class="donut-card">
-            <div class="ctit" style="align-self:flex-start;margin-bottom:3px;">Fidelidade ao Plano</div>
-            <div class="donut-wrap"><div class="donut-canvas-box"><canvas id="planChart"></canvas></div></div>
-            <div class="donut-legend">
-              <div class="leg-item"><div class="leg-dot" style="background:var(--accent);"></div> Seguiu <strong id="lgPY" style="color:var(--white);">0</strong></div>
-              <div class="leg-item"><div class="leg-dot" style="background:var(--dim);"></div> Não Seguiu <strong id="lgPN" style="color:var(--white);">0</strong></div>
+          <div class="donut-card" style="padding:10px 13px;">
+            <div class="chd" style="width:100%;padding:0;align-items:center;">
+              <span class="ctit" id="slotTitle_plan">📐 Fidelidade ao Plano</span>
+              <div class="slot-tools">
+                <div class="slot-dots" id="slotDots_plan"></div>
+                <button class="gc-btn" id="slotPin_plan" onclick="slotPin('plan')" title="Manter este gráfico fixo">📌</button>
+              </div>
             </div>
+            <div class="slot-body" id="slotBody_plan"><canvas></canvas></div>
           </div>
           <div class="rec-card">
             <div class="rec-hd"><span class="ctit">Últimas Ops</span></div>
             <div class="rec-bd" id="recOps">
               <div style="text-align:center;padding:16px;color:var(--lgray);font-size:11px;"><div style="font-size:22px;margin-bottom:4px;">📭</div>Nenhuma operação ainda</div>
-            </div>
-          </div>
-        </div>
-        </div>
-
-        <!-- GRÁFICOS (integrados ao dashboard) -->
-        <div class="dash-charts">
-          <div class="card">
-            <div class="chd" style="margin-bottom:2px;">
-              <span class="ctit">Gráficos</span>
-              <div class="gc-tools">
-                <div class="gc-seg" id="gSeg">
-                  <button data-p="week" onclick="gPeriod('week')">Semana</button>
-                  <button data-p="month" onclick="gPeriod('month')">Mês</button>
-                  <button data-p="all" onclick="gPeriod('all')">Tudo</button>
-                </div>
-                <button class="b-btn" onclick="gOffset(-1)" title="Período anterior">‹</button>
-                <span class="gc-range" id="gRange">—</span>
-                <button class="b-btn" id="gNext" onclick="gOffset(1)" title="Próximo período">›</button>
-                <span class="b-sep"></span>
-                <button class="b-btn" id="gAutoBtn" onclick="gAutoToggle()" title="Ciclo automático com fade">🔁 Auto</button>
-                <button class="b-btn" onclick="gOpenMenu()">⚙️ Gerenciar</button>
-              </div>
-            </div>
-            <div class="cbd">
-              <div class="g-grid" id="gGrid"></div>
             </div>
           </div>
         </div>
@@ -1732,7 +1727,7 @@ tr.op-det-row td{padding:0 14px 14px;background:color-mix(in srgb, var(--accent)
               <span class="speed-lbl">20s</span>
               <span class="speed-val" id="cycleSecVal">6 s</span>
             </div>
-            <div style="font-size:10px;color:var(--dim);line-height:1.55;margin-top:8px;">No Dashboard, um gráfico é destacado por vez com fade-in/out. Os fixados (📌) ficam sempre em evidência.</div>
+            <div style="font-size:10px;color:var(--dim);line-height:1.55;margin-top:8px;">No Dashboard, cada bloco de gráfico alterna automaticamente entre os seus gráficos com fade-in. Use 📌 no bloco para manter um gráfico fixo.</div>
           </div>
         </div>
       </div>
@@ -2009,23 +2004,6 @@ tr.op-det-row td{padding:0 14px 14px;background:color-mix(in srgb, var(--accent)
   </div>
 </div>
 
-<!-- GRÁFICOS: gerenciar (mostrar/ocultar/fixar) -->
-<div class="mol" id="gMenuMod">
-  <div class="mod" style="max-width:480px;">
-    <div class="mhd">
-      <div class="mtit">⚙️ Gerenciar Gráficos</div>
-      <div class="mcls" onclick="closeMod('gMenuMod')">✕</div>
-    </div>
-    <div class="mbd">
-      <div style="font-size:11px;color:var(--lgray);line-height:1.6;margin-bottom:10px;">
-        Mostre ou oculte gráficos e fixe os mais importantes no topo. Os fixados ficam destacados.
-      </div>
-      <div class="g-menu-list" id="gMenuList"></div>
-      <button class="btn-s xs" style="margin-top:11px;width:100%;justify-content:center;" onclick="gReset()">↺ Restaurar padrão</button>
-    </div>
-  </div>
-</div>
-
 <!-- QUADRO: cor do post-it -->
 <div class="mol" id="bdTplMod">
   <div class="mod" style="max-width:400px;">
@@ -2218,7 +2196,7 @@ let S = {
   bg:{ on:true, opacity:26 },
   operations:[], cp:'all',
   checks:[],
-  charts:{ period:'all', offset:0, pinned:[], hidden:[], auto:true, autoSec:6 },
+  charts:{ period:'all', offset:0, pinned:[], hidden:[], auto:true, autoSec:6, fixed:{} },
   autoBackup:{ on:false, lastAt:'' },
   board:{ items:[], links:[], view:{ px:0, py:0, z:1 } }
 };
@@ -2450,6 +2428,7 @@ function load(){
       if(typeof S.charts.offset!=='number') S.charts.offset=0;
       if(typeof S.charts.auto!=='boolean') S.charts.auto=true;
       if(!(S.charts.autoSec>0)) S.charts.autoSec=6;
+      if(!S.charts.fixed||typeof S.charts.fixed!=='object') S.charts.fixed={};
       if(typeof S.settings.tickerOn!=='boolean') S.settings.tickerOn=true;
       if(!(S.settings.tickerSpeed>0)) S.settings.tickerSpeed=40;
       if(!S.autoBackup||typeof S.autoBackup!=='object') S.autoBackup={on:false,lastAt:''};
@@ -3628,13 +3607,6 @@ function gFilter(ops){
   if(!r.s) return sorted;
   return sorted.filter(o=>o.date>=r.s&&o.date<=r.e);
 }
-function gVisible(){
-  const pin=S.charts.pinned||[], hid=new Set(S.charts.hidden||[]);
-  const cmp=(a,b)=>GCHARTS.findIndex(c=>c.id===a)-GCHARTS.findIndex(c=>c.id===b);
-  const pinned=pin.filter(id=>!hid.has(id)&&gDef(id)).sort(cmp);
-  const rest=GCHARTS.filter(c=>!hid.has(c.id)&&!pinned.includes(c.id)).sort(cmp);
-  return [...pinned, ...rest.map(c=>c.id)];
-}
 function gPeriod(p){ S.charts.period=p; S.charts.offset=0; save(); gSegUI(); renderCharts(); anRefresh(); }
 function gOffset(d){
   if(S.charts.period==='all') return;
@@ -3652,58 +3624,10 @@ function gSegUI(){
     if(nx) nx.style.opacity=(S.charts.period==='all'||(S.charts.offset||0)===0)?'.35':'1';
   });
 }
-function gPin(id){ const p=S.charts.pinned||(S.charts.pinned=[]); const i=p.indexOf(id); if(i>=0)p.splice(i,1); else p.push(id); save(); renderChartGrid(); gRenderMenu(); }
-function gHide(id){ const h=S.charts.hidden||(S.charts.hidden=[]); if(!h.includes(id))h.push(id); save(); renderCharts(); }
-function gShow(id){ S.charts.hidden=(S.charts.hidden||[]).filter(x=>x!==id); save(); renderCharts(); }
-function gReset(){ S.charts.hidden=[]; S.charts.pinned=[]; save(); renderCharts(); gRenderMenu(); toast('Gráficos restaurados ao padrão.','s'); }
-function gOpenMenu(){ gRenderMenu(); showMod('gMenuMod'); }
-function gRenderMenu(){
-  const list=document.getElementById('gMenuList'); if(!list) return;
-  const hid=new Set(S.charts.hidden||[]), pin=new Set(S.charts.pinned||[]);
-  list.innerHTML=GCHARTS.map(c=>`
-    <div class="g-menu-item ${hid.has(c.id)?'off':''}">
-      <span style="font-size:15px;">${c.icon}</span>
-      <div class="gm-info"><div class="gm-name">${c.name}</div><div class="gm-desc">${c.desc}</div></div>
-      <span class="gm-toggle" onclick="gPin('${c.id}')">${pin.has(c.id)?'📌 Fixado':'📌 Fixar'}</span>
-      <button class="gc-btn" onclick="gShow('${c.id}')" title="Mostrar" style="${hid.has(c.id)?'':'display:none'}">👁</button>
-      <button class="gc-btn" onclick="gHide('${c.id}')" title="Ocultar" style="${hid.has(c.id)?'display:none':''}">✕</button>
-    </div>`).join('');
-}
 function isChartsActive(){ const p=document.getElementById('page-dashboard'); return !!(p&&p.classList.contains('active')); }
 function chartsRefresh(){ if(isChartsActive()) renderCharts(); }
 function isAnActive(){ const p=document.getElementById('page-analytics'); return !!(p&&p.classList.contains('active')); }
 function anRefresh(){ if(isAnActive()) updateAn(); }
-function buildGCard(id){
-  const c=gDef(id); if(!c) return null;
-  const el=document.createElement('div');
-  el.className='gcard'+(c.size==='lg'?' lg':'');
-  el.dataset.id=id;
-  el.innerHTML=`<div class="gc-hd"><span class="gc-tit">${c.icon} ${c.name}</span>
-    <div class="gc-acts">
-      <button class="gc-btn gc-pin" title="Fixar no topo" onclick="gPin('${id}')">📌</button>
-      <button class="gc-btn" title="Ocultar" onclick="gHide('${id}')">✕</button>
-    </div></div>
-    <div class="gc-sub">${c.desc}</div>
-    <div class="gc-body"><canvas></canvas></div>`;
-  return el;
-}
-function renderChartGrid(){
-  const grid=document.getElementById('gGrid'); if(!grid) return;
-  const vis=gVisible();
-  vis.forEach(id=>{
-    let el=grid.querySelector(`[data-id="${id}"]`);
-    if(!el){ el=buildGCard(id); el.classList.add('new'); setTimeout(()=>el.classList.remove('new'),500); }
-    grid.appendChild(el);
-  });
-  [...grid.children].forEach(c=>{ if(!vis.includes(c.dataset.id)) c.remove(); });
-  vis.forEach(id=>{
-    const el=grid.querySelector(`[data-id="${id}"]`); if(!el) return;
-    const pinned=(S.charts.pinned||[]).includes(id);
-    el.classList.toggle('pinned', pinned);
-    const pb=el.querySelector('.gc-pin'); if(pb) pb.classList.toggle('on', pinned);
-    const sub=el.querySelector('.gc-sub'); if(sub) sub.textContent=gDef(id).desc+' · '+gRange().label;
-  });
-}
 const GCB={};
 function gCanvas(body,id){ let c=body.querySelector('canvas'); if(!c){ c=document.createElement('canvas'); body.innerHTML=''; body.appendChild(c); } return c; }
 function gNoData(body,id,msg){ if(CH['gc_'+id]){ try{CH['gc_'+id].destroy();}catch(e){} delete CH['gc_'+id]; } body.innerHTML=`<div class="gc-empty">${msg}</div>`; }
@@ -3821,52 +3745,93 @@ GCB.pn=(ops,canvas,body)=>{
     options:{...CD,plugins:{...CD.plugins,legend:{display:true,labels:{color:PAL.muted,font:{size:10,family:'Inter'},boxWidth:9,usePointStyle:true,pointStyle:'circle'}}},
       scales:{x:{grid:{display:false},ticks:{color:PAL.muted,font:{size:11}}},y:{grid:{color:PAL.grid,drawBorder:false},ticks:{color:PAL.tick,font:{size:9},stepSize:1}}}}});
 };
-function renderChartData(){
-  const ops=gFilter(S.operations);
-  gVisible().forEach(id=>{
-    const el=document.querySelector(`#gGrid [data-id="${id}"]`); if(!el) return;
-    const body=el.querySelector('.gc-body'); if(!body) return;
-    const fn=GCB[id]; if(fn) fn(ops, body.querySelector('canvas'), body);
-  });
+/* ══════════════════════════════════════
+   SLOTS DE GRÁFICOS NO DASHBOARD
+   Cada bloco (Evolução do Capital, Assertividade,
+   Fidelidade ao Plano) alterna entre vários gráficos
+   com fade-in. O 📌 mantém o gráfico atual fixo.
+══════════════════════════════════════ */
+const SLOTS={
+  main:   { charts:['cap','weekly','monthly','types'] },
+  assert: { charts:['wr','cp'] },
+  plan:   { charts:['plan','pn'] }
+};
+const slotIdx={main:0, assert:0, plan:0};
+const slotCur={main:null, assert:null, plan:null};
+let slotTimer=null;
+function slotFixed(sid){ return S.charts.fixed && S.charts.fixed[sid]; }
+function fadeBody(body){
+  if(!body) return;
+  body.classList.remove('fade');
+  void body.offsetWidth;
+  body.classList.add('fade');
 }
-function renderCharts(){ renderChartGrid(); gSegUI(); renderChartData(); gCycleStart(); }
-
-/* ── Ciclo automático com fade (destaca um gráfico por vez) ── */
-let gCycleTimer=null, gSpotIdx=0;
-function gCycleStep(){
+function slotRender(sid){
+  const def=SLOTS[sid]; if(!def) return;
+  const body=document.getElementById('slotBody_'+sid); if(!body) return;
+  const fixed=slotFixed(sid);
+  const list=def.charts;
+  slotIdx[sid]=((slotIdx[sid]%list.length)+list.length)%list.length;
+  const showId=fixed||list[slotIdx[sid]];
+  const g=gDef(showId); if(!g) return;
+  const prev=slotCur[sid];
+  if(prev&&prev!==showId&&CH['gc_'+prev]){ try{CH['gc_'+prev].destroy();}catch(e){} delete CH['gc_'+prev]; }
+  const changed=prev!==showId;
+  slotCur[sid]=showId;
+  const t=document.getElementById('slotTitle_'+sid);
+  if(t) t.textContent=g.icon+' '+g.name;
+  const p=document.getElementById('slotPin_'+sid);
+  if(p){ p.classList.toggle('on', !!fixed); p.title=fixed?('Fixo em '+g.name+' — clique para voltar a alternar'):'Manter este gráfico fixo'; }
+  const d=document.getElementById('slotDots_'+sid);
+  if(d) d.innerHTML=list.map((cid,idx)=>{
+    const act=(!fixed&&idx===slotIdx[sid])||(fixed&&cid===fixed);
+    return `<button class="slot-dot ${act?'on':''}" onclick="slotJump('${sid}',${idx})" title="${gDef(cid)?gDef(cid).name:cid}"></button>`;
+  }).join('');
+  const fn=GCB[showId];
+  if(fn){ fn(gFilter(S.operations), body.querySelector('canvas'), body); }
+  if(changed) fadeBody(body);
+}
+function slotRenderAll(){ for(const sid in SLOTS) slotRender(sid); }
+function slotJump(sid,idx){
+  if(!SLOTS[sid]) return;
+  slotIdx[sid]=((idx%SLOTS[sid].charts.length)+SLOTS[sid].charts.length)%SLOTS[sid].charts.length;
+  if(S.charts.fixed) S.charts.fixed[sid]=null;
+  save();
+  slotRender(sid);
+}
+function slotPin(sid){
+  if(!SLOTS[sid]) return;
+  const cur=slotCur[sid]||SLOTS[sid].charts[slotIdx[sid]];
+  const fixed=slotFixed(sid);
+  if(fixed){ S.charts.fixed[sid]=null; toast('Alternando gráficos novamente.','s'); }
+  else{ S.charts.fixed[sid]=cur; toast('Gráfico fixado.','s'); }
+  save();
+  slotRender(sid);
+}
+function slotStep(){
   if(!isChartsActive()) return;
-  const grid=document.getElementById('gGrid'); if(!grid) return;
-  const cards=[...grid.querySelectorAll('.gcard')];
-  if(!cards.length) return;
-  cards.forEach(c=>c.classList.remove('gc-spot','gc-dim'));
-  const cyclable=cards.filter(c=>!(S.charts.pinned||[]).includes(c.dataset.id));
-  if(!cyclable.length) return;                      // tudo fixado: sem destaque
-  gSpotIdx=(gSpotIdx%cyclable.length+cyclable.length)%cyclable.length;
-  const spot=cyclable[gSpotIdx];
-  gSpotIdx=(gSpotIdx+1)%cyclable.length;
-  cards.forEach(c=>{ if(c!==spot) c.classList.add('gc-dim'); });
-  spot.classList.add('gc-spot');
+  let any=false;
+  for(const sid in SLOTS){
+    if(slotFixed(sid)) continue;
+    slotIdx[sid]=(slotIdx[sid]+1)%SLOTS[sid].charts.length;
+    slotRender(sid);
+    any=true;
+  }
+  if(!any) slotStop();                      // todos fixados: para o cronômetro
 }
-function gCycleStart(){
-  gCycleStop();
+function slotStart(){
+  slotStop();
   const btn=document.getElementById('gAutoBtn');
-  if(btn) btn.classList.toggle('active',!!S.charts.auto);
+  if(btn) btn.classList.toggle('active', !!S.charts.auto);
   if(!S.charts.auto) return;
-  gCycleStep();
-  gCycleTimer=setInterval(gCycleStep, Math.max(3,(S.charts.autoSec||6))*1000);
+  slotTimer=setInterval(slotStep, Math.max(3,(S.charts.autoSec||6))*1000);
 }
-function gCycleStop(){ if(gCycleTimer){ clearInterval(gCycleTimer); gCycleTimer=null; } }
+function slotStop(){ if(slotTimer){ clearInterval(slotTimer); slotTimer=null; } }
+function renderCharts(){ slotRenderAll(); gSegUI(); slotStart(); }
 function gAutoToggle(){
   S.charts.auto=!S.charts.auto;
   save();
-  if(S.charts.auto) gCycleStart();
-  else{
-    gCycleStop();
-    const grid=document.getElementById('gGrid');
-    if(grid) grid.querySelectorAll('.gcard').forEach(c=>c.classList.remove('gc-spot','gc-dim'));
-    const btn=document.getElementById('gAutoBtn');
-    if(btn) btn.classList.remove('active');
-  }
+  if(S.charts.auto) slotStart(); else slotStop();
   syncCycleUI();
 }
 function syncCycleUI(){
@@ -3878,21 +3843,14 @@ function cycleToggleChange(){
   const t=document.getElementById('cycleToggle');
   S.charts.auto=!!(t&&t.checked);
   save();
-  if(S.charts.auto) gCycleStart();
-  else{
-    gCycleStop();
-    const grid=document.getElementById('gGrid');
-    if(grid) grid.querySelectorAll('.gcard').forEach(c=>c.classList.remove('gc-spot','gc-dim'));
-    const btn=document.getElementById('gAutoBtn');
-    if(btn) btn.classList.remove('active');
-  }
+  if(S.charts.auto) slotStart(); else slotStop();
 }
 function cycleSecChange(el){
   const v=parseInt(el&&el.value)||6;
   S.charts.autoSec=Math.max(3,Math.min(20,v));
   const o=document.getElementById('cycleSecVal'); if(o) o.textContent=S.charts.autoSec+' s';
   save();
-  if(S.charts.auto) gCycleStart();
+  if(S.charts.auto) slotStart();
 }
 
 /* ══════════════════════════════════════
@@ -3917,7 +3875,6 @@ function updateDash(){
   const capEl=document.getElementById('dashCap');
   capEl.textContent=fmtBRL(s.currentCapital);
   applyMetal(capEl);
-  document.getElementById('chartBig').textContent=fmtBRL(s.currentCapital);
   const cc=document.getElementById('dashCapChg');cc.textContent=(capChg>=0?'+':'')+capChg.toFixed(2)+'%';cc.className='cbadge '+(capChg>=0?'pos':'neg');
   document.getElementById('hdrUsd').textContent='R$ '+s.usdRate.toFixed(2);
   document.getElementById('dashStop').textContent=fmtBRL(stopA);
@@ -3956,7 +3913,7 @@ function updateDash(){
   document.getElementById('stWL2').textContent=fmtBRL(wl);
   if(ops.length>0){const d=ops.map(o=>o.date).sort();document.getElementById('statsRng').textContent=`${d[0]} → ${d[d.length-1]}`;}
   else document.getElementById('statsRng').textContent='—';
-  renderRec(ops);buildCharts(ops,wins,loss);badge();
+  renderRec(ops);badge();
   renderTicker();
   if(isChartsActive()) renderCharts();
 }
@@ -3976,21 +3933,6 @@ const CD={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:fal
   tooltip:{backgroundColor:()=>PAL.tooltipBg||'rgba(255,255,255,.96)',borderColor:()=>PAL.grid,borderWidth:1,titleColor:()=>PAL.ink,bodyColor:()=>PAL.muted,padding:10,cornerRadius:10,displayColors:false,
     titleFont:{family:'Inter',weight:'700',size:11},bodyFont:{family:'Inter',size:11}}}};
 function dk(k){if(CH[k]){try{CH[k].destroy();}catch(e){}delete CH[k];}}
-function setCP(p){S.cp=p;const w=S.operations.filter(o=>o.result==='WIN').length,l=S.operations.filter(o=>o.result==='LOSS').length;buildCharts(S.operations,w,l);document.getElementById('btnW').className=p==='week'?'btn-o xs':'btn-s xs';document.getElementById('btnA').className=p==='all'?'btn-o xs':'btn-s xs';}
-function buildCharts(ops,wins,losses){
-  let cOps=[...ops];if(S.cp==='week'){const w=new Date();w.setDate(w.getDate()-7);cOps=ops.filter(o=>new Date(o.date)>=w);}
-  let cv=S.settings.initialCapital,ca=[cv];cOps.forEach(op=>{cv=op.result==='WIN'?cv+op.value:cv-op.value;ca.push(Math.max(0,cv));});
-  const isUp=ca[ca.length-1]>=ca[0],lc=isUp?PAL.up:PAL.down;
-  dk('cap');const ctxC=document.getElementById('capChart').getContext('2d');const gC=ctxC.createLinearGradient(0,0,0,170);
-  gC.addColorStop(0,isUp?PAL.upFill:PAL.downFill);gC.addColorStop(1,isUp?PAL.upFill0:PAL.downFill0);
-  CH.cap=new Chart(ctxC,{type:'line',data:{labels:['Início',...cOps.map((_,i)=>`#${i+1}`)],datasets:[{data:ca,borderColor:lc,backgroundColor:gC,borderWidth:2.5,fill:true,tension:.42,pointRadius:ca.length<=10?4:2,pointBackgroundColor:'#fff',pointBorderColor:lc,pointBorderWidth:2,pointHoverRadius:6}]},
-    options:{...CD,scales:{x:{display:false},y:{display:true,grid:{color:PAL.grid,drawBorder:false},ticks:{color:PAL.tick,font:{size:9},callback:v=>fmtS(v)}}}}});
-  dk('wr');CH.wr=new Chart(document.getElementById('wrChart').getContext('2d'),{type:'doughnut',data:{labels:['Wins','Losses'],datasets:[{data:[wins||.001,losses||.001],backgroundColor:[PAL.win,PAL.loss],borderWidth:0,hoverOffset:5}]},options:{...CD,cutout:'70%'}});
-  document.getElementById('lgW').textContent=wins;document.getElementById('lgL').textContent=losses;
-  const pY=ops.filter(o=>o.plan==='yes').length,pN=ops.filter(o=>o.plan==='no').length;
-  dk('plan');CH.plan=new Chart(document.getElementById('planChart').getContext('2d'),{type:'doughnut',data:{labels:['Seguiu','Não Seguiu'],datasets:[{data:[pY||.001,pN||.001],backgroundColor:[PAL.accent,PAL.slate],borderWidth:0,hoverOffset:5}]},options:{...CD,cutout:'70%'}});
-  document.getElementById('lgPY').textContent=pY;document.getElementById('lgPN').textContent=pN;
-}
 
 /* ══════════════════════════════════════
    ANALYTICS
