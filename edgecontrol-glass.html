@@ -304,8 +304,8 @@ html,body{width:100vw;height:100vh;overflow:hidden;font-family:'Inter',sans-seri
 .slot-dot:hover{opacity:.8;}
 .slot-dot.on{background:var(--accent);opacity:1;transform:scale(1.3);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 26%,transparent);}
 .slot-body{flex:1;min-height:0;position:relative;width:100%;}
-.slot-body.fade{animation:slotFade .6s cubic-bezier(.22,.9,.36,1);}
-@keyframes slotFade{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+.slot-body.fade{animation:slotFade var(--slot-fade,.8s) cubic-bezier(.33,1,.68,1);}
+@keyframes slotFade{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
 
 /* ══ RECENT OPS ══ */
 .rec-card{background:var(--card);backdrop-filter:blur(22px) saturate(170%);-webkit-backdrop-filter:blur(22px) saturate(170%);
@@ -1038,6 +1038,13 @@ input[type="file"].h{display:none!important;}
   background:var(--accent);border:2px solid rgba(255,255,255,.9);cursor:pointer;display:none;
   align-items:center;justify-content:center;color:#fff;font-size:10px;font-weight:800;line-height:1;box-shadow:0 2px 8px rgba(23,29,72,.3);}
 .b-op.sel .b-port{display:flex;}
+.b-el:hover .b-port{display:flex;}
+.b-note .b-port{position:absolute;top:7px;right:7px;width:18px;height:18px;border-radius:50%;
+  background:var(--accent);border:2px solid rgba(255,255,255,.9);cursor:pointer;display:none;
+  align-items:center;justify-content:center;color:#fff;font-size:10px;font-weight:800;line-height:1;box-shadow:0 2px 8px rgba(23,29,72,.3);}
+.b-el.sel .b-port{display:flex;}
+.b-el.bd-linkfrom{outline:2px solid var(--accent);outline-offset:2px;border-radius:8px;animation:bdPulse 1.3s ease-in-out infinite;}
+@keyframes bdPulse{0%,100%{outline-color:var(--accent);}50%{outline-color:color-mix(in srgb,var(--accent) 40%,transparent);}}
 .b-note{min-width:140px;max-width:230px;padding:13px 14px;border-radius:4px;cursor:move;position:relative;
   font-size:13px;line-height:1.5;color:var(--white);font-weight:500;white-space:pre-wrap;word-break:break-word;
   background:var(--nbg, #ffe9a3);box-shadow:0 5px 16px rgba(23,29,72,.18);}
@@ -1720,14 +1727,21 @@ tr.op-det-row td{padding:0 14px 14px;background:color-mix(in srgb, var(--accent)
               </label>
               <span style="font-size:12px;font-weight:600;color:var(--white);">Destacar gráficos automaticamente (fade)</span>
             </div>
-            <div style="font-size:10px;font-weight:700;color:var(--lgray);text-transform:uppercase;letter-spacing:.7px;margin-bottom:7px;">Intervalo entre destaques</div>
+            <div style="font-size:10px;font-weight:700;color:var(--lgray);text-transform:uppercase;letter-spacing:.7px;margin-bottom:7px;">Intervalo entre trocas</div>
             <div class="speed-row">
               <span class="speed-lbl">⏱ 3s</span>
               <input type="range" class="rb-slider" id="cycleSec" min="3" max="20" step="1" value="6" oninput="cycleSecChange(this)">
               <span class="speed-lbl">20s</span>
               <span class="speed-val" id="cycleSecVal">6 s</span>
             </div>
-            <div style="font-size:10px;color:var(--dim);line-height:1.55;margin-top:8px;">No Dashboard, cada bloco de gráfico alterna automaticamente entre os seus gráficos com fade-in. Use 📌 no bloco para manter um gráfico fixo.</div>
+            <div style="font-size:10px;font-weight:700;color:var(--lgray);text-transform:uppercase;letter-spacing:.7px;margin-bottom:7px;">Suavidade da transição</div>
+            <div class="speed-row">
+              <span class="speed-lbl">⚡ Rápida</span>
+              <input type="range" class="rb-slider" id="cycleFade" min="0.3" max="2" step="0.1" value="0.8" oninput="cycleFadeChange(this)">
+              <span class="speed-lbl">🪶 Suave</span>
+              <span class="speed-val" id="cycleFadeVal">0.8 s</span>
+            </div>
+            <div style="font-size:10px;color:var(--dim);line-height:1.55;margin-top:8px;">No Dashboard, cada bloco de gráfico alterna automaticamente entre os seus gráficos com fade-in suave. Use 📌 no bloco para manter um gráfico fixo.</div>
           </div>
         </div>
       </div>
@@ -2196,7 +2210,7 @@ let S = {
   bg:{ on:true, opacity:26 },
   operations:[], cp:'all',
   checks:[],
-  charts:{ period:'all', offset:0, pinned:[], hidden:[], auto:true, autoSec:6, fixed:{} },
+  charts:{ period:'all', offset:0, pinned:[], hidden:[], auto:true, autoSec:6, fadeSec:0.8, fixed:{} },
   autoBackup:{ on:false, lastAt:'' },
   board:{ items:[], links:[], view:{ px:0, py:0, z:1 } }
 };
@@ -2428,6 +2442,7 @@ function load(){
       if(typeof S.charts.offset!=='number') S.charts.offset=0;
       if(typeof S.charts.auto!=='boolean') S.charts.auto=true;
       if(!(S.charts.autoSec>0)) S.charts.autoSec=6;
+      if(!(S.charts.fadeSec>0)) S.charts.fadeSec=0.8;
       if(!S.charts.fixed||typeof S.charts.fixed!=='object') S.charts.fixed={};
       if(typeof S.settings.tickerOn!=='boolean') S.settings.tickerOn=true;
       if(!(S.settings.tickerSpeed>0)) S.settings.tickerSpeed=40;
@@ -3033,6 +3048,7 @@ function bdPY(){ return (S.board.view&&S.board.view.py)||0; }
 function bdWrap(){ return document.getElementById('boardWrap'); }
 function bdNewId(){ return 'bd'+Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
 function isBoardActive(){ const p=document.getElementById('page-board'); return !!(p&&p.classList.contains('active')); }
+function bdSave(){ save(); }
 
 function bdNormalize(){
   if(!S.board||typeof S.board!=='object') S.board={items:[],links:[],view:{px:0,py:0,z:1}};
@@ -3115,6 +3131,34 @@ function bdCenterEl(id){
   const l=parseFloat(el.style.left)||0, t=parseFloat(el.style.top)||0;
   return {x:l+el.offsetWidth/2, y:t+el.offsetHeight/2};
 }
+function bdItemRect(id){
+  const el=bdEls[id]; const it=bdState().items.find(i=>i.id===id);
+  if(!el||!it) return null;
+  const z=bdZ();
+  const x=(parseFloat(el.style.left||0)-bdPX())/z;
+  const y=(parseFloat(el.style.top||0)-bdPY())/z;
+  return {x, y, w:el.offsetWidth/z, h:el.offsetHeight/z};
+}
+/* ponto onde o segmento P→Q sai do retângulo r (P dentro, Q fora) */
+function bdRectExit(px,py,qx,qy,r){
+  const dx=qx-px, dy=qy-py;
+  const x0=r.x, y0=r.y, x1=r.x+r.w, y1=r.y+r.h;
+  let tmin=Infinity;
+  if(dx>1e-9){ const t=(x1-px)/dx; if(t>0&&t<tmin)tmin=t; }
+  else if(dx<-1e-9){ const t=(x0-px)/dx; if(t>0&&t<tmin)tmin=t; }
+  if(dy>1e-9){ const t=(y1-py)/dy; if(t>0&&t<tmin)tmin=t; }
+  else if(dy<-1e-9){ const t=(y0-py)/dy; if(t>0&&t<tmin)tmin=t; }
+  if(tmin===Infinity||tmin>1) return {x:px,y:py};
+  return {x:px+dx*tmin, y:py+dy*tmin};
+}
+/* pontos de ancoragem nas bordas: sai de A e chega em B (ponta visível) */
+function bdEdgePoints(aId,bId){
+  const ra=bdItemRect(aId), rb=bdItemRect(bId);
+  if(!ra||!rb) return null;
+  const ax=ra.x+ra.w/2, ay=ra.y+ra.h/2;
+  const bx=rb.x+rb.w/2, by=rb.y+rb.h/2;
+  return {a:bdRectExit(ax,ay,bx,by,ra), b:bdRectExit(bx,by,ax,ay,rb)};
+}
 function bdWorldCenter(){
   const w=bdWrap(); const r=w?w.getBoundingClientRect():{width:800,height:500};
   return {x:(r.width/2 - bdPX())/bdZ(), y:(r.height/2 - bdPY())/bdZ()};
@@ -3126,7 +3170,7 @@ function bdSelAdd(id){ bdSel.add(id); bdSyncSel(); }
 function bdSyncSel(){
   for(const [id,el] of Object.entries(bdEls)) el.classList.toggle('sel', bdSel.has(id));
 }
-function bdClearSel(){ bdSel.clear(); bdSelLink=null; bdSyncSel(); if(bdLinkMode) bdToggleLink(); bdDrawArrows(); }
+function bdClearSel(){ bdSel.clear(); bdSelLink=null; if(bdLinkFrom){ const el=bdEls[bdLinkFrom]; if(el) el.classList.remove('bd-linkfrom'); bdLinkFrom=null; } bdSyncSel(); if(bdLinkMode) bdToggleLink(); bdDrawArrows(); }
 
 function bdRemoveItem(id){
   const B=bdState();
@@ -3203,10 +3247,14 @@ function bdBuildItem(el,it){
     const n=BD_NOTES.find(x=>x.id===it.color)||BD_NOTES[0];
     el.style.setProperty('--nbg', n.bg);
     el.style.color=n.dark?'#171b33':'#ffffff';
-    el.innerHTML=`<div class="b-txt">${escHtml(it.txt||'')}</div><span class="b-note-x" title="excluir">✕</span>`;
+    el.innerHTML=`<div class="b-txt">${escHtml(it.txt||'')}</div><span class="b-note-x" title="excluir">✕</span><span class="b-port" title="ligar">⭢</span>`;
     const t=el.querySelector('.b-txt');
     el.addEventListener('dblclick', e=>{ e.preventDefault(); t.contentEditable='true'; t.focus(); bdSelectAll(t); });
     t.addEventListener('input', ()=>{ it.txt=t.innerText; });
+    t.addEventListener('keydown', e=>{
+      if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); t.blur(); }
+      else if(e.key==='Escape'){ t.innerText=it.txt; t.blur(); }
+    });
     t.addEventListener('blur', ()=>{ t.contentEditable='false'; save(); });
     el.querySelector('.b-note-x').addEventListener('click', e=>{ e.stopPropagation(); bdRemoveItem(it.id); bdDrawArrows(); bdEmpty(); });
   }
@@ -3251,15 +3299,17 @@ function bdDrawArrows(){
   const svg=document.getElementById('boardSvg'); if(!svg) return;
   const B=bdState(); let html='';
   for(const l of B.links){
-    const a=bdEls[l.a], b=bdEls[l.b]; if(!a||!b) continue;
-    html+=bdArrowSvg(bdCenterEl(l.a), bdCenterEl(l.b), {id:l.id, sel:bdSelLink===l.id});
+    const pts=bdEdgePoints(l.a,l.b); if(!pts) continue;
+    html+=bdArrowSvg(pts.a, pts.b, {id:l.id, sel:bdSelLink===l.id});
   }
   if(bdLinkDrag){
     const w=bdWrap();
     if(w){
       const r=w.getBoundingClientRect();
-      const a=bdCenterEl(bdLinkDrag.from);
+      const src=bdItemRect(bdLinkDrag.from);
       const wx=(bdLinkDrag.x-r.left-bdPX())/bdZ(), wy=(bdLinkDrag.y-r.top-bdPY())/bdZ();
+      let a={x:wx,y:wy};
+      if(src) a=bdRectExit(src.x+src.w/2, src.y+src.h/2, wx, wy, src);
       html+=bdArrowSvg(a,{x:wx,y:wy},{pending:true});
     }
   }
@@ -3307,6 +3357,7 @@ function bdPortDown(e,it){
   if(e.pointerType==='mouse'&&e.button!==0) return;
   e.stopPropagation(); e.preventDefault();
   bdSelSet(it.id);
+  bdSuppressClick=true; setTimeout(()=>{bdSuppressClick=false;},0);
   bdLinkDrag={from:it.id, x:e.clientX, y:e.clientY};
   document.addEventListener('pointermove', bdLinkMove);
   document.addEventListener('pointerup', bdLinkUp);
@@ -3348,17 +3399,29 @@ function bdLinkClick(id,e){
   bdSelLink=(bdSelLink===id)?null:id;
   bdDrawArrows();
 }
+function bdCancelLinkPick(){
+  if(bdLinkFrom){ const el=bdEls[bdLinkFrom]; if(el) el.classList.remove('bd-linkfrom'); }
+  bdLinkFrom=null;
+  bdDrawArrows();
+}
 function bdLinkPick(id){
-  if(!bdLinkFrom){ bdLinkFrom=id; bdSelAdd(id); bdDrawArrows(); toast('Agora clique no outro bloco.','w'); return; }
-  if(bdLinkFrom===id){ bdLinkFrom=null; bdDrawArrows(); toast('Ligação cancelada.','w'); return; }
-  if(bdConnect(bdLinkFrom,id)) toast('Itens ligados!','s');
-  bdLinkFrom=null; bdDrawArrows();
+  if(!bdLinkFrom){
+    bdLinkFrom=id; bdSelAdd(id);
+    const el=bdEls[id]; if(el) el.classList.add('bd-linkfrom');
+    bdDrawArrows();
+    toast('Agora clique no outro bloco.','w');
+    return;
+  }
+  if(bdLinkFrom===id){ bdCancelLinkPick(); toast('Ligação cancelada.','w'); return; }
+  const ok=bdConnect(bdLinkFrom,id);
+  if(ok) toast('Itens ligados!','s');
+  bdCancelLinkPick();
 }
 function bdToggleLink(){
-  bdLinkMode=!bdLinkMode; bdLinkFrom=null; bdSelLink=null;
+  bdLinkMode=!bdLinkMode; bdSelLink=null;
+  bdCancelLinkPick();
   const b=document.getElementById('bdLinkBtn'); if(b){ b.classList.toggle('prim',bdLinkMode); b.textContent=bdLinkMode?'🔗 Clique em 2 blocos':'🔗 Ligar'; }
   const w=bdWrap(); if(w) w.style.cursor=bdLinkMode?'crosshair':'grab';
-  bdDrawArrows();
   if(bdLinkMode) toast('Clique em um bloco e depois no outro.','w');
 }
 function bdDragMove(e){
@@ -3838,6 +3901,20 @@ function syncCycleUI(){
   const t=document.getElementById('cycleToggle'); if(t) t.checked=S.charts.auto!==false;
   const s=document.getElementById('cycleSec'); if(s){ s.value=S.charts.autoSec||6; }
   const o=document.getElementById('cycleSecVal'); if(o) o.textContent=(S.charts.autoSec||6)+' s';
+  const f=document.getElementById('cycleFade'); if(f){ f.value=S.charts.fadeSec||0.8; }
+  const fv=document.getElementById('cycleFadeVal'); if(fv) fv.textContent=(S.charts.fadeSec||0.8).toFixed(1)+' s';
+  applySlotFade();
+}
+function applySlotFade(){
+  const v=S.charts.fadeSec>0?S.charts.fadeSec:0.8;
+  document.documentElement.style.setProperty('--slot-fade', v.toFixed(2)+'s');
+}
+function cycleFadeChange(el){
+  const v=parseFloat(el&&el.value);
+  S.charts.fadeSec=Math.max(0.3,Math.min(2,isFinite(v)?v:0.8));
+  const fv=document.getElementById('cycleFadeVal'); if(fv) fv.textContent=S.charts.fadeSec.toFixed(1)+' s';
+  applySlotFade();
+  save();
 }
 function cycleToggleChange(){
   const t=document.getElementById('cycleToggle');
@@ -4366,6 +4443,7 @@ window.addEventListener('appinstalled',()=>{
 ══════════════════════════════════════ */
 function init(){
   load();
+  applySlotFade();
   applyTheme(S.theme||'default',{silent:true});
   applyProfUI();
   updateDash();
