@@ -1095,7 +1095,7 @@ tr.op-det-row td{padding:0 14px 14px;background:color-mix(in srgb, var(--accent)
   background:color-mix(in srgb, var(--accent) 13%, transparent);color:var(--accent);}
 
 /* ══ FAIXA DE RESULTADOS (ticker no topo) ══ */
-.ticker{flex-shrink:0;height:50px;margin:9px 0 0;position:relative;overflow:hidden;border-radius:12px;
+.ticker{flex-shrink:0;height:38px;margin:9px 0 0;position:relative;overflow:hidden;border-radius:12px;
   background:var(--card);border:1px solid var(--border);box-shadow:var(--sh),inset 0 1px 0 var(--glass-inset);}
 .ticker::before,.ticker::after{content:'';position:absolute;top:0;bottom:0;width:46px;z-index:2;pointer-events:none;}
 .ticker::before{left:0;background:linear-gradient(90deg,var(--bg),transparent);}
@@ -1103,8 +1103,8 @@ tr.op-det-row td{padding:0 14px 14px;background:color-mix(in srgb, var(--accent)
 .ticker-inner{display:inline-flex;align-items:center;height:100%;white-space:nowrap;will-change:transform;gap:10px;}
 .ticker-inner:hover{animation-play-state:paused;}
 @keyframes tkScroll{from{transform:translateX(0);}to{transform:translateX(-50%);}}
-.tk-item{display:inline-flex;align-items:center;gap:9px;padding:0 20px;height:38px;border-radius:11px;
-  font-size:22px;font-weight:700;line-height:1;color:#fff;flex-shrink:0;box-shadow:0 3px 10px rgba(0,0,0,.20);}
+.tk-item{display:inline-flex;align-items:center;gap:7px;padding:0 14px;height:28px;border-radius:9px;
+  font-size:22px;font-weight:700;line-height:1;color:#fff;flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,.18);}
 .tk-item.win{background:var(--green);}
 .tk-item.loss{background:var(--red);}
 .tk-item.tk-empty{background:transparent;box-shadow:none;color:var(--lgray);font-size:14px;font-weight:600;}
