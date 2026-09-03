@@ -1709,6 +1709,26 @@ tr.op-det-row td{padding:0 14px 14px;background:color-mix(in srgb, var(--accent)
             </div>
             <div style="font-size:10px;color:var(--dim);line-height:1.55;margin-top:8px;">Os resultados das suas operações desfilam no topo, como a faixa de preços dos terminais de trading.</div>
           </div>
+
+          <div class="set-card">
+            <div class="set-tit">🔁 Ciclo de Gráficos</div>
+            <div class="toggle-row">
+              <label class="tgl">
+                <input type="checkbox" id="cycleToggle" onchange="cycleToggleChange()">
+                <div class="tgl-track"></div>
+                <div class="tgl-thumb"></div>
+              </label>
+              <span style="font-size:12px;font-weight:600;color:var(--white);">Destacar gráficos automaticamente (fade)</span>
+            </div>
+            <div style="font-size:10px;font-weight:700;color:var(--lgray);text-transform:uppercase;letter-spacing:.7px;margin-bottom:7px;">Intervalo entre destaques</div>
+            <div class="speed-row">
+              <span class="speed-lbl">⏱ 3s</span>
+              <input type="range" class="rb-slider" id="cycleSec" min="3" max="20" step="1" value="6" oninput="cycleSecChange(this)">
+              <span class="speed-lbl">20s</span>
+              <span class="speed-val" id="cycleSecVal">6 s</span>
+            </div>
+            <div style="font-size:10px;color:var(--dim);line-height:1.55;margin-top:8px;">Na aba Gráficos, um gráfico é destacado por vez com fade-in/out. Os fixados (📌) ficam sempre em evidência.</div>
+          </div>
         </div>
       </div>
 
@@ -2416,7 +2436,7 @@ function nav(page,el){
   document.getElementById('hdrTit').textContent=t[page]||page;
   document.getElementById('fab').style.display=page==='operations'?'flex':'none';
   if(page==='dashboard') updateDash();
-  if(page==='settings'){ loadSetForm(); syncMetalUI(); syncThemeUI(); updGalStats(); chkSyncUI(); syncTickerUI(); paintPWA(); setTab('perfil'); }
+  if(page==='settings'){ loadSetForm(); syncMetalUI(); syncThemeUI(); updGalStats(); chkSyncUI(); syncTickerUI(); syncCycleUI(); paintPWA(); setTab('perfil'); }
   mtApplyAll();
   if(page==='operations'){ renderOps(); syncOpsUsd(); }
   if(page==='analytics'){ updateAn(); gSegUI(); }
@@ -3498,8 +3518,7 @@ function renderTicker(){
     const seg=ops.map(o=>{
       const w=o.result==='WIN';
       const dd=(o.date||'').slice(8,10)+'/'+(o.date||'').slice(5,7);
-      const tg=(o.checks&&o.checks.length)?' · '+escHtml(o.checks.map(c=>c.label).join('+')):'';
-      return `<span class="tk-item ${w?'win':'loss'}">${dd} ${escHtml(o.type||'—')} · ${w?'WIN':'LOSS'} <span class="tk-v">${w?'+':'-'}${fmtBRL(o.value)}</span>${tg}</span>`;
+      return `<span class="tk-item ${w?'win':'loss'}">${dd} ${escHtml(o.type||'—')} · ${w?'WIN':'LOSS'} <span class="tk-v">${w?'+':'-'}${fmtBRL(o.value)}</span></span>`;
     }).join('');
     html=seg+seg;
   }
@@ -3806,6 +3825,32 @@ function gAutoToggle(){
     const btn=document.getElementById('gAutoBtn');
     if(btn) btn.classList.remove('active');
   }
+  syncCycleUI();
+}
+function syncCycleUI(){
+  const t=document.getElementById('cycleToggle'); if(t) t.checked=S.charts.auto!==false;
+  const s=document.getElementById('cycleSec'); if(s){ s.value=S.charts.autoSec||6; }
+  const o=document.getElementById('cycleSecVal'); if(o) o.textContent=(S.charts.autoSec||6)+' s';
+}
+function cycleToggleChange(){
+  const t=document.getElementById('cycleToggle');
+  S.charts.auto=!!(t&&t.checked);
+  save();
+  if(S.charts.auto) gCycleStart();
+  else{
+    gCycleStop();
+    const grid=document.getElementById('gGrid');
+    if(grid) grid.querySelectorAll('.gcard').forEach(c=>c.classList.remove('gc-spot','gc-dim'));
+    const btn=document.getElementById('gAutoBtn');
+    if(btn) btn.classList.remove('active');
+  }
+}
+function cycleSecChange(el){
+  const v=parseInt(el&&el.value)||6;
+  S.charts.autoSec=Math.max(3,Math.min(20,v));
+  const o=document.getElementById('cycleSecVal'); if(o) o.textContent=S.charts.autoSec+' s';
+  save();
+  if(S.charts.auto) gCycleStart();
 }
 
 /* ══════════════════════════════════════
