@@ -980,21 +980,22 @@ input[type="file"].h{display:none!important;}
 #boardWrap .bd-dot-anim{animation:bdShift 26s linear infinite;}
 @keyframes bdShift{to{background-position:132px 132px;}}
 #boardSvg{position:absolute;inset:0;pointer-events:none;z-index:0;}
-#boardSvg *{pointer-events:auto;}
-#boardSvg path.b-line{fill:none;stroke:var(--accent);stroke-width:2.5;stroke-linecap:round;opacity:.9;}
-#boardSvg path.b-line.sel{stroke:var(--accent);stroke-width:3.5;}
-#boardSvg polygon.b-arr{fill:var(--accent);stroke:none;}
-#boardSvg path.b-line.on{stroke:var(--red,#e11d48);stroke-width:3;}
-#boardSvg polygon.b-arr.on{fill:var(--red,#e11d48);}
-#boardSvg circle.b-pt{fill:#fff;stroke:var(--accent);stroke-width:2;cursor:crosshair;}
-#boardSvg .b-line.b-pending{stroke:var(--accent);stroke-width:2.5;stroke-dasharray:7 6;opacity:.85;}
+#boardSvg .b-link{cursor:pointer;pointer-events:auto;}
+#boardSvg path.b-line{fill:none;stroke:var(--accent);stroke-width:2.5;stroke-linecap:round;opacity:.9;pointer-events:stroke;}
+#boardSvg polygon.b-arr{fill:var(--accent);stroke:none;pointer-events:fill;}
+#boardSvg .b-link.sel path.b-line{stroke:var(--red,#e11d48);stroke-width:3.5;opacity:1;}
+#boardSvg .b-link.sel polygon.b-arr{fill:var(--red,#e11d48);}
+#boardSvg path.b-line.b-pending{stroke:var(--accent);stroke-width:2.5;stroke-dasharray:7 6;opacity:.85;}
+#boardSvg .b-link:hover path.b-line{stroke-width:3.5;}
 .b-el{position:absolute;z-index:2;cursor:move;touch-action:none;user-select:none;-webkit-user-select:none;}
 .b-el.sel{outline:2px solid var(--accent);outline-offset:2px;border-radius:8px;}
 .b-img{border-radius:12px;overflow:hidden;background:#0000;position:relative;box-shadow:0 6px 22px rgba(23,29,72,.22);}
 .b-img img{display:block;max-width:none;pointer-events:none;border-radius:12px;background:var(--surf,#fff);}
-.b-img .b-port{position:absolute;top:7px;right:7px;width:16px;height:16px;border-radius:50%;
-  background:var(--accent);border:2px solid rgba(255,255,255,.9);cursor:pointer;display:none;}
-.b-img.sel .b-port{display:block;}
+.b-img .b-port{position:absolute;top:7px;right:7px;width:18px;height:18px;border-radius:50%;
+  background:var(--accent);border:2px solid rgba(255,255,255,.9);cursor:pointer;display:none;
+  align-items:center;justify-content:center;color:#fff;font-size:10px;font-weight:800;line-height:1;box-shadow:0 2px 8px rgba(23,29,72,.3);}
+.b-img.sel .b-port,.b-el:hover .b-port{display:flex;}
+.b-img .b-port:hover,.b-op .b-port:hover{transform:scale(1.15);}
 .b-op{width:250px;border-radius:14px;padding:12px 13px;cursor:move;
   background:var(--glass-3, rgba(255,255,255,.9));backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
   border:1px solid var(--border, rgba(255,255,255,.62));
@@ -1008,9 +1009,10 @@ input[type="file"].h{display:none!important;}
 .b-op .bo-meta{font-size:10.5px;color:var(--dim);line-height:1.5;}
 .b-op .bo-re{font-size:10.5px;color:var(--lgray);line-height:1.45;margin-top:5px;max-height:40px;overflow:hidden;}
 .b-op .bo-why{font-size:10px;color:var(--accent);font-weight:700;margin-top:7px;text-transform:uppercase;letter-spacing:.5px;}
-.b-op .b-port{position:absolute;top:7px;right:7px;width:16px;height:16px;border-radius:50%;
-  background:var(--accent);border:2px solid rgba(255,255,255,.9);cursor:pointer;display:none;}
-.b-op.sel .b-port{display:block;}
+.b-op .b-port{position:absolute;top:7px;right:7px;width:18px;height:18px;border-radius:50%;
+  background:var(--accent);border:2px solid rgba(255,255,255,.9);cursor:pointer;display:none;
+  align-items:center;justify-content:center;color:#fff;font-size:10px;font-weight:800;line-height:1;box-shadow:0 2px 8px rgba(23,29,72,.3);}
+.b-op.sel .b-port{display:flex;}
 .b-note{min-width:140px;max-width:230px;padding:13px 14px;border-radius:4px;cursor:move;position:relative;
   font-size:13px;line-height:1.5;color:var(--white);font-weight:500;white-space:pre-wrap;word-break:break-word;
   background:var(--nbg, #ffe9a3);box-shadow:0 5px 16px rgba(23,29,72,.18);}
@@ -1040,6 +1042,42 @@ input[type="file"].h{display:none!important;}
 .bd-pick-item .pi-main{flex:1;min-width:0;}
 .bd-pick-item .pi-sub{font-size:10.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .bd-pick-empty{padding:16px;text-align:center;color:var(--lgray);font-size:12px;}
+
+/* ══ DETALHE DE OPERAÇÃO INLINE (expande na tabela) ══ */
+.ops-tbl tbody tr.op-row{cursor:pointer;}
+.ops-tbl tbody tr.op-row:hover{background:color-mix(in srgb, var(--accent) 5%, transparent);}
+.ops-tbl tbody tr.op-row .chev{display:inline-block;transition:transform .18s ease;color:var(--dim);font-size:10px;margin-left:5px;}
+.ops-tbl tbody tr.op-row.exp .chev{transform:rotate(180deg);}
+tr.op-det-row td{padding:0 14px 14px;background:color-mix(in srgb, var(--accent) 4%, transparent);}
+.op-det{border:1px solid var(--hair);border-radius:14px;padding:14px 16px;background:var(--glass-2,#fff);
+  animation:opDetIn .22s ease;}
+@keyframes opDetIn{from{opacity:0;transform:translateY(-6px);}to{opacity:1;transform:none;}}
+.op-det .od-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;flex-wrap:wrap;}
+.op-det .od-title{font-family:'Space Grotesk';font-size:13.5px;font-weight:700;color:var(--white);}
+.dlab{font-size:10px;font-weight:700;color:var(--lgray);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;}
+.op-det-block{padding:9px 0;}
+.op-det-reason{font-size:13px;color:var(--white);line-height:1.6;background:color-mix(in srgb, var(--accent) 7%, transparent);
+  border:1px solid color-mix(in srgb, var(--accent) 18%, transparent);border-radius:12px;padding:11px;}
+.op-det .det-shots{display:flex;flex-wrap:wrap;gap:8px;}
+.op-det .det-shots .shot-item{width:92px;height:68px;}
+
+/* ══ CHECKLIST DE TIPOS DE OPERACIONAIS ══ */
+.chk-grid{display:flex;flex-wrap:wrap;gap:7px;}
+.chk-box{display:inline-flex;align-items:center;gap:7px;padding:7px 11px;border-radius:10px;cursor:pointer;
+  background:var(--glass-2,#fff);border:1px solid var(--border,#fff);font-size:12px;font-weight:600;color:var(--white);
+  transition:background .15s ease,border-color .15s ease;}
+.chk-box:hover{border-color:var(--accent);}
+.chk-box.on{background:color-mix(in srgb, var(--accent) 14%, transparent);border-color:var(--accent);}
+.chk-fake{width:16px;height:16px;border-radius:5px;border:1.5px solid var(--lgray);display:inline-flex;
+  align-items:center;justify-content:center;font-size:11px;color:#fff;flex-shrink:0;transition:all .15s ease;}
+.chk-box.on .chk-fake{background:var(--accent);border-color:var(--accent);}
+.chk-manage{font-size:9.5px;color:var(--accent);cursor:pointer;font-weight:700;margin-left:4px;}
+.chk-item{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 11px;border-radius:10px;
+  background:var(--glass-2,#fff);border:1px solid var(--border,#fff);font-size:12.5px;font-weight:600;color:var(--white);}
+.chk-item .chk-acts{display:flex;gap:8px;}
+.chk-item .chk-acts span{cursor:pointer;font-size:13px;}
+.chk-tag{display:inline-block;font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:20px;margin:2px 3px 0 0;
+  background:color-mix(in srgb, var(--accent) 13%, transparent);color:var(--accent);}
 
 </style>
 </head>
@@ -1446,11 +1484,22 @@ input[type="file"].h{display:none!important;}
           </div>
 
           <div class="set-card">
+            <div class="set-tit">✅ Tipos de Operacionais</div>
+            <div style="font-size:10.5px;color:var(--dim);line-height:1.55;margin-bottom:10px;">
+              Padronize os padrões/setups que você usa. Eles viram caixas de seleção no formulário de operação.
+            </div>
+            <button class="btn-o" style="width:100%;justify-content:center;" onclick="openChkMod()">⚙️ Gerenciar tipos</button>
+            <div style="margin-top:10px;" id="chkPreview"></div>
+          </div>
+
+          <div class="set-card">
             <div class="set-tit">📊 Resumo dos Dados</div>
             <div class="drow"><span class="dkey">Total de Operações</span><span class="dval" id="sumOps">0</span></div>
             <div class="drow"><span class="dkey">Capital Inicial</span><span class="dval" id="sumIni">R$ 0,00</span></div>
             <div class="drow"><span class="dkey">Capital Atual</span><span class="dval" id="sumCur">R$ 0,00</span></div>
             <div class="drow"><span class="dkey">Rentabilidade</span><span class="dval" id="sumRent">0%</span></div>
+            <div class="drow"><span class="dkey">Tipos de Operacionais</span><span class="dval" id="sumChk">0</span></div>
+            <div class="drow"><span class="dkey">Itens no Quadro</span><span class="dval" id="sumBoard">0</span></div>
             <div class="drow"><span class="dkey">Última sincronização</span><span class="dval" id="sumSync">—</span></div>
           </div>
         </div>
@@ -1510,6 +1559,10 @@ input[type="file"].h{display:none!important;}
         <textarea class="fi" id="opReason" style="border-color:color-mix(in srgb, var(--accent) 28%, transparent);min-height:74px;" placeholder="Ex: Rompimento de resistência no M5, confluência EMA21 + RSI saindo de sobrevenda..."></textarea>
       </div>
       <div class="fg"><label class="fl">Seguiu o Plano?</label><select class="fi" id="opPlan"><option value="yes">✅ Sim, segui o plano</option><option value="no">❌ Não segui o plano</option></select></div>
+      <div class="fg">
+        <label class="fl" style="color:var(--accent);">✅ Tipos de Operacionais <span class="chk-manage" onclick="openChkMod()">＋ gerenciar</span></label>
+        <div class="chk-grid" id="opChecks"></div>
+      </div>
       <div class="fg">
         <label class="fl" style="color:var(--accent);">📸 Prints da Operação</label>
         <div class="shot-zone" id="shotZone" onclick="document.getElementById('shotFile').click()">
@@ -1597,6 +1650,24 @@ input[type="file"].h{display:none!important;}
       <div class="fg"><label class="fl">Buscar</label><input class="fi" id="bdPickQ" placeholder="data, tipo, resultado..." oninput="bdRenderPick()"></div>
       <div class="bd-pick-list" id="bdPickList" style="max-height:46vh;overflow-y:auto;display:flex;flex-direction:column;gap:6px;"></div>
     </div>
+  </div>
+</div>
+
+<!-- CHECKLIST: gerenciar tipos de operacionais -->
+<div class="mol" id="chkMod">
+  <div class="mod" style="max-width:440px;">
+    <div class="mhd"><div class="mtit">✅ Tipos de Operacionais</div><div class="mcls" onclick="closeMod('chkMod');chkSyncUI()">✕</div></div>
+    <div class="mbd">
+      <div style="display:flex;gap:7px;margin-bottom:10px;">
+        <input class="fi" id="chkNew" placeholder="Novo tipo (ex: Rompimento, Pullback...)" style="flex:1;">
+        <button class="btn-o" onclick="chkAdd()">＋ Adicionar</button>
+      </div>
+      <div style="font-size:10.5px;color:var(--dim);line-height:1.5;margin-bottom:9px;">
+        Marque um ou mais tipos em cada operação. Renomear ou excluir aqui não altera o que já foi salvo nas operações.
+      </div>
+      <div id="chkList" style="display:flex;flex-direction:column;gap:6px;"></div>
+    </div>
+    <div class="mft"><button class="btn-o" onclick="closeMod('chkMod');chkSyncUI()">Concluir</button></div>
   </div>
 </div>
 
@@ -1779,6 +1850,7 @@ let S = {
   theme:'default',
   bg:{ on:true, opacity:26 },
   operations:[], cp:'all',
+  checks:[],
   board:{ items:[], links:[], view:{ px:0, py:0, z:1 } }
 };
 let curId=null, CH={};
@@ -1990,6 +2062,7 @@ function load(){
       if(!S.theme) S.theme='default';
       if(!S.bg||typeof S.bg!=='object') S.bg={on:true,opacity:50};
       bdNormalize();
+      chkNormalize();
     }
   }catch(e){}
 }
@@ -2013,7 +2086,7 @@ function nav(page,el){
   document.getElementById('hdrTit').textContent=t[page]||page;
   document.getElementById('fab').style.display=page==='operations'?'flex':'none';
   if(page==='dashboard') updateDash();
-  if(page==='settings'){ loadSetForm(); syncMetalUI(); syncThemeUI(); updGalStats(); paintPWA(); }
+  if(page==='settings'){ loadSetForm(); syncMetalUI(); syncThemeUI(); updGalStats(); chkSyncUI(); paintPWA(); }
   mtApplyAll();
   if(page==='operations'){ renderOps(); syncOpsUsd(); }
   if(page==='analytics') updateAn();
@@ -2111,6 +2184,8 @@ function updSum(){
   document.getElementById('sumIni').textContent=fmtBRL(ini);
   document.getElementById('sumCur').textContent=fmtBRL(cur);
   const re=document.getElementById('sumRent');re.textContent=(r>=0?'+':'')+r.toFixed(2)+'%';re.style.color=r>=0?PAL.up:PAL.down;
+  const sc=document.getElementById('sumChk'); if(sc) sc.textContent=(S.checks||[]).length;
+  const sb=document.getElementById('sumBoard'); if(sb) sb.textContent=(S.board&&S.board.items)?S.board.items.length:0;
 }
 
 /* ══════════════════════════════════════
@@ -2122,7 +2197,7 @@ function openNewOpModal(){
   document.getElementById('opTime').value=now.toTimeString().slice(0,5);
   ['opVal','opValU','opRes','opType','opReason','opYT','opNotes'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
   document.getElementById('opPlan').value='yes';
-  draftShots=[]; renderShotGrid(); syncValLabel();
+  draftShots=[]; renderShotGrid(); draftChecks=[]; chkRenderModal(); syncValLabel();
   showMod('newOpModal'); initShotZone();
 }
 function syncValLabel(){
@@ -2149,12 +2224,13 @@ function saveOp(){
   const usd=value/(S.settings.usdRate||1);
   const opId=curId||Date.now().toString();
   const shots=[...draftShots];
+  const checks=[...draftChecks];
   // vincula cada print à operação (útil para a limpeza de órfãos)
   shots.forEach(async sid=>{const r=await IMGDB.get(sid);if(r&&!r.opId){r.opId=opId;IMGDB.put(r);}});
-  const op={id:opId,date,time,value,usd,result,type,reason,plan,img,yt,notes,shots,createdAt:new Date().toISOString()};
+  const op={id:opId,date,time,value,usd,result,type,reason,plan,img,yt,notes,shots,checks,createdAt:new Date().toISOString()};
   if(curId){const i=S.operations.findIndex(o=>o.id===curId);if(i!==-1)S.operations[i]=op;toast('Operação atualizada!','s');}
   else{S.operations.push(op);if(result==='WIN')S.settings.currentCapital=Math.max(0,S.settings.currentCapital+value);else S.settings.currentCapital=Math.max(0,S.settings.currentCapital-value);toast('Operação registrada!','s');}
-  draftShots=[];
+  draftShots=[]; draftChecks=[];
   save();closeMod('newOpModal');updateDash();renderOps();badge();
 }
 function delOp(){
@@ -2163,30 +2239,37 @@ function delOp(){
   if(_op&&_op.shots) _op.shots.forEach(sid=>{IMGDB.del(sid).catch(()=>{});revokeImgURL(sid);});
   S.operations=S.operations.filter(o=>o.id!==curId);
   bdRemoveOpRefs(curId);
+  if(expandedOp===curId) expandedOp=null;
   save();closeMod('opDetMod');updateDash();renderOps();badge();toast('Operação excluída.','s');
 }
 function openDet(id){
   const op=S.operations.find(o=>o.id===id);if(!op)return;curId=id;
-  const rc=op.result==='WIN'?'bwin':'bloss',tc=op.type==='CALL'?'bcall':'bput',pc=op.plan==='yes'?'byes':'bno';
-  let ytHtml='';if(op.yt){const yid=ytId(op.yt);if(yid)ytHtml=`<div style="margin-top:11px;"><div style="font-size:10px;font-weight:700;color:var(--lgray);text-transform:uppercase;margin-bottom:5px;">🎬 Vídeo</div><iframe style="width:100%;aspect-ratio:16/9;border-radius:12px;border:none;" src="https://www.youtube.com/embed/${yid}" allowfullscreen></iframe></div>`;}
-  const nShots=(op.shots||[]).length;
-  let imgHtml=`<div style="margin-top:11px;"><div style="font-size:10px;font-weight:700;color:var(--lgray);text-transform:uppercase;margin-bottom:5px;">📸 Prints ${nShots?`(${nShots})`:''}</div><div class="det-shots" id="detShots"></div></div>`;
-  if(op.img)imgHtml+=`<div style="margin-top:11px;"><img style="max-width:100%;border-radius:12px;border:1px solid var(--border);" src="${op.img}" onerror="this.style.display='none'"></div>`;
+  const rc=op.result==='WIN'?'bwin':'bloss';
   document.getElementById('detTit').innerHTML=`Operação #${op.id.slice(-4)} <span class="badge ${rc}" style="margin-left:6px;">${op.result==='WIN'?'✅':'❌'} ${op.result}</span>`;
-  document.getElementById('detBod').innerHTML=`
-    <div class="drow"><span class="dkey">Data/Hora</span><span class="dval">${op.date} às ${op.time}</span></div>
-    <div class="drow"><span class="dkey">Valor</span><span class="dval">${fmtBRL(op.value)} <span style="color:var(--lgray);font-size:11px;font-weight:400;">≈ $${op.usd.toFixed(2)}</span></span></div>
-    <div class="drow"><span class="dkey">Resultado</span><span class="dval"><span class="badge ${rc}">${op.result==='WIN'?'✅':'❌'} ${op.result}</span></span></div>
-    <div class="drow"><span class="dkey">Tipo</span><span class="dval"><span class="badge ${tc}">${op.type==='CALL'?'📈':'📉'} ${op.type}</span></span></div>
-    <div class="drow"><span class="dkey">Seguiu o Plano</span><span class="dval"><span class="badge ${pc}">${op.plan==='yes'?'✅ Sim':'❌ Não'}</span></span></div>
-    <div style="padding:9px 0;"><div style="font-size:10px;font-weight:700;color:var(--accent);text-transform:uppercase;margin-bottom:5px;">🎯 Motivo da Entrada</div><div style="font-size:13px;color:var(--white);line-height:1.6;background:color-mix(in srgb, var(--accent) 7%, transparent);border:1px solid color-mix(in srgb, var(--accent) 18%, transparent);border-radius:12px;padding:11px;">${op.reason||'—'}</div></div>
-    ${op.notes?`<div class="drow"><span class="dkey">Obs</span><span class="dval" style="font-size:12px;font-weight:400;">${op.notes}</span></div>`:''}
-    ${imgHtml}${ytHtml}`;
+  document.getElementById('detBod').innerHTML=opDetailHTML(op);
   const _ft=document.getElementById('opDetMod').querySelector('.mft');
   _ft.querySelectorAll('button').forEach(b=>b.style.display='inline-flex');
   document.getElementById('detEditBtn').style.display='inline-flex';
   document.getElementById('detEditBtn').onclick=()=>{closeMod('opDetMod');editOp(id);};
   showMod('opDetMod'); refreshDetShots();
+}
+function opDetailHTML(op){
+  const rc=op.result==='WIN'?'bwin':'bloss',tc=op.type==='CALL'?'bcall':'bput',pc=op.plan==='yes'?'byes':'bno';
+  let ytHtml='';if(op.yt){const yid=ytId(op.yt);if(yid)ytHtml=`<div class="op-det-block"><div class="dlab">🎬 Vídeo</div><iframe style="width:100%;aspect-ratio:16/9;border-radius:12px;border:none;" src="https://www.youtube.com/embed/${yid}" allowfullscreen></iframe></div>`;}
+  const nShots=(op.shots||[]).length;
+  const chk=chkTagsHTML(op.checks);
+  let imgHtml=`<div class="op-det-block"><div class="dlab">📸 Prints ${nShots?`(${nShots})`:''}</div><div class="det-shots"></div></div>`;
+  if(op.img)imgHtml+=`<div class="op-det-block"><img style="max-width:100%;border-radius:12px;border:1px solid var(--border);" src="${op.img}" onerror="this.style.display='none'"></div>`;
+  return `
+    <div class="drow"><span class="dkey">Data/Hora</span><span class="dval">${op.date} às ${op.time}</span></div>
+    <div class="drow"><span class="dkey">Valor</span><span class="dval">${fmtBRL(op.value)} <span style="color:var(--lgray);font-size:11px;font-weight:400;">≈ $${(op.usd||0).toFixed(2)}</span></span></div>
+    <div class="drow"><span class="dkey">Resultado</span><span class="dval"><span class="badge ${rc}">${op.result==='WIN'?'✅':'❌'} ${op.result}</span></span></div>
+    <div class="drow"><span class="dkey">Tipo</span><span class="dval"><span class="badge ${tc}">${op.type==='CALL'?'📈':'📉'} ${op.type}</span></span></div>
+    <div class="drow"><span class="dkey">Seguiu o Plano</span><span class="dval"><span class="badge ${pc}">${op.plan==='yes'?'✅ Sim':'❌ Não'}</span></span></div>
+    ${chk?`<div class="drow"><span class="dkey">Tipos de Operacionais</span><span class="dval" style="font-size:11px;font-weight:400;">${chk}</span></div>`:''}
+    <div class="op-det-block"><div class="dlab">🎯 Motivo da Entrada</div><div class="op-det-reason">${escHtml(op.reason||'—')}</div></div>
+    ${op.notes?`<div class="drow"><span class="dkey">Obs</span><span class="dval" style="font-size:12px;font-weight:400;">${escHtml(op.notes)}</span></div>`:''}
+    ${imgHtml}${ytHtml}`;
 }
 function editOp(id){
   const op=S.operations.find(o=>o.id===id);if(!op)return;curId=id;
@@ -2196,9 +2279,11 @@ function editOp(id){
   document.getElementById('opReason').value=op.reason;document.getElementById('opPlan').value=op.plan;
   document.getElementById('opYT').value=op.yt||'';
   document.getElementById('opNotes').value=op.notes||'';
-  draftShots=[...(op.shots||[])]; renderShotGrid(); syncValLabel();
+  draftShots=[...(op.shots||[])]; renderShotGrid();
+  draftChecks=[...(op.checks||[])]; chkRenderModal(); syncValLabel();
   showMod('newOpModal'); initShotZone();
 }
+let expandedOp=null;
 function renderOps(filt){
   const ops=filt!==undefined?filt:[...S.operations].reverse();
   const tb=document.getElementById('opsTb');
@@ -2208,22 +2293,49 @@ function renderOps(filt){
     const tb2=op.type==='CALL'?`<span class="badge bcall">📈 CALL</span>`:`<span class="badge bput">📉 PUT</span>`;
     const pb=op.plan==='yes'?`<span class="badge byes">✅</span>`:`<span class="badge bno">❌</span>`;
     const ns=(op.shots||[]).length;
+    const nchk=(op.checks||[]).length;
     const med=[ns?`📸${ns}`:'',op.img?'🖼':'',op.yt?'🎬':''].filter(Boolean).join(' ')||'—';
     const rs=op.reason?(op.reason.length>24?op.reason.slice(0,24)+'…':op.reason):'—';
-    return `<tr onclick="openDet('${op.id}')">
+    const chkRow=chkTagsHTML((op.checks||[]).slice(0,3))+(nchk>3?`<span class="chk-tag">+${nchk-3}</span>`:'');
+    const isExp=expandedOp===op.id;
+    let out=`<tr class="op-row ${isExp?'exp':''}" onclick="toggleOpRow('${op.id}')">
       <td style="color:var(--dim);font-size:11px;">${i+1}</td>
       <td style="font-size:12px;">${op.date}<br><span style="color:var(--dim);font-size:10px;">${op.time}</span></td>
       <td class="td-money">${fmtBRL(op.value)}</td>
-      <td style="color:var(--lgray);font-size:12px;">$${op.usd.toFixed(2)}</td>
+      <td style="color:var(--lgray);font-size:12px;">$${(op.usd||0).toFixed(2)}</td>
       <td>${rb}</td><td>${tb2}</td>
-      <td style="max-width:135px;color:var(--lgray);font-size:11px;" title="${op.reason}">${rs}</td>
+      <td style="max-width:150px;color:var(--lgray);font-size:11px;" title="${escHtml(op.reason||'')}">${rs}${chkRow?`<div>${chkRow}</div>`:''}</td>
       <td>${pb}</td><td style="font-size:13px;">${med}</td>
-      <td><div style="display:flex;gap:6px;">
-        <span onclick="event.stopPropagation();editOp('${op.id}')" style="cursor:pointer;font-size:13px;">✏️</span>
-        <span onclick="event.stopPropagation();curId='${op.id}';delOp()" style="cursor:pointer;font-size:13px;">🗑️</span>
+      <td><div style="display:flex;gap:6px;align-items:center;">
+        <span onclick="event.stopPropagation();editOp('${op.id}')" style="cursor:pointer;font-size:13px;" title="Editar">✏️</span>
+        <span onclick="event.stopPropagation();curId='${op.id}';delOp()" style="cursor:pointer;font-size:13px;" title="Excluir">🗑️</span>
+        <span class="chev">▾</span>
       </div></td>
     </tr>`;
+    if(isExp){
+      out+=`<tr class="op-det-row" onclick="event.stopPropagation()"><td colspan="10">
+        <div class="op-det">
+          <div class="od-head">
+            <div class="od-title">Detalhes da Operação #${op.id.slice(-4)}</div>
+            <div style="display:flex;gap:7px;">
+              <button class="btn-s xs" onclick="editOp('${op.id}')">✏️ Editar</button>
+              <button class="btn-s xs" style="color:var(--red);border-color:rgba(225,29,72,.28);" onclick="curId='${op.id}';delOp()">🗑️ Excluir</button>
+              <button class="btn-o xs" onclick="toggleOpRow('${op.id}')">Fechar</button>
+            </div>
+          </div>
+          ${opDetailHTML(op)}
+        </div>
+      </td></tr>`;
+    }
+    return out;
   }).join('');
+  const exp=expandedOp;
+  if(exp){ const op=S.operations.find(o=>o.id===exp); if(op){ tb.querySelectorAll('.det-shots').forEach(b=>fillShotsBox(b,(op.shots||[]))); } }
+}
+function toggleOpRow(id){
+  curId=id;
+  expandedOp=(expandedOp===id)?null:id;
+  renderOps();
 }
 function applyFilter(){
   const d=document.getElementById('fDate').value,r=document.getElementById('fRes').value,t=document.getElementById('fType').value,p=document.getElementById('fPlan').value;
@@ -2240,6 +2352,7 @@ function syncOpsUsd(){const e=document.getElementById('opsUsdEl');if(e)e.textCon
    PRINTS DA OPERAÇÃO (colar / arrastar / escolher)
 ══════════════════════════════════════ */
 let draftShots=[];            // ids dos prints do formulário aberto
+let draftChecks=[];           // tipos de operacionais marcados no formulário
 let svList=[], svIdx=0, svCtx='modal';
 
 function isNewOpOpen(){
@@ -2391,12 +2504,10 @@ function initShotZone(){
   });
 }
 
-/* miniaturas no detalhe da operação */
-async function refreshDetShots(){
-  const box=document.getElementById('detShots');
+/* miniaturas no detalhe da operação (modal ou linha expandida) */
+async function fillShotsBox(box,ids){
   if(!box) return;
-  const op=S.operations.find(o=>o.id===curId);
-  const ids=(op&&op.shots)||[];
+  ids=(Array.isArray(ids)?ids:[]);
   if(!ids.length){ box.innerHTML='<div style="font-size:11px;color:var(--dim);">Nenhum print anexado.</div>'; return; }
   const parts=[];
   for(let i=0;i<ids.length;i++){
@@ -2408,6 +2519,13 @@ async function refreshDetShots(){
     </div>`);
   }
   box.innerHTML=parts.join('');
+}
+async function refreshDetShots(){
+  const detBod=document.getElementById('detBod');
+  if(!detBod) return;
+  const op=S.operations.find(o=>o.id===curId);
+  const boxes=detBod.querySelectorAll('.det-shots');
+  if(boxes.length) await fillShotsBox(boxes[0], (op&&op.shots)||[]);
 }
 function escHtml(t){return String(t??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 
@@ -2531,6 +2649,7 @@ const BD_NOTES=[
 const bdEls={};           // id -> elemento DOM
 const bdSel=new Set();    // ids selecionados
 let bdLinkMode=false, bdLinkFrom=null;
+let bdSelLink=null, bdLinkDrag=null;
 let bdDrag=null, bdPan=null, bdMoved=false, bdSuppressClick=false;
 let bdInitialized=false;
 
@@ -2546,11 +2665,76 @@ function bdNormalize(){
   if(!S.board||typeof S.board!=='object') S.board={items:[],links:[],view:{px:0,py:0,z:1}};
   if(!Array.isArray(S.board.items)) S.board.items=[];
   if(!Array.isArray(S.board.links)) S.board.links=[];
+  S.board.links.forEach(l=>{ if(!l.id) l.id='lk'+Date.now().toString(36)+Math.random().toString(36).slice(2,6); });
   if(!S.board.view||typeof S.board.view!=='object') S.board.view={px:0,py:0,z:1};
   if(!(S.board.view.z>0)) S.board.view.z=1;
   if(typeof S.board.view.px!=='number') S.board.view.px=0;
   if(typeof S.board.view.py!=='number') S.board.view.py=0;
 }
+
+/* ══ CHECKLIST de tipos de operacionais ══ */
+function chkNewId(){ return 'ck'+Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+function chkList(){ if(!Array.isArray(S.checks)) S.checks=[]; return S.checks; }
+function chkNormalize(){
+  if(!Array.isArray(S.checks)) S.checks=[];
+  S.checks=S.checks.filter(c=>c&&typeof c==='object'&&c.id&&c.label);
+  (S.operations||[]).forEach(o=>{ if(!Array.isArray(o.checks)) o.checks=[]; });
+}
+function chkTagsHTML(checks){
+  checks=(Array.isArray(checks)?checks:[]).filter(c=>c&&c.label);
+  if(!checks.length) return '';
+  return checks.map(c=>`<span class="chk-tag">${escHtml(c.label)}</span>`).join('');
+}
+function chkRenderModal(){
+  const g=document.getElementById('opChecks'); if(!g) return;
+  const L=chkList();
+  if(!L.length){ g.innerHTML='<span style="font-size:11px;color:var(--dim);">Nenhum tipo cadastrado. Clique em "gerenciar" para criar.</span>'; return; }
+  g.innerHTML=L.map(c=>{
+    const on=draftChecks.some(d=>d.id===c.id);
+    return `<label class="chk-box ${on?'on':''}"><input type="checkbox" style="display:none;" ${on?'checked':''} onchange="chkToggle('${c.id}',this.checked)"><span class="chk-fake">${on?'✓':''}</span>${escHtml(c.label)}</label>`;
+  }).join('');
+}
+function chkToggle(id,on){
+  const c=chkList().find(x=>x.id===id); if(!c) return;
+  if(on){ if(!draftChecks.some(d=>d.id===id)) draftChecks.push({id:c.id,label:c.label}); }
+  else draftChecks=draftChecks.filter(d=>d.id!==id);
+  chkRenderModal();
+}
+function openChkMod(){ chkRenderList(); showMod('chkMod'); }
+function chkRenderList(){
+  const el=document.getElementById('chkList'); if(!el) return;
+  const L=chkList();
+  if(!L.length){ el.innerHTML='<div style="padding:14px;text-align:center;color:var(--lgray);font-size:12px;">Nenhum tipo cadastrado ainda.</div>'; }
+  else el.innerHTML=L.map(c=>`<div class="chk-item"><span>${escHtml(c.label)}</span><div class="chk-acts"><span title="Renomear" onclick="chkRename('${c.id}')">✏️</span><span title="Excluir" onclick="chkDel('${c.id}')">🗑️</span></div></div>`).join('');
+  chkPreview();
+}
+function chkPreview(){
+  const el=document.getElementById('chkPreview'); if(!el) return;
+  const L=chkList();
+  el.innerHTML=L.length?L.map(c=>`<span class="chk-tag">${escHtml(c.label)}</span>`).join(''):'<span style="font-size:11px;color:var(--dim);">nenhum tipo ainda</span>';
+}
+function chkAdd(){
+  const inp=document.getElementById('chkNew'); const v=(inp?inp.value:'').trim();
+  if(!v){ toast('Digite um nome para o tipo.','e'); return; }
+  if(chkList().some(c=>c.label.toLowerCase()===v.toLowerCase())){ toast('Esse tipo já existe.','w'); return; }
+  chkList().push({id:chkNewId(), label:v});
+  if(inp) inp.value='';
+  save(); chkRenderList(); chkRenderModal();
+}
+function chkRename(id){
+  const c=chkList().find(x=>x.id===id); if(!c) return;
+  const v=prompt('Renomear tipo:',c.label);
+  if(v===null) return;
+  const t=v.trim(); if(!t){ toast('Nome vazio.','e'); return; }
+  c.label=t; save(); chkRenderList(); chkRenderModal();
+}
+function chkDel(id){
+  const c=chkList().find(x=>x.id===id); if(!c) return;
+  if(!confirm(`Excluir "${c.label}"?\nAs operações já registradas mantêm esse tipo.`)) return;
+  S.checks=S.checks.filter(x=>x.id!==id);
+  save(); chkRenderList(); chkRenderModal();
+}
+function chkSyncUI(){ chkRenderList(); chkRenderModal(); updSum(); }
 
 /* ── coordenadas ── */
 function bdCenterEl(id){
@@ -2569,13 +2753,13 @@ function bdSelAdd(id){ bdSel.add(id); bdSyncSel(); }
 function bdSyncSel(){
   for(const [id,el] of Object.entries(bdEls)) el.classList.toggle('sel', bdSel.has(id));
 }
-function bdClearSel(){ bdSel.clear(); bdSyncSel(); if(bdLinkMode) bdToggleLink(); }
+function bdClearSel(){ bdSel.clear(); bdSelLink=null; bdSyncSel(); if(bdLinkMode) bdToggleLink(); bdDrawArrows(); }
 
 function bdRemoveItem(id){
   const B=bdState();
   B.items=B.items.filter(i=>i.id!==id);
   B.links=B.links.filter(l=>l.a!==id&&l.b!==id);
-  bdSel.delete(id); if(bdLinkFrom===id) bdLinkFrom=null;
+  bdSel.delete(id); if(bdLinkFrom===id) bdLinkFrom=null; bdSelLink=null;
   const el=bdEls[id]; if(el){ el.remove(); delete bdEls[id]; }
   save();
 }
@@ -2651,7 +2835,7 @@ function bdBuildItem(el,it){
     el.addEventListener('dblclick', e=>{ e.preventDefault(); t.contentEditable='true'; t.focus(); bdSelectAll(t); });
     t.addEventListener('input', ()=>{ it.txt=t.innerText; });
     t.addEventListener('blur', ()=>{ t.contentEditable='false'; save(); });
-    el.querySelector('.b-note-x').addEventListener('click', e=>{ e.stopPropagation(); bdRemoveItem(it.id); });
+    el.querySelector('.b-note-x').addEventListener('click', e=>{ e.stopPropagation(); bdRemoveItem(it.id); bdDrawArrows(); bdEmpty(); });
   }
   el.addEventListener('pointerdown', e=>{ bdItemDown(e, it); });
   el.addEventListener('click', e=>{ bdItemClick(e, it); });
@@ -2660,8 +2844,7 @@ function bdBuildItem(el,it){
   });
   const port=el.querySelector('.b-port');
   if(port){
-    port.addEventListener('pointerdown', e=>{ e.stopPropagation(); });
-    port.addEventListener('click', e=>{ e.stopPropagation(); bdPortClick(it); });
+    port.addEventListener('pointerdown', e=>{ bdPortDown(e, it); });
   }
 }
 function bdSelectAll(n){ const r=document.createRange(); r.selectNodeContents(n); const s=window.getSelection(); s.removeAllRanges(); s.addRange(r); }
@@ -2696,11 +2879,21 @@ function bdDrawArrows(){
   const B=bdState(); let html='';
   for(const l of B.links){
     const a=bdEls[l.a], b=bdEls[l.b]; if(!a||!b) continue;
-    html+=bdArrowSvg(bdCenterEl(l.a), bdCenterEl(l.b), l.a===bdLinkFrom||l.b===bdLinkFrom);
+    html+=bdArrowSvg(bdCenterEl(l.a), bdCenterEl(l.b), {id:l.id, sel:bdSelLink===l.id});
+  }
+  if(bdLinkDrag){
+    const w=bdWrap();
+    if(w){
+      const r=w.getBoundingClientRect();
+      const a=bdCenterEl(bdLinkDrag.from);
+      const wx=(bdLinkDrag.x-r.left-bdPX())/bdZ(), wy=(bdLinkDrag.y-r.top-bdPY())/bdZ();
+      html+=bdArrowSvg(a,{x:wx,y:wy},{pending:true});
+    }
   }
   svg.innerHTML=html;
 }
-function bdArrowSvg(a,b,on){
+function bdArrowSvg(a,b,opts){
+  opts=opts||{};
   const dx=b.x-a.x, dy=b.y-a.y, len=Math.hypot(dx,dy)||1;
   const ux=dx/len, uy=dy/len, head=11;
   const ex=b.x-ux*7, ey=b.y-uy*7;
@@ -2709,7 +2902,11 @@ function bdArrowSvg(a,b,on){
   const l1=`${(bx+px*head*.5).toFixed(1)},${(by+py*head*.5).toFixed(1)}`;
   const l2=`${(bx-px*head*.5).toFixed(1)},${(by-py*head*.5).toFixed(1)}`;
   const tip=`${b.x.toFixed(1)},${b.y.toFixed(1)}`;
-  return `<path class="b-line${on?' on':''}" d="M ${a.x.toFixed(1)} ${a.y.toFixed(1)} L ${ex.toFixed(1)} ${ey.toFixed(1)}"/><polygon class="b-arr${on?' on':''}" points="${tip} ${l1} ${l2}"/>`;
+  const sel=opts.sel?' sel':'';
+  const dash=opts.pending?' b-pending':'';
+  const pe=opts.pending?' style="pointer-events:none"':'';
+  const onClick=opts.pending?'':` onclick="bdLinkClick('${opts.id}',event)"`;
+  return `<g class="b-link${sel}"${onClick}${pe}><path class="b-line${dash}" d="M ${a.x.toFixed(1)} ${a.y.toFixed(1)} L ${ex.toFixed(1)} ${ey.toFixed(1)}"/><polygon class="b-arr" points="${tip} ${l1} ${l2}"/></g>`;
 }
 function bdEmpty(){
   const e=document.getElementById('bdEmpty'); if(!e) return;
@@ -2733,25 +2930,63 @@ function bdItemClick(e,it){
   if(bdSuppressClick){ bdSuppressClick=false; return; }
   if(bdLinkMode){ e.stopPropagation(); bdLinkPick(it.id); }
 }
-function bdPortClick(it){
-  if(bdLinkMode){ bdLinkPick(it.id); return; }
-  bdLinkMode=true; bdLinkFrom=it.id;
-  const b=document.getElementById('bdLinkBtn'); if(b){ b.classList.add('prim'); b.textContent='🔗 Ligando… clique em 2 itens'; }
-  bdSelAdd(it.id);
-  toast('Clique em outro item para ligar com uma seta.','w');
+function bdPortDown(e,it){
+  if(e.pointerType==='mouse'&&e.button!==0) return;
+  e.stopPropagation(); e.preventDefault();
+  bdSelSet(it.id);
+  bdLinkDrag={from:it.id, x:e.clientX, y:e.clientY};
+  document.addEventListener('pointermove', bdLinkMove);
+  document.addEventListener('pointerup', bdLinkUp);
+  bdDrawArrows();
+  toast('Arraste até o outro bloco para ligar.','w');
+}
+function bdLinkMove(e){ if(!bdLinkDrag) return; bdLinkDrag.x=e.clientX; bdLinkDrag.y=e.clientY; bdDrawArrows(); }
+function bdLinkUp(e){
+  if(!bdLinkDrag) return;
+  const from=bdLinkDrag.from;
+  document.removeEventListener('pointermove', bdLinkMove);
+  document.removeEventListener('pointerup', bdLinkUp);
+  bdLinkDrag=null;
+  const target=bdHitTest(e.clientX,e.clientY,from);
+  if(target&&bdConnect(from,target)) toast('Itens ligados!','s');
+  bdDrawArrows();
+}
+function bdHitTest(cx,cy,excludeId){
+  let found=null;
+  for(const [id,el] of Object.entries(bdEls)){
+    if(id===excludeId) continue;
+    const r=el.getBoundingClientRect();
+    if(cx>=r.left&&cx<=r.right&&cy>=r.top&&cy<=r.bottom) found=id;
+  }
+  return found;
+}
+function bdConnect(a,b){
+  if(!a||!b||a===b) return false;
+  const B=bdState();
+  if(!B.links.some(l=>(l.a===a&&l.b===b)||(l.a===b&&l.b===a))){
+    B.links.push({id:'lk'+Date.now().toString(36)+Math.random().toString(36).slice(2,6), a, b});
+    save(); bdDrawArrows();
+    return true;
+  }
+  return false;
+}
+function bdLinkClick(id,e){
+  if(e){ e.stopPropagation(); }
+  bdSelLink=(bdSelLink===id)?null:id;
+  bdDrawArrows();
 }
 function bdLinkPick(id){
-  if(!bdLinkFrom){ bdLinkFrom=id; bdSelAdd(id); bdDrawArrows(); toast('Agora clique no outro item.','w'); return; }
+  if(!bdLinkFrom){ bdLinkFrom=id; bdSelAdd(id); bdDrawArrows(); toast('Agora clique no outro bloco.','w'); return; }
   if(bdLinkFrom===id){ bdLinkFrom=null; bdDrawArrows(); toast('Ligação cancelada.','w'); return; }
-  const B=bdState();
-  if(!B.links.some(l=>(l.a===bdLinkFrom&&l.b===id)||(l.a===id&&l.b===bdLinkFrom))) B.links.push({a:bdLinkFrom,b:id});
-  bdLinkFrom=null; save(); bdDrawArrows(); toast('Itens ligados!','s');
+  if(bdConnect(bdLinkFrom,id)) toast('Itens ligados!','s');
+  bdLinkFrom=null; bdDrawArrows();
 }
 function bdToggleLink(){
-  bdLinkMode=!bdLinkMode; bdLinkFrom=null;
-  const b=document.getElementById('bdLinkBtn'); if(b){ b.classList.toggle('prim',bdLinkMode); b.textContent=bdLinkMode?'🔗 Ligando… clique em 2 itens':'🔗 Ligar'; }
+  bdLinkMode=!bdLinkMode; bdLinkFrom=null; bdSelLink=null;
+  const b=document.getElementById('bdLinkBtn'); if(b){ b.classList.toggle('prim',bdLinkMode); b.textContent=bdLinkMode?'🔗 Clique em 2 blocos':'🔗 Ligar'; }
   const w=bdWrap(); if(w) w.style.cursor=bdLinkMode?'crosshair':'grab';
   bdDrawArrows();
+  if(bdLinkMode) toast('Clique em um bloco e depois no outro.','w');
 }
 function bdDragMove(e){
   if(bdDrag){
@@ -2779,9 +3014,10 @@ function bdDragEnd(){
 function bdWrapDown(e){
   const w=bdWrap(); if(!w) return;
   if(e.target.closest&&e.target.closest('.b-el')) return;
+  if(e.target.closest&&e.target.closest('.b-link')) return;
   if(e.pointerType==='mouse'&&e.button!==0&&e.button!==1) return;
   e.preventDefault();
-  bdSel.clear(); bdSyncSel();
+  bdSel.clear(); bdSelLink=null; bdSyncSel(); bdDrawArrows();
   bdPan={sx:e.clientX, sy:e.clientY, px:bdPX(), py:bdPY()};
   w.classList.add('drag');
   document.addEventListener('pointermove', bdDragMove);
@@ -2903,7 +3139,12 @@ function bdInit(){
     const t=document.activeElement;
     if(t&&(t.isContentEditable||t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.tagName==='SELECT')) return;
     if(e.key==='Escape'){ if(bdLinkMode) bdToggleLink(); else bdClearSel(); return; }
-    if(e.key==='Delete'||e.key==='Backspace'){ e.preventDefault(); bdDeleteSelected(); return; }
+    if(e.key==='Delete'||e.key==='Backspace'){
+      e.preventDefault();
+      if(bdSelLink){ const B=bdState(); B.links=B.links.filter(l=>l.id!==bdSelLink); bdSelLink=null; save(); bdDrawArrows(); toast('Seta removida.','s'); return; }
+      bdDeleteSelected();
+      return;
+    }
     if(e.key.startsWith('Arrow')){ e.preventDefault(); const st=e.shiftKey?10:2; bdNudge(e.key==='ArrowLeft'?-st:e.key==='ArrowRight'?st:0, e.key==='ArrowUp'?-st:e.key==='ArrowDown'?st:0); }
   });
 }
@@ -3028,7 +3269,7 @@ async function exportData(){
     const shots=await IMGDB.all();
     const imgs={};
     for(const r of shots){
-      if(r.size>3*1024*1024) continue;              // pula imagens muito grandes
+      if(r.size>8*1024*1024) continue;              // pula só imagens excepcionalmente grandes
       imgs[r.id]={d:await blobToDataURL(r.blob),note:r.note||'',name:r.name||'',at:r.at||''};
     }
     const pack={__ec:2,exportedAt:new Date().toISOString(),state:S,shots:imgs};
@@ -3097,14 +3338,14 @@ async function importData(ev){
     }
 
     /* ── aplica ── */
-    bdNormalize(); bdPruneOps();
+    bdNormalize(); bdPruneOps(); chkNormalize();
     save();
     applyTheme(S.theme,{silent:true});
     await applyProfUI();
     updateDash(); renderOps(); badge(); mtApplyAll();
     if(isBoardActive()) bdRender();
     const sp=document.getElementById('page-settings');
-    if(sp&&sp.classList.contains('active')){ loadSetForm(); syncMetalUI(); syncThemeUI(); updGalStats(); }
+    if(sp&&sp.classList.contains('active')){ loadSetForm(); syncMetalUI(); syncThemeUI(); updGalStats(); chkSyncUI(); }
     toast(`Importado: ${nOps} operações${ok?` e ${ok} prints`:''}.`,'s');
   }catch(err){
     toast('Erro ao importar: '+(err&&err.message?err.message:'desconhecido'),'e');
