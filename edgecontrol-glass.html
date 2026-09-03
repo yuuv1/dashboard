@@ -187,7 +187,9 @@ html,body{width:100vw;height:100vh;overflow:hidden;font-family:'Inter',sans-seri
 .dash-head{flex-shrink:0;padding:0 2px 9px;display:flex;align-items:flex-start;justify-content:space-between;}
 .pg-title{font-family:'Space Grotesk',sans-serif;font-size:21px;font-weight:800;letter-spacing:-.6px;}
 .pg-sub{font-size:10.5px;color:var(--lgray);margin-top:2px;opacity:.92;}
-.dash-body{flex:1;min-height:0;display:flex;flex-direction:column;gap:10px;}
+.dash-body{flex:1;min-height:0;display:flex;flex-direction:column;gap:10px;overflow-y:auto;padding-right:2px;}
+.dash-top{flex:0 0 auto;height:100%;min-height:100%;display:flex;flex-direction:column;gap:10px;}
+.dash-charts{flex:0 0 auto;}
 .r1{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;flex:2.6;min-height:0;}
 .r2{display:grid;grid-template-columns:1fr 1.35fr;gap:10px;flex:3.0;min-height:0;}
 .r3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;flex:2.4;min-height:0;}
@@ -1112,8 +1114,6 @@ tr.op-det-row td{padding:0 14px 14px;background:color-mix(in srgb, var(--accent)
 .tk-item .tk-mute{color:var(--dim);font-weight:500;}
 
 /* ══ PÁGINA DE GRÁFICOS ══ */
-#page-charts{flex-direction:column;overflow-y:auto;padding:0 4px 10px 0;}
-.gc-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;flex-shrink:0;padding:0 2px 9px;}
 .gc-tools{display:flex;gap:7px;align-items:center;flex-wrap:wrap;}
 .gc-seg{display:inline-flex;gap:2px;padding:3px;background:var(--glass-2,#fff);border:1px solid var(--border,#fff);border-radius:11px;}
 .gc-seg button{border:none;background:transparent;color:var(--lgray);font-size:11.5px;font-weight:600;padding:5px 11px;border-radius:8px;cursor:pointer;font-family:'Inter',sans-serif;}
@@ -1331,7 +1331,6 @@ tr.op-det-row td{padding:0 14px 14px;background:color-mix(in srgb, var(--accent)
     <div class="nav-item active" onclick="nav('dashboard',this)"><span class="nav-icon">⊞</span> Dashboard</div>
     <div class="nav-item" onclick="nav('operations',this)"><span class="nav-icon">📋</span> Operações <span class="nav-badge" id="opsBadge">0</span></div>
     <div class="nav-item" onclick="nav('analytics',this)"><span class="nav-icon">📊</span> Analytics</div>
-    <div class="nav-item" onclick="nav('charts',this)"><span class="nav-icon">📈</span> Gráficos</div>
     <div class="nav-item" onclick="nav('board',this)"><span class="nav-icon">⬛</span> Quadro</div>
     <div class="nav-sec" style="margin-top:6px;">Sistema</div>
     <div class="nav-item" onclick="nav('settings',this)"><span class="nav-icon">⚙️</span> Configurações</div>
@@ -1342,7 +1341,7 @@ tr.op-det-row td{padding:0 14px 14px;background:color-mix(in srgb, var(--accent)
       <div class="uc-s">Gestão de risco profissional para traders sérios.</div>
       <div class="uc-row">
         <button class="btn-o xs" style="flex:1;justify-content:center;" onclick="openProfileModal()">Perfil</button>
-        <button class="btn-s xs" style="flex:1;justify-content:center;" onclick="nav('settings',document.querySelectorAll('.nav-item')[5])">Config</button>
+        <button class="btn-s xs" style="flex:1;justify-content:center;" onclick="nav('settings',document.querySelectorAll('.nav-item')[4])">Config</button>
       </div>
     </div>
   </div>
@@ -1378,6 +1377,7 @@ tr.op-det-row td{padding:0 14px 14px;background:color-mix(in srgb, var(--accent)
         <button class="btn-s xs" onclick="updateDash()">🔄 Reset Dia</button>
       </div>
       <div class="dash-body">
+        <div class="dash-top">
         <!-- R1 -->
         <div class="r1">
           <div class="ov acc">
@@ -1466,6 +1466,32 @@ tr.op-det-row td{padding:0 14px 14px;background:color-mix(in srgb, var(--accent)
             <div class="rec-hd"><span class="ctit">Últimas Ops</span></div>
             <div class="rec-bd" id="recOps">
               <div style="text-align:center;padding:16px;color:var(--lgray);font-size:11px;"><div style="font-size:22px;margin-bottom:4px;">📭</div>Nenhuma operação ainda</div>
+            </div>
+          </div>
+        </div>
+        </div>
+
+        <!-- GRÁFICOS (integrados ao dashboard) -->
+        <div class="dash-charts">
+          <div class="card">
+            <div class="chd" style="margin-bottom:2px;">
+              <span class="ctit">Gráficos</span>
+              <div class="gc-tools">
+                <div class="gc-seg" id="gSeg">
+                  <button data-p="week" onclick="gPeriod('week')">Semana</button>
+                  <button data-p="month" onclick="gPeriod('month')">Mês</button>
+                  <button data-p="all" onclick="gPeriod('all')">Tudo</button>
+                </div>
+                <button class="b-btn" onclick="gOffset(-1)" title="Período anterior">‹</button>
+                <span class="gc-range" id="gRange">—</span>
+                <button class="b-btn" id="gNext" onclick="gOffset(1)" title="Próximo período">›</button>
+                <span class="b-sep"></span>
+                <button class="b-btn" id="gAutoBtn" onclick="gAutoToggle()" title="Ciclo automático com fade">🔁 Auto</button>
+                <button class="b-btn" onclick="gOpenMenu()">⚙️ Gerenciar</button>
+              </div>
+            </div>
+            <div class="cbd">
+              <div class="g-grid" id="gGrid"></div>
             </div>
           </div>
         </div>
@@ -1562,27 +1588,6 @@ tr.op-det-row td{padding:0 14px 14px;background:color-mix(in srgb, var(--accent)
           <div class="an-card"><div class="ctit" style="margin-bottom:6px;">Ops com vs sem Plano</div><div class="ch"><canvas id="anPC"></canvas></div></div>
         </div>
       </div>
-    </div>
-
-    <!-- CHARTS -->
-    <div id="page-charts" class="page">
-      <div class="gc-top">
-        <div><div class="pg-title">Gráficos</div><div class="pg-sub">Análise visual com filtros semanais e mensais — fixe e organize como quiser</div></div>
-        <div class="gc-tools">
-          <div class="gc-seg" id="gSeg">
-            <button data-p="week" onclick="gPeriod('week')">Semana</button>
-            <button data-p="month" onclick="gPeriod('month')">Mês</button>
-            <button data-p="all" onclick="gPeriod('all')">Tudo</button>
-          </div>
-          <button class="b-btn" onclick="gOffset(-1)" title="Período anterior">‹</button>
-          <span class="gc-range" id="gRange">—</span>
-          <button class="b-btn" id="gNext" onclick="gOffset(1)" title="Próximo período">›</button>
-          <span class="b-sep"></span>
-          <button class="b-btn" id="gAutoBtn" onclick="gAutoToggle()" title="Ciclo automático com fade">🔁 Auto</button>
-          <button class="b-btn" onclick="gOpenMenu()">⚙️ Gerenciar</button>
-        </div>
-      </div>
-      <div class="g-grid" id="gGrid"></div>
     </div>
 
     <!-- SETTINGS -->
@@ -1727,7 +1732,7 @@ tr.op-det-row td{padding:0 14px 14px;background:color-mix(in srgb, var(--accent)
               <span class="speed-lbl">20s</span>
               <span class="speed-val" id="cycleSecVal">6 s</span>
             </div>
-            <div style="font-size:10px;color:var(--dim);line-height:1.55;margin-top:8px;">Na aba Gráficos, um gráfico é destacado por vez com fade-in/out. Os fixados (📌) ficam sempre em evidência.</div>
+            <div style="font-size:10px;color:var(--dim);line-height:1.55;margin-top:8px;">No Dashboard, um gráfico é destacado por vez com fade-in/out. Os fixados (📌) ficam sempre em evidência.</div>
           </div>
         </div>
       </div>
@@ -1800,6 +1805,28 @@ tr.op-det-row td{padding:0 14px 14px;background:color-mix(in srgb, var(--accent)
                 <input type="file" id="impSet" class="h" accept=".json" onchange="importData(event)">
               </div>
               <div style="margin-top:11px;padding-top:11px;border-top:1px solid color-mix(in srgb, var(--accent) 15%, transparent);font-size:10px;color:var(--lgray);line-height:1.5;">⚠️ <strong>Atenção:</strong> Ao importar, os dados atuais serão substituídos.</div>
+            </div>
+          </div>
+
+          <div class="set-card">
+            <div class="set-tit">💾 Backup Automático</div>
+            <div class="toggle-row">
+              <label class="tgl">
+                <input type="checkbox" id="autoBackupToggle" onchange="autoBackupToggleChange()">
+                <div class="tgl-track"></div>
+                <div class="tgl-thumb"></div>
+              </label>
+              <span style="font-size:12px;font-weight:600;color:var(--white);">Backup automático ao salvar</span>
+            </div>
+            <div style="display:flex;gap:7px;align-items:center;margin:11px 0 8px;flex-wrap:wrap;">
+              <button class="btn-s xs" onclick="chooseBackupDir()">📁 Escolher pasta</button>
+              <span style="font-size:11px;color:var(--lgray);font-weight:600;" id="backupDirName">Nenhuma pasta escolhida</span>
+            </div>
+            <div class="drow"><span class="dkey">Último backup</span><span class="dval" id="lastBackupAt">—</span></div>
+            <div style="font-size:10px;color:var(--dim);line-height:1.55;margin-top:8px;">
+              Toda vez que você alterar algo (operação, configuração, quadro…), um arquivo
+              <strong>edgecontrol_backup_*.json</strong> é gravado sozinho na pasta escolhida.
+              Requer <strong>Chrome/Edge</strong> aberto via https ou localhost.
             </div>
           </div>
 
@@ -2192,6 +2219,7 @@ let S = {
   operations:[], cp:'all',
   checks:[],
   charts:{ period:'all', offset:0, pinned:[], hidden:[], auto:true, autoSec:6 },
+  autoBackup:{ on:false, lastAt:'' },
   board:{ items:[], links:[], view:{ px:0, py:0, z:1 } }
 };
 let curId=null, CH={};
@@ -2301,10 +2329,11 @@ const IMGDB={
   open(){
     if(this._db) return Promise.resolve(this._db);
     return new Promise((res,rej)=>{
-      const r=indexedDB.open('edgecontrol_media',1);
+      const r=indexedDB.open('edgecontrol_media',2);
       r.onupgradeneeded=e=>{
         const db=e.target.result;
         if(!db.objectStoreNames.contains('shots')) db.createObjectStore('shots',{keyPath:'id'});
+        if(!db.objectStoreNames.contains('meta')) db.createObjectStore('meta',{keyPath:'k'});
       };
       r.onsuccess=()=>{this._db=r.result;res(this._db);};
       r.onerror=()=>rej(r.error);
@@ -2323,6 +2352,18 @@ const IMGDB={
   del(id){ return this._tx('readwrite',s=>s.delete(id)); },
   all(){ return this._tx('readonly', s=>s.getAll()); },
   keys(){ return this._tx('readonly', s=>s.getAllKeys()); }
+};
+const DBMETA={
+  get(k){ return IMGDB.open().then(db=>new Promise((res,rej)=>{
+    const r=db.transaction('meta','readonly').objectStore('meta').get(k);
+    r.onsuccess=()=>res(r.result?r.result.v:undefined);
+    r.onerror=()=>rej(r.error);
+  })); },
+  set(k,v){ return IMGDB.open().then(db=>new Promise((res,rej)=>{
+    const t=db.transaction('meta','readwrite');
+    t.objectStore('meta').put({k,v});
+    t.oncomplete=()=>res(); t.onerror=()=>rej(t.error);
+  })); }
 };
 
 /* URLs de objeto com cache, para não vazar memória */
@@ -2411,17 +2452,19 @@ function load(){
       if(!(S.charts.autoSec>0)) S.charts.autoSec=6;
       if(typeof S.settings.tickerOn!=='boolean') S.settings.tickerOn=true;
       if(!(S.settings.tickerSpeed>0)) S.settings.tickerSpeed=40;
+      if(!S.autoBackup||typeof S.autoBackup!=='object') S.autoBackup={on:false,lastAt:''};
+      if(typeof S.autoBackup.on!=='boolean') S.autoBackup.on=false;
       bdNormalize();
       chkNormalize();
     }
   }catch(e){}
 }
+function persist(){ try{ localStorage.setItem('ec7',JSON.stringify(S)); }catch(e){} }
 function save(){
-  try{
-    localStorage.setItem('ec7',JSON.stringify(S));
-    const e=document.getElementById('sumSync');
-    if(e) e.textContent=new Date().toLocaleString('pt-BR');
-  }catch(e){}
+  persist();
+  const e=document.getElementById('sumSync');
+  if(e) e.textContent=new Date().toLocaleString('pt-BR');
+  scheduleAutoBackup();
 }
 
 /* ══════════════════════════════════════
@@ -2432,15 +2475,14 @@ function nav(page,el){
   document.getElementById('page-'+page).classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   if(el) el.classList.add('active');
-  const t={dashboard:'Dashboard',operations:'Operações',analytics:'Analytics',charts:'Gráficos',board:'Quadro',settings:'Configurações'};
+  const t={dashboard:'Dashboard',operations:'Operações',analytics:'Analytics',board:'Quadro',settings:'Configurações'};
   document.getElementById('hdrTit').textContent=t[page]||page;
   document.getElementById('fab').style.display=page==='operations'?'flex':'none';
   if(page==='dashboard') updateDash();
-  if(page==='settings'){ loadSetForm(); syncMetalUI(); syncThemeUI(); updGalStats(); chkSyncUI(); syncTickerUI(); syncCycleUI(); paintPWA(); setTab('perfil'); }
+  if(page==='settings'){ loadSetForm(); syncMetalUI(); syncThemeUI(); updGalStats(); chkSyncUI(); syncTickerUI(); syncCycleUI(); updateBackupUI(); paintPWA(); setTab('perfil'); }
   mtApplyAll();
   if(page==='operations'){ renderOps(); syncOpsUsd(); }
   if(page==='analytics'){ updateAn(); gSegUI(); }
-  if(page==='charts'){ renderCharts(); }
   if(page==='board'){ bdRender(); }
 }
 
@@ -3627,7 +3669,7 @@ function gRenderMenu(){
       <button class="gc-btn" onclick="gHide('${c.id}')" title="Ocultar" style="${hid.has(c.id)?'display:none':''}">✕</button>
     </div>`).join('');
 }
-function isChartsActive(){ const p=document.getElementById('page-charts'); return !!(p&&p.classList.contains('active')); }
+function isChartsActive(){ const p=document.getElementById('page-dashboard'); return !!(p&&p.classList.contains('active')); }
 function chartsRefresh(){ if(isChartsActive()) renderCharts(); }
 function isAnActive(){ const p=document.getElementById('page-analytics'); return !!(p&&p.classList.contains('active')); }
 function anRefresh(){ if(isAnActive()) updateAn(); }
@@ -3916,6 +3958,7 @@ function updateDash(){
   else document.getElementById('statsRng').textContent='—';
   renderRec(ops);buildCharts(ops,wins,loss);badge();
   renderTicker();
+  if(isChartsActive()) renderCharts();
 }
 function renderRec(ops){
   const c=document.getElementById('recOps'),r=[...ops].reverse().slice(0,5);
@@ -3979,22 +4022,99 @@ function updateAn(){
 /* ══════════════════════════════════════
    BACKUP
 ══════════════════════════════════════ */
+async function buildBackupPack(){
+  const shots=await IMGDB.all();
+  const imgs={};
+  for(const r of shots){
+    if(r.size>8*1024*1024) continue;              // pula só imagens excepcionalmente grandes
+    imgs[r.id]={d:await blobToDataURL(r.blob),note:r.note||'',name:r.name||'',at:r.at||''};
+  }
+  return {__ec:2,exportedAt:new Date().toISOString(),state:S,shots:imgs};
+}
 async function exportData(){
   try{
     toast('Preparando backup…','w');
-    const shots=await IMGDB.all();
-    const imgs={};
-    for(const r of shots){
-      if(r.size>8*1024*1024) continue;              // pula só imagens excepcionalmente grandes
-      imgs[r.id]={d:await blobToDataURL(r.blob),note:r.note||'',name:r.name||'',at:r.at||''};
-    }
-    const pack={__ec:2,exportedAt:new Date().toISOString(),state:S,shots:imgs};
+    const pack=await buildBackupPack();
     const b=new Blob([JSON.stringify(pack)],{type:'application/json'});
     const u=URL.createObjectURL(b),a=document.createElement('a');
     a.href=u;a.download=`edgecontrol_${new Date().toISOString().slice(0,10)}.json`;a.click();
     setTimeout(()=>URL.revokeObjectURL(u),1200);
-    toast(`Backup: ${(S.operations||[]).length} ops e ${Object.keys(imgs).length} prints.`,'s');
+    toast(`Backup: ${(S.operations||[]).length} ops e ${Object.keys(pack.shots).length} prints.`,'s');
   }catch(e){ toast('Falha ao exportar.','e'); }
+}
+
+/* ══════════════════════════════════════
+   BACKUP AUTOMÁTICO (em pasta escolhida)
+══════════════════════════════════════ */
+let backupDirHandle=null;
+let _abTimer=null;
+function tsStamp(){ const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}_${String(d.getHours()).padStart(2,'0')}-${String(d.getMinutes()).padStart(2,'0')}-${String(d.getSeconds()).padStart(2,'0')}`; }
+function updateBackupUI(){
+  const n=document.getElementById('backupDirName');
+  if(n) n.textContent=backupDirHandle?('📁 '+backupDirHandle.name):'Nenhuma pasta escolhida';
+  const t=document.getElementById('autoBackupToggle');
+  if(t) t.checked=!!(S.autoBackup&&S.autoBackup.on);
+  const l=document.getElementById('lastBackupAt');
+  if(l) l.textContent=(S.autoBackup&&S.autoBackup.lastAt)?S.autoBackup.lastAt:'—';
+}
+async function chooseBackupDir(){
+  if(!window.showDirectoryPicker){
+    toast('Este navegador não permite escolher pasta. Use Chrome ou Edge (https/localhost).','e');
+    return;
+  }
+  try{
+    const h=await window.showDirectoryPicker({id:'edgecontrol-backups',mode:'readwrite'});
+    backupDirHandle=h;
+    await DBMETA.set('backupDir',h);
+    updateBackupUI();
+    toast('Pasta escolhida: '+h.name,'s');
+    if(S.autoBackup&&S.autoBackup.on) scheduleAutoBackup();
+  }catch(e){
+    if(e&&e.name==='AbortError') return;           // usuário cancelou o seletor
+    toast('Não foi possível escolher a pasta.','e');
+  }
+}
+async function loadBackupDir(){
+  try{
+    const h=await DBMETA.get('backupDir');
+    if(h) backupDirHandle=h;
+  }catch(e){ backupDirHandle=null; }
+  updateBackupUI();
+}
+function autoBackupToggleChange(){
+  const t=document.getElementById('autoBackupToggle');
+  S.autoBackup.on=!!(t&&t.checked);
+  save();
+  if(S.autoBackup.on) scheduleAutoBackup();
+}
+function scheduleAutoBackup(){
+  if(!(S.autoBackup&&S.autoBackup.on)) return;
+  if(!backupDirHandle) return;
+  clearTimeout(_abTimer);
+  _abTimer=setTimeout(()=>{ writeAutoBackup().catch(()=>{}); },1200);
+}
+async function writeAutoBackup(){
+  if(!backupDirHandle) return;
+  let perm='granted';
+  try{ perm=await backupDirHandle.queryPermission({mode:'readwrite'}); }
+  catch(e){ perm='prompt'; }
+  if(perm!=='granted'){
+    try{ perm=await backupDirHandle.requestPermission({mode:'readwrite'}); }
+    catch(e){ return; }
+  }
+  if(perm!=='granted'){
+    toast('Permissão negada para gravar na pasta de backup.','e');
+    return;
+  }
+  const pack=await buildBackupPack();
+  const fh=await backupDirHandle.getFileHandle(`edgecontrol_backup_${tsStamp()}.json`,{create:true});
+  const w=await fh.createWritable();
+  await w.write(new Blob([JSON.stringify(pack)],{type:'application/json'}));
+  await w.close();
+  S.autoBackup.lastAt=new Date().toLocaleString('pt-BR');
+  persist();
+  updateBackupUI();
+  toast('Backup automático salvo na pasta.','s');
 }
 
 function blobToDataURL(b){return new Promise(r=>{const f=new FileReader();f.onload=()=>r(f.result);f.readAsDataURL(b);});}
@@ -4313,6 +4433,7 @@ function init(){
   bdInit();
   initPWA();
   gcShots().catch(()=>{});
+  loadBackupDir().catch(()=>{});
 }
 document.addEventListener('DOMContentLoaded',init);
 </script>
