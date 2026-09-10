@@ -1097,7 +1097,7 @@ input[type="file"].h{display:none!important;}
               <span class="ctit">Evolução do Capital</span>
               <div style="display:flex;gap:5px;">
                 <button class="btn-s xs" id="btnW" onclick="setCP('week')">7d</button>
-                <button class="btn-o xs" id="btnA" onclick="setCP('all')">Tudo</button>
+                <button class="btn-o xs" id="btnA" onclick="setCP('all')">Tudo</button><div style="display:flex;align-items:center;"><select class="fi" style="width:70px;padding:5px 8px;font-size:11px;" id="monthSel" onchange="setCP('month')"><option value="0">Janeiro</option><option value="1">Fevereiro</option><option value="2">Março</option><option value="3">Abril</option><option value="4">Maio</option><option value="5">Junho</option><option value="6">Julho</option><option value="7">Agosto</option><option value="8">Setembro</option><option value="9">Outubro</option><option value="10">Novembro</option><option value="11">Dezembro</option></select><select class="fi" style="width:50px;padding:5px 8px;font-size:11px;" id="yearSel" onchange="setCP('month')"><option value="2026">2026</option><option value="2025">2025</option><option value="2024">2024</option></select></div>
               </div>
             </div>
             <div class="cbd" style="padding-top:0;">
@@ -2445,10 +2445,10 @@ const CD={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:fal
   tooltip:{backgroundColor:()=>PAL.tooltipBg||'rgba(255,255,255,.96)',borderColor:()=>PAL.grid,borderWidth:1,titleColor:()=>PAL.ink,bodyColor:()=>PAL.muted,padding:10,cornerRadius:10,displayColors:false,
     titleFont:{family:'Inter',weight:'700',size:11},bodyFont:{family:'Inter',size:11}}}};
 function dk(k){if(CH[k]){try{CH[k].destroy();}catch(e){}delete CH[k];}}
-function setCP(p){S.cp=p;const w=S.operations.filter(o=>o.result==='WIN').length,l=S.operations.filter(o=>o.result==='LOSS').length;buildCharts(S.operations,w,l);document.getElementById('btnW').className=p==='week'?'btn-o xs':'btn-s xs';document.getElementById('btnA').className=p==='all'?'btn-o xs':'btn-s xs';}
+function getWeekMonFriOps(ops){const now=new Date();const day=now.getDay();const target=new Date(now);target.setDate(target.getDate()-(day===0?6:day-1));const start=new Date(target);start.setHours(0,0,0,0);const end=new Date(start);end.setDate(end.getDate()+4);return ops.filter(o=>{const d=new Date(o.date);return d>=start&&d<=end});}
+function setCP(p){S.cp=p;let wins=0,loss=0;if(p==='week'){const wops=getWeekMonFriOps(S.operations);wins=wops.filter(o=>o.result==='WIN').length;loss=wops.filter(o=>o.result==='LOSS').length;document.getElementById('monthRow').style.display='none';}else if(p==='month'){const mn=document.getElementById('monthSel').value,yr=document.getElementById('yearSel').value;const ms=new Date(Number(yr),Number(mn),1),me=new Date(Number(yr),Number(mn)+1,1);const mops=S.operations.filter(o=>{const d=new Date(o.date);return d>=ms&&d<me});wins=mops.filter(o=>o.result==='WIN').length;loss=mops.filter(o=>o.result==='LOSS').length;document.getElementById('monthRow').style.display='flex';}else{wins=S.operations.filter(o=>o.result==='WIN').length;loss=S.operations.filter(o=>o.result==='LOSS').length;document.getElementById('monthRow').style.display='none';}buildCharts(S.operations,wins,loss);document.getElementById('btnW').className=p==='week'?'btn-o xs':'btn-s xs';document.getElementById('btnA').className=p==='all'?'btn-o xs':'btn-s xs';}
 function buildCharts(ops,wins,losses){
-  let cOps=[...ops];if(S.cp==='week'){const w=new Date();w.setDate(w.getDate()-7);cOps=ops.filter(o=>new Date(o.date)>=w);}
-  let cv=S.settings.initialCapital,ca=[cv];cOps.forEach(op=>{cv=op.result==='WIN'?cv+op.value:cv-op.value;ca.push(Math.max(0,cv));});
+  let cOps=[...ops];if(S.cp==='week'){cOps=getWeekMonFriOps(ops);}else if(S.cp==='month'){const mn=document.getElementById('monthSel').value,yr=document.getElementById('yearSel').value;const ms=new Date(Number(yr),Number(mn),1),me=new Date(Number(yr),Number(mn)+1,1);cOps=ops.filter(o=>{const d=new Date(o.date);return d>=ms&&d<me});}else{cOps=ops;}let cv=S.settings.initialCapital,ca=[cv];cOps.forEach(op=>{cv=op.result==='WIN'?cv+op.value:cv-op.value;ca.push(Math.max(0,cv));});
   const isUp=ca[ca.length-1]>=ca[0],lc=isUp?PAL.up:PAL.down;
   dk('cap');const ctxC=document.getElementById('capChart').getContext('2d');const gC=ctxC.createLinearGradient(0,0,0,170);
   gC.addColorStop(0,isUp?PAL.upFill:PAL.downFill);gC.addColorStop(1,isUp?PAL.upFill0:PAL.downFill0);
