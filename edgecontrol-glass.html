@@ -338,25 +338,24 @@ tbody tr:last-child td{border-bottom:none;}
 .td-money{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:800;color:var(--white);}
 
 /* ══ ANALYTICS ══ */
-#page-analytics{flex-direction:column;overflow-y:auto;padding:0 4px 6px 0;}
-.an-body{flex:none;display:flex;flex-direction:column;gap:12px;}
-.an-sr{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;flex-shrink:0;}
-@media(max-width:900px){.an-sr{grid-template-columns:repeat(2,1fr);}}
+#page-analytics{flex-direction:column;overflow-y:auto;padding:0 4px 8px 0;}
+.an-body{flex:none;display:flex;flex-direction:column;gap:12px;min-width:0;}
+.an-sr{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;flex-shrink:0;}
 .an-st{background:var(--card);backdrop-filter:blur(22px) saturate(170%);-webkit-backdrop-filter:blur(22px) saturate(170%);
-  border:1px solid var(--border);border-radius:16px;padding:13px 15px;box-shadow:var(--sh),inset 0 1px 0 var(--glass-inset);}
+  border:1px solid var(--border);border-radius:16px;padding:13px 15px;box-shadow:var(--sh),inset 0 1px 0 var(--glass-inset);min-width:0;}
 .an-lbl{font-size:9px;font-weight:700;color:var(--lgray);text-transform:uppercase;letter-spacing:.7px;margin-bottom:5px;}
-.an-val{font-family:'Space Grotesk',sans-serif;font-size:clamp(16px,1.7vw,24px);font-weight:800;color:var(--white);line-height:1;letter-spacing:-.6px;}
+.an-val{font-family:'Space Grotesk',sans-serif;font-size:clamp(15px,1.6vw,22px);font-weight:800;color:var(--white);line-height:1.15;letter-spacing:-.6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .an-sub{font-size:10px;color:var(--dim);margin-top:4px;}
 .an-stack{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:start;}
 .an-stack .an-card{min-width:0;}
 .an-stack .an-card.an-drill{grid-column:1 / -1;}
-@media(max-width:900px){.an-stack{grid-template-columns:1fr;}}
 .an-card{background:var(--card);backdrop-filter:blur(22px) saturate(170%);-webkit-backdrop-filter:blur(22px) saturate(170%);
-  border:1px solid var(--border);border-radius:18px;padding:14px 16px 16px;display:flex;flex-direction:column;min-height:0;
+  border:1px solid var(--border);border-radius:18px;padding:14px 16px 16px;display:flex;flex-direction:column;min-height:0;min-width:0;
   box-shadow:var(--sh),inset 0 1px 0 var(--glass-inset);}
 /* cada gráfico preenche a área 16:9 inteira do card */
-.an-card .ch{position:relative;width:100%;aspect-ratio:16/9;flex-shrink:0;}
-.an-card-hd{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:9px;}
+.an-card .ch{position:relative;width:100%;aspect-ratio:16/9;flex-shrink:0;min-height:0;}
+.an-card-hd{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:9px;min-width:0;}
+.an-card-hd>div:first-child{min-width:0;}
 .an-card-sub{font-size:10.5px;color:var(--dim);margin-top:3px;line-height:1.5;}
 .an-card-acts{display:flex;gap:4px;align-items:center;flex-shrink:0;}
 .an-chip{font-size:10px;font-weight:700;color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,transparent);
@@ -364,7 +363,7 @@ tbody tr:last-child td{border-bottom:none;}
 /* painéis de drill-down (aparecem após clicar) */
 .an-drill{animation:gIn .32s cubic-bezier(.22,.9,.36,1);}
 .an-empty{text-align:center;padding:22px;color:var(--lgray);font-size:11.5px;line-height:1.6;}
-.an-day-list{display:flex;flex-direction:column;gap:8px;max-height:360px;overflow-y:auto;padding:2px 2px 4px;}
+.an-day-list{display:flex;flex-direction:column;gap:8px;max-height:360px;overflow-y:auto;overflow-x:hidden;padding:2px 2px 4px;min-width:0;}
 .an-sum{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;}
 .an-pill{font-size:10.5px;font-weight:600;color:var(--white);background:var(--glass-2);border:1px solid var(--hair);
   padding:4px 10px;border-radius:9px;white-space:nowrap;}
@@ -372,24 +371,52 @@ tbody tr:last-child td{border-bottom:none;}
 .an-pill.g b{color:var(--green);}.an-pill.r b{color:var(--red);}.an-pill.a b{color:var(--accent);}
 .an-trig{display:flex;flex-wrap:wrap;gap:5px;margin:2px 0 9px;}
 .an-trig-chip{display:inline-flex;align-items:center;gap:5px;font-size:9.5px;font-weight:700;padding:3px 9px;border-radius:20px;
-  background:color-mix(in srgb,var(--accent) 13%,transparent);color:var(--accent);border:1px solid color-mix(in srgb,var(--accent) 22%,transparent);}
+  background:color-mix(in srgb,var(--accent) 13%,transparent);color:var(--accent);border:1px solid color-mix(in srgb,var(--accent) 22%,transparent);max-width:100%;}
 .an-trig-chip b{font-weight:800;color:var(--white);}
 .an-trig-chip i{font-style:normal;color:var(--dim);font-weight:600;}
 .an-row{display:flex;align-items:center;gap:12px;padding:10px 13px;border:1px solid var(--hair);border-radius:13px;
-  background:var(--glass-2);cursor:pointer;transition:border-color .15s,transform .15s;}
+  background:var(--glass-2);cursor:pointer;transition:border-color .15s,transform .15s;min-width:0;}
 .an-row:hover{border-color:color-mix(in srgb,var(--accent) 48%,transparent);transform:translateY(-1px);}
 .an-r-main{flex:1;min-width:0;}
-.an-r-top{display:flex;align-items:center;gap:7px;flex-wrap:wrap;}
-.an-r-type{font-size:9.5px;font-weight:800;padding:2px 7px;border-radius:6px;background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--accent);letter-spacing:.3px;}
-.an-r-res{font-size:10px;font-weight:700;letter-spacing:.2px;}
+.an-r-top{display:flex;align-items:center;gap:7px;flex-wrap:wrap;min-width:0;}
+.an-r-type{font-size:9.5px;font-weight:800;padding:2px 7px;border-radius:6px;background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--accent);letter-spacing:.3px;white-space:nowrap;}
+.an-r-res{font-size:10px;font-weight:700;letter-spacing:.2px;white-space:nowrap;}
 .an-r-res.g{color:var(--green);}.an-r-res.r{color:var(--red);}
-.an-r-date{font-size:10.5px;color:var(--dim);font-family:'Space Grotesk',monospace;}
-.an-r-reason{font-size:12px;color:var(--white);margin-top:4px;line-height:1.45;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
+.an-r-date{font-size:10.5px;color:var(--dim);font-family:'Space Grotesk',monospace;white-space:nowrap;}
+.an-r-reason{font-size:12px;color:var(--white);margin-top:4px;line-height:1.45;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow-wrap:anywhere;}
 .an-r-chk{display:flex;flex-wrap:wrap;gap:0;margin-top:5px;}
 .an-r-val{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:800;white-space:nowrap;flex-shrink:0;}
 .an-r-val.g{color:var(--green);}.an-r-val.r{color:var(--red);}
 .an-r-go{color:var(--dim);font-size:13px;flex-shrink:0;}
 .an-tit-sub{font-size:10.5px;color:var(--dim);margin-top:3px;}
+@media(max-width:1100px){
+  .an-sr{grid-template-columns:repeat(2,minmax(0,1fr));}
+  .an-stack{grid-template-columns:1fr;}
+}
+@media(max-width:520px){.an-sr{grid-template-columns:1fr;}}
+
+/* ══ RESPONSIVO GLOBAL (sidebar compacta em telas menores) ══ */
+@media(max-width:960px){
+  :root{--sw:64px;}
+  #sidebar{border-radius:16px;}
+  .sb-logo{justify-content:center;padding:12px 6px 10px;}
+  .logo-txt{display:none;}
+  .sb-profile{padding:8px 6px;justify-content:center;}
+  .sb-profile .prof-name,.sb-profile .prof-status,.sb-profile span{display:none;}
+  .nav-sec{display:none;}
+  .nav-item{justify-content:center;gap:0;font-size:0;}
+  .nav-item .nav-icon{font-size:17px;}
+  .nav-badge{display:none;}
+  .sb-bot{display:none;}
+}
+@media(max-width:760px){
+  #hdr > div:nth-child(3){display:none!important;}
+  #hdr .btn-o{display:none;}
+}
+@media(max-width:560px){
+  #hdr .bc span:not(.cur){display:none;}
+  #hdr .upill{display:none;}
+}
 
 /* ══ SETTINGS ══ */
 #page-settings{flex-direction:column;overflow-y:auto;padding:0 4px 4px 0;}
@@ -3308,13 +3335,13 @@ let _gMonthsSig='';
 function gSegUI(){
   const months=gMonths();
   const sig=months.map(m=>m.key).join('|');
+  const opts='<option value="">Todo o histórico</option>'+months.map(m=>`<option value="${m.key}">${m.label}</option>`).join('');
+  const rebuild=_gMonthsSig!==sig;
+  if(rebuild) _gMonthsSig=sig;
   ['g','an'].forEach(px=>{
     const msel=document.getElementById(px+'MonthSel');
     if(!msel) return;
-    if(_gMonthsSig!==sig){
-      _gMonthsSig=sig;
-      msel.innerHTML='<option value="">Todo o histórico</option>'+months.map(m=>`<option value="${m.key}">${m.label}</option>`).join('');
-    }
+    if(rebuild) msel.innerHTML=opts;
     const ym=S.charts.month||'';
     msel.value=ym;
     const wsel=document.getElementById(px+'WeekSel');
@@ -3749,6 +3776,18 @@ function anResetCanvas(id){
   if(box) box.innerHTML=`<canvas id="${id}"></canvas>`;
   return document.getElementById(id);
 }
+/* estado vazio: nenhuma operação no recorte selecionado */
+function anEmptyState(){
+  ['anCap','anW','anCP','anP','anTp'].forEach(k=>dk(k));
+  const ids=['anCapC','anWC','anCPC','anPC','anTpWC'];
+  const msg='Nenhuma operação neste período.\nRegistre operações ou mude o filtro mês/semana.';
+  ids.forEach(id=>{
+    const c=document.getElementById(id);
+    const box=c?c.parentElement:null;
+    if(box) box.innerHTML=`<canvas id="${id}"></canvas><div class="gc-empty">${msg}</div>`;
+  });
+  anClearDay(); anClearOps();
+}
 /* rótulo central do donut (win rate) */
 const ANcenter={
   id:'anCenter',
@@ -3775,6 +3814,9 @@ function updateAn(){
   document.getElementById('anG').textContent=fmtBRL(s.won);
   document.getElementById('anL').textContent=fmtBRL(s.lost);
   const ne=document.getElementById('anN'); ne.textContent=(s.net>=0?'+':'')+fmtBRL(s.net); ne.style.color=s.net>=0?PAL.up:PAL.down;
+
+  /* sem operações → estado vazio claro em todos os gráficos */
+  if(!ops.length){ anEmptyState(); return; }
 
   /* ── 1 · Evolução do capital por DIA ── */
   const r=gRange(); let base=S.settings.initialCapital||0;
@@ -3808,7 +3850,7 @@ function updateAn(){
   dk('anW');
   CH.anW=new Chart(document.getElementById('anWC').getContext('2d'),{type:'doughnut',
     data:{labels:['Wins','Losses'],datasets:[{data:[s.w||.001,s.l||.001],backgroundColor:[PAL.win,PAL.loss],borderWidth:0,hoverOffset:10}]},
-    options:{responsive:true,maintainAspectRatio:false,cutout:'68%',
+    options:{responsive:true,maintainAspectRatio:false,aspectRatio:16/9,cutout:'68%',
       onClick:(evt,els)=>{ if(!els||!els.length) return; const kind=els[0].index===0?'WIN':'LOSS';
         AN.filter={kind:'result',key:kind,title:(kind==='WIN'?'✅ Wins':'❌ Losses')+' — operações'};
         anShowOps(AN.filter.title, ops.filter(o=>o.result===kind)); },
