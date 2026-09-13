@@ -1188,6 +1188,9 @@ tr.op-det-row td{padding:0 14px 14px;background:color-mix(in srgb, var(--accent)
 .gc-seg button{border:none;background:transparent;color:var(--lgray);font-size:11.5px;font-weight:600;padding:5px 11px;border-radius:8px;cursor:pointer;font-family:'Inter',sans-serif;}
 .gc-seg button.active{background:var(--accent);color:#fff;}
 .gc-range{font-size:11.5px;font-weight:600;color:var(--lgray);min-width:118px;text-align:center;}
+.gc-sel{background:var(--glass-2,#fff);border:1px solid var(--border,#fff);color:var(--white);font-size:11.5px;font-weight:600;padding:6px 8px;border-radius:8px;font-family:'Inter',sans-serif;cursor:pointer;max-width:170px;}
+.gc-sel:focus{outline:none;border-color:var(--accent);}
+.gc-sel option{color:#171b33;background:#fff;}
 .g-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start;}
 @media(max-width:900px){.g-grid{grid-template-columns:1fr;}}
 .gcard{background:var(--card);backdrop-filter:blur(22px) saturate(170%);-webkit-backdrop-filter:blur(22px) saturate(170%);
@@ -1444,13 +1447,10 @@ tr.op-det-row td{padding:0 14px 14px;background:color-mix(in srgb, var(--accent)
         <div><div class="pg-title">Overview</div><div class="pg-sub">Aqui está o resumo geral do seu capital e desempenho</div></div>
         <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap;justify-content:flex-end;">
           <div class="gc-seg" id="gSeg">
-            <button data-p="week" onclick="gPeriod('week')">Semana</button>
-            <button data-p="month" onclick="gPeriod('month')">Mês</button>
-            <button data-p="all" onclick="gPeriod('all')">Tudo</button>
+            <select class="gc-sel" id="gMonthSel" onchange="gMonthChange(this.value)" title="Escolher mês"></select>
+            <select class="gc-sel" id="gWeekSel" onchange="gWeekChange(this.value)" title="Escolher semana"></select>
           </div>
-          <button class="b-btn" onclick="gOffset(-1)" title="Período anterior">‹</button>
           <span class="gc-range" id="gRange">—</span>
-          <button class="b-btn" id="gNext" onclick="gOffset(1)" title="Próximo período">›</button>
           <button class="b-btn" id="gAutoBtn" onclick="gAutoToggle()" title="Alternar gráficos automaticamente com fade">🔁 Auto</button>
           <button class="btn-s xs" onclick="updateDash()">🔄 Reset Dia</button>
         </div>
@@ -1592,13 +1592,10 @@ tr.op-det-row td{padding:0 14px 14px;background:color-mix(in srgb, var(--accent)
         <div><div class="pg-title">Analytics</div><div class="pg-sub">Análise detalhada de performance e métricas avançadas</div></div>
         <div class="gc-tools" style="padding:0;">
           <div class="gc-seg" id="anSeg">
-            <button data-p="week" onclick="gPeriod('week')">Semana</button>
-            <button data-p="month" onclick="gPeriod('month')">Mês</button>
-            <button data-p="all" onclick="gPeriod('all')">Tudo</button>
+            <select class="gc-sel" id="anMonthSel" onchange="gMonthChange(this.value)" title="Escolher mês"></select>
+            <select class="gc-sel" id="anWeekSel" onchange="gWeekChange(this.value)" title="Escolher semana"></select>
           </div>
-          <button class="b-btn" onclick="gOffset(-1)" title="Período anterior">‹</button>
           <span class="gc-range" id="anRange">—</span>
-          <button class="b-btn" id="anNext" onclick="gOffset(1)" title="Próximo período">›</button>
         </div>
       </div>
       <div class="an-body">
@@ -2216,7 +2213,7 @@ let S = {
   bg:{ on:true, opacity:26 },
   operations:[], cp:'all',
   checks:[],
-  charts:{ period:'all', offset:0, pinned:[], hidden:[], auto:true, autoSec:6, fadeSec:0.8, fixed:{} },
+  charts:{ pinned:[], hidden:[], auto:true, autoSec:6, fadeSec:0.8, fixed:{}, month:'', week:-1 },
   autoBackup:{ on:false, lastAt:'' },
 };
 let curId=null, CH={};
@@ -2439,11 +2436,11 @@ function load(){
       if(!(S.metal.speed>0)) S.metal.speed=4.5;
       if(!S.theme) S.theme='default';
       if(!S.bg||typeof S.bg!=='object') S.bg={on:true,opacity:50};
-      if(!S.charts||typeof S.charts!=='object') S.charts={period:'all',offset:0,pinned:[],hidden:[]};
+      if(!S.charts||typeof S.charts!=='object') S.charts={pinned:[],hidden:[]};
       if(!Array.isArray(S.charts.pinned)) S.charts.pinned=[];
       if(!Array.isArray(S.charts.hidden)) S.charts.hidden=[];
-      if(!S.charts.period) S.charts.period='all';
-      if(typeof S.charts.offset!=='number') S.charts.offset=0;
+      if(typeof S.charts.month!=='string') S.charts.month='';
+      if(typeof S.charts.week!=='number') S.charts.week=-1;
       if(typeof S.charts.auto!=='boolean') S.charts.auto=true;
       if(!(S.charts.autoSec>0)) S.charts.autoSec=6;
       if(!(S.charts.fadeSec>0)) S.charts.fadeSec=0.8;
@@ -3142,19 +3139,18 @@ const gFmt=d=>`${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).p
 function gDef(id){ return GCHARTS.find(c=>c.id===id); }
 function gSorted(ops){ return [...ops].sort((a,b)=>(a.date||'').localeCompare(b.date||'')||(a.time||'').localeCompare(b.time||'')||(a.createdAt||'').localeCompare(b.createdAt||'')); }
 function gRange(){
-  const p=S.charts.period||'all', off=S.charts.offset||0, now=new Date();
-  if(p==='week'){
-    const d=new Date(now); d.setDate(d.getDate()+off*7);
-    const mon=new Date(d); mon.setDate(d.getDate()-((d.getDay()+6)%7));
-    const fri=new Date(mon); fri.setDate(mon.getDate()+4);
-    return {s:gIso(mon), e:gIso(fri), label:`${gFmt(mon)} – ${gFmt(fri)}`};
-  }
-  if(p==='month'){
-    const d=new Date(now.getFullYear(), now.getMonth()+off, 1);
-    const last=new Date(d.getFullYear(), d.getMonth()+1, 0);
-    return {s:gIso(d), e:gIso(last), label:d.toLocaleDateString('pt-BR',{month:'long',year:'numeric'})};
-  }
-  return {s:null,e:null,label:'Todo o histórico'};
+  const ym=S.charts.month||'';
+  if(!ym) return {s:null,e:null,label:'Todo o histórico'};
+  const y=parseInt(ym.slice(0,4),10), m=parseInt(ym.slice(5,7),10);
+  if(!y||!m) return {s:null,e:null,label:'Todo o histórico'};
+  const first=new Date(y,m-1,1);
+  const last=new Date(y,m,0);
+  const wk=(typeof S.charts.week==='number')?S.charts.week:-1;
+  if(wk<0) return {s:gIso(first), e:gIso(last), label:first.toLocaleDateString('pt-BR',{month:'long',year:'numeric'})};
+  const weeks=gMonthWeeks(ym);
+  const w=weeks[wk];
+  if(!w) return {s:gIso(first), e:gIso(last), label:first.toLocaleDateString('pt-BR',{month:'long',year:'numeric'})};
+  return {s:w.s, e:w.e, label:`Semana ${wk+1} · ${gFmt(new Date(w.s+'T12:00:00'))} – ${gFmt(new Date(w.e+'T12:00:00'))}`};
 }
 function gFilter(ops){
   const r=gRange();
@@ -3162,21 +3158,64 @@ function gFilter(ops){
   if(!r.s) return sorted;
   return sorted.filter(o=>o.date>=r.s&&o.date<=r.e);
 }
-function gPeriod(p){ S.charts.period=p; S.charts.offset=0; save(); gSegUI(); renderCharts(); anRefresh(); }
-function gOffset(d){
-  if(S.charts.period==='all') return;
-  S.charts.offset=Math.min(0,(S.charts.offset||0)+d);
-  save(); gSegUI(); renderCharts(); anRefresh();
-}
-function gSegUI(){
-  const lab=gRange().label;
-  ['gSeg','anSeg'].forEach(id=>{
-    document.querySelectorAll('#'+id+' button').forEach(b=>b.classList.toggle('active', b.dataset.p===S.charts.period));
+/* Meses que possuem operações (mais recente primeiro). */
+function gMonths(){
+  const map=new Map();
+  (S.operations||[]).forEach(o=>{
+    if(!o||!o.date) return;
+    const d=new Date(o.date+'T12:00:00');
+    if(isNaN(d.getTime())) return;
+    const key=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+    if(!map.has(key)) map.set(key,d);
   });
-  ['gRange','anRange'].forEach(id=>{ const rl=document.getElementById(id); if(rl) rl.textContent=lab; });
-  ['gNext','anNext'].forEach(id=>{
-    const nx=document.getElementById(id);
-    if(nx) nx.style.opacity=(S.charts.period==='all'||(S.charts.offset||0)===0)?'.35':'1';
+  return [...map.entries()]
+    .map(([key,d])=>({key,label:d.toLocaleDateString('pt-BR',{month:'long',year:'numeric'}),s:key+'-01',e:gIso(new Date(d.getFullYear(),d.getMonth()+1,0))}))
+    .sort((a,b)=>b.key.localeCompare(a.key));
+}
+/* Semanas (segunda a sexta) de um mês 'YYYY-MM'. */
+function gMonthWeeks(ym){
+  const y=parseInt(ym.slice(0,4),10), m=parseInt(ym.slice(5,7),10);
+  if(!y||!m) return [];
+  const first=new Date(y,m-1,1), last=new Date(y,m,0);
+  const weeks=[];
+  let d=new Date(first);
+  while(d<=last){
+    const mon=new Date(d); mon.setDate(mon.getDate()-((mon.getDay()+6)%7));
+    const fri=new Date(mon); fri.setDate(mon.getDate()+4);
+    const s=mon<first?first:mon;
+    const e=fri>last?last:fri;
+    weeks.push({s:gIso(s), e:gIso(e)});
+    d=new Date(mon); d.setDate(mon.getDate()+7);
+  }
+  return weeks;
+}
+function gSelWeek(){ return (typeof S.charts.week==='number')?S.charts.week:-1; }
+function gApply(){ save(); gSegUI(); renderCharts(); anRefresh(); }
+function gMonthChange(v){ S.charts.month=v||''; S.charts.week=-1; gApply(); }
+function gWeekChange(v){ S.charts.week=parseInt(v,10); if(isNaN(S.charts.week)) S.charts.week=-1; gApply(); }
+let _gMonthsSig='';
+function gSegUI(){
+  const months=gMonths();
+  const sig=months.map(m=>m.key).join('|');
+  ['g','an'].forEach(px=>{
+    const msel=document.getElementById(px+'MonthSel');
+    if(!msel) return;
+    if(_gMonthsSig!==sig){
+      _gMonthsSig=sig;
+      msel.innerHTML='<option value="">Todo o histórico</option>'+months.map(m=>`<option value="${m.key}">${m.label}</option>`).join('');
+    }
+    const ym=S.charts.month||'';
+    msel.value=ym;
+    const wsel=document.getElementById(px+'WeekSel');
+    if(wsel){
+      const weeks=ym?gMonthWeeks(ym):[];
+      wsel.style.display=ym?'inline-block':'none';
+      wsel.innerHTML='<option value="-1">Mês inteiro</option>'+weeks.map((w,i)=>`<option value="${i}">Semana ${i+1} · ${gFmt(new Date(w.s+'T12:00:00'))} – ${gFmt(new Date(w.e+'T12:00:00'))}</option>`).join('');
+      const wk=gSelWeek();
+      wsel.value=String(wk>=weeks.length?-1:wk);
+    }
+    const rl=document.getElementById(px+'Range');
+    if(rl) rl.textContent=gRange().label;
   });
 }
 function isChartsActive(){ const p=document.getElementById('page-dashboard'); return !!(p&&p.classList.contains('active')); }
@@ -3721,6 +3760,9 @@ async function importData(ev){
 
     /* ── aplica ── */
     delete S.board; chkNormalize();
+    if(!S.charts||typeof S.charts!=='object') S.charts={};
+    if(typeof S.charts.month!=='string') S.charts.month='';
+    if(typeof S.charts.week!=='number') S.charts.week=-1;
     save();
     applyTheme(S.theme,{silent:true});
     await applyProfUI();
