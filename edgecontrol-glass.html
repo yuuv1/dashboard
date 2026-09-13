@@ -3533,14 +3533,43 @@ function updateAn(){
 /* ══════════════════════════════════════
    BACKUP
 ══════════════════════════════════════ */
+/* Converte um timestamp ISO para o dia local (YYYY-MM-DD). */
+function dayFromAt(iso){
+  if(!iso) return '';
+  const d=new Date(iso);
+  if(isNaN(d.getTime())) return '';
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+/* Conta o total de prints num objeto de shots (formato plano OU agrupado por dia). */
+function shotCount(pics){
+  let n=0;
+  for(const v of Object.values(pics||{})){
+    if(!v||typeof v!=='object') continue;
+    if(typeof v.d==='string'){ n++; }
+    else for(const o of Object.values(v)){ if(o&&typeof o.d==='string') n++; }
+  }
+  return n;
+}
 async function buildBackupPack(){
   const shots=await IMGDB.all();
-  const imgs={};
+  // Associa cada print ao DIA da operação a que pertence
+  const dayByShot={};
+  (S.operations||[]).forEach(op=>{
+    (op.shots||[]).forEach(sid=>{ if(!dayByShot[sid]) dayByShot[sid]=op.date||''; });
+  });
+  const opById={};
+  (S.operations||[]).forEach(op=>{ if(!opById[op.id]) opById[op.id]=op; });
+  const shotsByDay={};
   for(const r of shots){
     if(r.size>8*1024*1024) continue;              // pula só imagens excepcionalmente grandes
-    imgs[r.id]={d:await blobToDataURL(r.blob),note:r.note||'',name:r.name||'',at:r.at||''};
+    let day=dayByShot[r.id];
+    if(!day && r.opId && opById[r.opId]) day=opById[r.opId].date;
+    if(!day) day=dayFromAt(r.at);
+    if(!day) day='_sem_data';
+    const o={d:await blobToDataURL(r.blob),note:r.note||'',name:r.name||'',at:r.at||''};
+    (shotsByDay[day]=shotsByDay[day]||{})[r.id]=o;
   }
-  return {__ec:2,exportedAt:new Date().toISOString(),state:S,shots:imgs};
+  return {__ec:2,exportedAt:new Date().toISOString(),state:S,shots:shotsByDay};
 }
 async function exportData(){
   try{
@@ -3550,7 +3579,7 @@ async function exportData(){
     const u=URL.createObjectURL(b),a=document.createElement('a');
     a.href=u;a.download=`edgecontrol_${new Date().toISOString().slice(0,10)}.json`;a.click();
     setTimeout(()=>URL.revokeObjectURL(u),1200);
-    toast(`Backup: ${(S.operations||[]).length} ops e ${Object.keys(pack.shots).length} prints.`,'s');
+    toast(`Backup: ${(S.operations||[]).length} ops e ${shotCount(pack.shots)} prints.`,'s');
   }catch(e){ toast('Falha ao exportar.','e'); }
 }
 
@@ -3640,8 +3669,8 @@ async function importData(ev){
     try{ raw=JSON.parse(txt); }
     catch(err){ toast('Arquivo não é um JSON válido.','e'); inputEl.value=''; return; }
 
-    /* Aceita os dois formatos:
-       v2 -> {__ec:2, state:{...}, shots:{...}}
+    /* Aceita os formatos:
+       v2 -> {__ec:2, state:{...}, shots:{...}}   (shots plano OU agrupado por dia)
        v1 -> {profile,settings,operations,...}  (estado na raiz) */
     const isPack = raw && typeof raw==='object' && raw.state && typeof raw.state==='object';
     const st  = isPack ? raw.state : raw;
@@ -3652,7 +3681,7 @@ async function importData(ev){
       inputEl.value=''; return;
     }
 
-    const nOps=st.operations.length, nPics=Object.keys(pics).length;
+    const nOps=st.operations.length, nPics=shotCount(pics);
     if(!confirm(`Importar ${nOps} operações e ${nPics} prints?\n\nOs dados atuais serão substituídos.`)){
       inputEl.value=''; return;
     }
@@ -3674,15 +3703,20 @@ async function importData(ev){
     if(!S.theme||!THEMES.some(t=>t.id===S.theme)) S.theme='default';
     if(!S.bg||typeof S.bg!=='object') S.bg={on:true,opacity:26};
 
-    /* ── prints (v2) ── */
+    /* ── prints (v2: plano OU agrupado por dia) ── */
     let ok=0;
-    for(const [id,o] of Object.entries(pics)){
-      try{
-        const blob=await dataURLtoBlob(o.d);
-        await IMGDB.put({id,blob,note:o.note||'',name:o.name||'',
-                         at:o.at||new Date().toISOString(),size:blob.size,w:0,h:0});
-        ok++;
-      }catch(err){ /* segue com os demais */ }
+    for(const [k,v] of Object.entries(pics)){
+      const flat=(v&&typeof v.d==='string')?[[k,v]]:
+                 (v&&typeof v==='object')?Object.entries(v):[];
+      for(const [id,o] of flat){
+        if(!o||typeof o.d!=='string') continue;
+        try{
+          const blob=await dataURLtoBlob(o.d);
+          await IMGDB.put({id,blob,note:o.note||'',name:o.name||'',
+                           at:o.at||new Date().toISOString(),size:blob.size,w:0,h:0});
+          ok++;
+        }catch(err){ /* segue com os demais */ }
+      }
     }
 
     /* ── aplica ── */
