@@ -338,20 +338,55 @@ tbody tr:last-child td{border-bottom:none;}
 .td-money{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:800;color:var(--white);}
 
 /* ══ ANALYTICS ══ */
-#page-analytics{flex-direction:column;overflow:hidden;}
-.an-body{flex:1;min-height:0;display:flex;flex-direction:column;gap:10px;}
+#page-analytics{flex-direction:column;overflow-y:auto;padding:0 4px 6px 0;}
+.an-body{flex:none;display:flex;flex-direction:column;gap:12px;}
 .an-sr{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;flex-shrink:0;}
+@media(max-width:900px){.an-sr{grid-template-columns:repeat(2,1fr);}}
 .an-st{background:var(--card);backdrop-filter:blur(22px) saturate(170%);-webkit-backdrop-filter:blur(22px) saturate(170%);
   border:1px solid var(--border);border-radius:16px;padding:13px 15px;box-shadow:var(--sh),inset 0 1px 0 var(--glass-inset);}
 .an-lbl{font-size:9px;font-weight:700;color:var(--lgray);text-transform:uppercase;letter-spacing:.7px;margin-bottom:5px;}
 .an-val{font-family:'Space Grotesk',sans-serif;font-size:clamp(16px,1.7vw,24px);font-weight:800;color:var(--white);line-height:1;letter-spacing:-.6px;}
 .an-sub{font-size:10px;color:var(--dim);margin-top:4px;}
-.an-top{display:grid;grid-template-columns:1.4fr 1fr;gap:10px;flex:1.8;min-height:0;}
-.an-bot{display:grid;grid-template-columns:1fr 1fr;gap:10px;flex:1.4;min-height:0;}
+.an-stack{display:flex;flex-direction:column;gap:12px;}
 .an-card{background:var(--card);backdrop-filter:blur(22px) saturate(170%);-webkit-backdrop-filter:blur(22px) saturate(170%);
-  border:1px solid var(--border);border-radius:18px;padding:12px 15px;display:flex;flex-direction:column;min-height:0;
+  border:1px solid var(--border);border-radius:18px;padding:14px 16px 16px;display:flex;flex-direction:column;min-height:0;
   box-shadow:var(--sh),inset 0 1px 0 var(--glass-inset);}
-.an-card .ch{flex:1;min-height:0;position:relative;}
+/* cada gráfico preenche a área 16:9 inteira do card */
+.an-card .ch{position:relative;width:100%;aspect-ratio:16/9;flex-shrink:0;}
+.an-card-hd{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:9px;}
+.an-card-sub{font-size:10.5px;color:var(--dim);margin-top:3px;line-height:1.5;}
+.an-card-acts{display:flex;gap:4px;align-items:center;flex-shrink:0;}
+.an-chip{font-size:10px;font-weight:700;color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,transparent);
+  border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);padding:3px 10px;border-radius:999px;letter-spacing:.4px;white-space:nowrap;}
+/* painéis de drill-down (aparecem após clicar) */
+.an-drill{animation:gIn .32s cubic-bezier(.22,.9,.36,1);}
+.an-empty{text-align:center;padding:22px;color:var(--lgray);font-size:11.5px;line-height:1.6;}
+.an-day-list{display:flex;flex-direction:column;gap:8px;max-height:360px;overflow-y:auto;padding:2px 2px 4px;}
+.an-sum{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;}
+.an-pill{font-size:10.5px;font-weight:600;color:var(--white);background:var(--glass-2);border:1px solid var(--hair);
+  padding:4px 10px;border-radius:9px;white-space:nowrap;}
+.an-pill b{font-family:'Space Grotesk',sans-serif;font-weight:800;color:var(--white);}
+.an-pill.g b{color:var(--green);}.an-pill.r b{color:var(--red);}.an-pill.a b{color:var(--accent);}
+.an-trig{display:flex;flex-wrap:wrap;gap:5px;margin:2px 0 9px;}
+.an-trig-chip{display:inline-flex;align-items:center;gap:5px;font-size:9.5px;font-weight:700;padding:3px 9px;border-radius:20px;
+  background:color-mix(in srgb,var(--accent) 13%,transparent);color:var(--accent);border:1px solid color-mix(in srgb,var(--accent) 22%,transparent);}
+.an-trig-chip b{font-weight:800;color:var(--white);}
+.an-trig-chip i{font-style:normal;color:var(--dim);font-weight:600;}
+.an-row{display:flex;align-items:center;gap:12px;padding:10px 13px;border:1px solid var(--hair);border-radius:13px;
+  background:var(--glass-2);cursor:pointer;transition:border-color .15s,transform .15s;}
+.an-row:hover{border-color:color-mix(in srgb,var(--accent) 48%,transparent);transform:translateY(-1px);}
+.an-r-main{flex:1;min-width:0;}
+.an-r-top{display:flex;align-items:center;gap:7px;flex-wrap:wrap;}
+.an-r-type{font-size:9.5px;font-weight:800;padding:2px 7px;border-radius:6px;background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--accent);letter-spacing:.3px;}
+.an-r-res{font-size:10px;font-weight:700;letter-spacing:.2px;}
+.an-r-res.g{color:var(--green);}.an-r-res.r{color:var(--red);}
+.an-r-date{font-size:10.5px;color:var(--dim);font-family:'Space Grotesk',monospace;}
+.an-r-reason{font-size:12px;color:var(--white);margin-top:4px;line-height:1.45;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
+.an-r-chk{display:flex;flex-wrap:wrap;gap:0;margin-top:5px;}
+.an-r-val{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:800;white-space:nowrap;flex-shrink:0;}
+.an-r-val.g{color:var(--green);}.an-r-val.r{color:var(--red);}
+.an-r-go{color:var(--dim);font-size:13px;flex-shrink:0;}
+.an-tit-sub{font-size:10.5px;color:var(--dim);margin-top:3px;}
 
 /* ══ SETTINGS ══ */
 #page-settings{flex-direction:column;overflow-y:auto;padding:0 4px 4px 0;}
@@ -1605,13 +1640,86 @@ tr.op-det-row td{padding:0 14px 14px;background:color-mix(in srgb, var(--accent)
           <div class="an-st"><div class="an-lbl">Total de Perdas</div><div class="an-val tr" id="anL">R$ 0</div><div class="an-sub">soma das perdas</div></div>
           <div class="an-st"><div class="an-lbl">Resultado Líquido</div><div class="an-val" id="anN">R$ 0</div><div class="an-sub">capital inicial vs. atual</div></div>
         </div>
-        <div class="an-top">
-          <div class="an-card"><div class="ctit" style="margin-bottom:6px;">Evolução do Capital (Completa)</div><div class="ch"><canvas id="anCapC"></canvas></div></div>
-          <div class="an-card"><div class="ctit" style="margin-bottom:6px;">Distribuição de Resultados</div><div class="ch" style="display:flex;align-items:center;justify-content:center;"><div style="position:relative;max-height:100%;aspect-ratio:1;height:100%;"><canvas id="anWC"></canvas></div></div></div>
-        </div>
-        <div class="an-bot">
-          <div class="an-card"><div class="ctit" style="margin-bottom:6px;">Performance por Tipo (CALL vs PUT)</div><div class="ch"><canvas id="anCPC"></canvas></div></div>
-          <div class="an-card"><div class="ctit" style="margin-bottom:6px;">Ops com vs sem Plano</div><div class="ch"><canvas id="anPC"></canvas></div></div>
+        <div class="an-stack">
+          <!-- 1 · Evolução do Capital — clique num dia para ver as operações -->
+          <div class="an-card">
+            <div class="an-card-hd">
+              <div>
+                <div class="ctit">📈 Evolução do Capital</div>
+                <div class="an-card-sub">Curva diária do saldo · clique num ponto para ver as operações daquele dia</div>
+              </div>
+              <div class="an-card-acts"><span class="an-chip" id="anCapSel">—</span></div>
+            </div>
+            <div class="ch"><canvas id="anCapC"></canvas></div>
+          </div>
+
+          <!-- Drill-down: operações do dia selecionado -->
+          <div class="an-card an-drill" id="anDayCard" style="display:none;">
+            <div class="an-card-hd">
+              <div>
+                <div class="ctit" id="anDayTit">📅 Operações do dia</div>
+                <div class="an-tit-sub" id="anDaySub"></div>
+              </div>
+              <div class="an-card-acts"><button class="gc-btn" onclick="anClearDay()" title="Fechar">✕</button></div>
+            </div>
+            <div class="an-day-list" id="anDayList"></div>
+          </div>
+
+          <!-- 2 · Distribuição de Resultados -->
+          <div class="an-card">
+            <div class="an-card-hd">
+              <div>
+                <div class="ctit">🎯 Distribuição de Resultados</div>
+                <div class="an-card-sub">Clique numa fatia para listar as operações WIN ou LOSS</div>
+              </div>
+            </div>
+            <div class="ch"><canvas id="anWC"></canvas></div>
+          </div>
+
+          <!-- 3 · Performance por Tipo (CALL vs PUT) -->
+          <div class="an-card">
+            <div class="an-card-hd">
+              <div>
+                <div class="ctit">🏷️ Performance por Tipo (CALL vs PUT)</div>
+                <div class="an-card-sub">Clique numa barra para ver as operações daquele tipo/resultado</div>
+              </div>
+            </div>
+            <div class="ch"><canvas id="anCPC"></canvas></div>
+          </div>
+
+          <!-- 4 · Fidelidade ao Plano -->
+          <div class="an-card">
+            <div class="an-card-hd">
+              <div>
+                <div class="ctit">📐 Fidelidade ao Plano</div>
+                <div class="an-card-sub">Clique numa barra para ver operações com/sem plano por resultado</div>
+              </div>
+            </div>
+            <div class="ch"><canvas id="anPC"></canvas></div>
+          </div>
+
+          <!-- 5 · Assertividade por tipo de entrada (gatilhos) -->
+          <div class="an-card">
+            <div class="an-card-hd">
+              <div>
+                <div class="ctit">🧩 Assertividade por Gatilho de Entrada</div>
+                <div class="an-card-sub">Taxa de win de cada tipo de operacional · clique para ver as operações</div>
+              </div>
+            </div>
+            <div class="ch"><canvas id="anTpWC"></canvas></div>
+          </div>
+
+          <!-- Drill-down: operações filtradas (com win% detalhado) -->
+          <div class="an-card an-drill" id="anOpsCard" style="display:none;">
+            <div class="an-card-hd">
+              <div>
+                <div class="ctit" id="anOpsTit">📋 Operações</div>
+                <div class="an-tit-sub" id="anOpsSub"></div>
+              </div>
+              <div class="an-card-acts"><button class="gc-btn" onclick="anClearOps()" title="Fechar">✕</button></div>
+            </div>
+            <div class="an-day-list" id="anOpsList"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -3543,30 +3651,219 @@ const CD={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:fal
 function dk(k){if(CH[k]){try{CH[k].destroy();}catch(e){}delete CH[k];}}
 
 /* ══════════════════════════════════════
-   ANALYTICS
+   ANALYTICS — interativo
+   Cada gráfico preenche a área 16:9 inteira e é
+   clicável para drill-down em operações.
 ══════════════════════════════════════ */
+const AN={day:null,filter:null};
+function anCssVar(n){ return (getComputedStyle(document.documentElement).getPropertyValue(n)||'').trim(); }
+function anOps(){ return gFilter(S.operations); }
+function anSummary(ops){
+  const n=ops.length, wins=ops.filter(o=>o.result==='WIN'), loss=ops.filter(o=>o.result==='LOSS');
+  const w=wins.length, l=loss.length;
+  const won=wins.reduce((a,o)=>a+o.value,0), lost=loss.reduce((a,o)=>a+o.value,0), net=won-lost;
+  const wr=n?w/n*100:0, pf=lost>0?won/lost:(won>0?Infinity:0), avgW=w?won/w:0, avgL=l?lost/l:0;
+  return {n,w,l,wr,won,lost,net,pf,avgW,avgL};
+}
+function anPills(s){
+  const p=(label,val,cls='')=>`<span class="an-pill ${cls}">${label} <b>${val}</b></span>`;
+  const net=s.net, netCls=net>0?'g':net<0?'r':'';
+  return p('Ops',s.n)+p('Wins',s.w,'g')+p('Losses',s.l,'r')+p('Win rate',s.wr.toFixed(1)+'%','a')
+    +p('Lucro',fmtBRL(s.won),'g')+p('Perda',fmtBRL(s.lost),'r')
+    +p('Líquido',(net>0?'+':'')+fmtBRL(net),netCls)
+    +p('Profit factor',s.pf===Infinity?'∞':s.pf.toFixed(2),'a')
+    +p('Méd. Win',fmtBRL(s.avgW),'g')+p('Méd. Loss',fmtBRL(s.avgL),'r');
+}
+function anTriggers(ops){
+  const map=new Map();
+  ops.forEach(o=>{(o.checks||[]).forEach(c=>{
+    if(!c||!c.label) return;
+    if(!map.has(c.label)) map.set(c.label,{n:0,w:0});
+    const b=map.get(c.label); b.n++; if(o.result==='WIN') b.w++;
+  });});
+  return [...map.entries()].map(([label,b])=>({label,n:b.n,w:b.w,rate:b.n?b.w/b.n*100:0})).sort((a,b)=>b.n-a.n);
+}
+function anTrigHTML(ops){
+  const t=anTriggers(ops);
+  if(!t.length) return '';
+  return `<div class="an-trig">${t.map(x=>`<span class="an-trig-chip">${escHtml(x.label)} <b>${x.n}×</b><i>${x.rate.toFixed(0)}% win</i></span>`).join('')}</div>`;
+}
+function anRows(ops){
+  if(!ops.length) return '<div class="an-empty">Nenhuma operação neste recorte.</div>';
+  return ops.map(o=>{
+    const w=o.result==='WIN', cls=w?'g':'r', sig=w?'+':'-';
+    const chk=chkTagsHTML(o.checks||[]);
+    return `<div class="an-row" onclick="openDet('${o.id}')">
+      <div class="an-r-main">
+        <div class="an-r-top">
+          <span class="an-r-type">${o.type==='CALL'?'📈 CALL':'📉 PUT'}</span>
+          <span class="an-r-res ${cls}">${w?'✅ WIN':'❌ LOSS'}</span>
+          <span class="an-r-date">${o.date}${o.time?' · '+o.time:''}</span>
+        </div>
+        <div class="an-r-reason">${escHtml(o.reason||'—')}</div>
+        ${chk?`<div class="an-r-chk">${chk}</div>`:''}
+      </div>
+      <div class="an-r-val ${cls}">${sig}${fmtBRL(o.value)}</div>
+      <div class="an-r-go">↗</div>
+    </div>`;
+  }).join('');
+}
+function anShowOps(title, ops, scroll=true){
+  const card=document.getElementById('anOpsCard'); if(!card) return;
+  const s=anSummary(ops);
+  document.getElementById('anOpsTit').textContent=title;
+  document.getElementById('anOpsSub').innerHTML=anPills(s)+anTrigHTML(ops);
+  document.getElementById('anOpsList').innerHTML=anRows(ops);
+  card.style.display='flex';
+  if(scroll) setTimeout(()=>{ if(typeof card.scrollIntoView==='function') card.scrollIntoView({behavior:'smooth',block:'nearest'}); },60);
+}
+function anClearOps(){ AN.filter=null; const c=document.getElementById('anOpsCard'); if(c) c.style.display='none'; }
+function anShowDay(day, scroll=true){
+  AN.day=day;
+  const ops=anOps().filter(o=>o.date===day);
+  const card=document.getElementById('anDayCard'); if(!card) return;
+  const s=anSummary(ops);
+  document.getElementById('anDayTit').textContent=`📅 ${day} — ${s.n} ${s.n===1?'operação':'operações'}`;
+  document.getElementById('anDaySub').innerHTML=anPills(s)+anTrigHTML(ops);
+  document.getElementById('anDayList').innerHTML=anRows(ops);
+  card.style.display='flex';
+  const sel=document.getElementById('anCapSel'); if(sel) sel.textContent=day;
+  if(scroll) setTimeout(()=>{ if(typeof card.scrollIntoView==='function') card.scrollIntoView({behavior:'smooth',block:'nearest'}); },60);
+}
+function anClearDay(){ AN.day=null; const c=document.getElementById('anDayCard'); if(c) c.style.display='none'; const sel=document.getElementById('anCapSel'); if(sel) sel.textContent='—'; }
+function anFilteredOps(fl, ops){
+  switch(fl.kind){
+    case 'result': return ops.filter(o=>o.result===fl.key);
+    case 'type': { const parts=fl.key.split('|'); return ops.filter(o=>o.type===parts[0]&&o.result===parts[1]); }
+    case 'plan': { const parts=fl.key.split('|'); return ops.filter(o=>o.plan===parts[0]&&o.result===parts[1]); }
+    case 'check': return ops.filter(o=>(o.checks||[]).some(c=>c.label===fl.key));
+  }
+  return ops;
+}
+function anResetCanvas(id){
+  const c=document.getElementById(id);
+  const box=c?c.parentElement:null;
+  if(box) box.innerHTML=`<canvas id="${id}"></canvas>`;
+  return document.getElementById(id);
+}
+/* rótulo central do donut (win rate) */
+const ANcenter={
+  id:'anCenter',
+  afterDraw(chart){
+    const o=chart.options.plugins&&chart.options.plugins.anCenter;
+    if(!o) return;
+    const {ctx,chartArea}=chart; if(!chartArea) return;
+    const cx=(chartArea.left+chartArea.right)/2, cy=(chartArea.top+chartArea.bottom)/2;
+    ctx.save(); ctx.textAlign='center'; ctx.textBaseline='middle';
+    if(o.sub){
+      ctx.font='700 11px Inter, sans-serif'; ctx.fillStyle=o.subColor||'#959bb8';
+      ctx.fillText(o.sub, cx, cy-18);
+    }
+    ctx.font='800 28px "Space Grotesk", Inter, sans-serif';
+    ctx.fillStyle=o.valueColor||'#171b33';
+    ctx.fillText(o.value||'', cx, cy+12);
+    ctx.restore();
+  }
+};
 function updateAn(){
-  const ops=gFilter(S.operations);
-  const tI=ops.reduce((a,o)=>a+o.value,0),tG=ops.filter(o=>o.result==='WIN').reduce((a,o)=>a+o.value,0),tL=ops.filter(o=>o.result==='LOSS').reduce((a,o)=>a+o.value,0),net=tG-tL;
-  document.getElementById('anI').textContent=fmtBRL(tI);document.getElementById('anG').textContent=fmtBRL(tG);document.getElementById('anL').textContent=fmtBRL(tL);
-  const ne=document.getElementById('anN');ne.textContent=(net>=0?'+':'')+fmtBRL(net);ne.style.color=net>=0?PAL.up:PAL.down;
-  let base=S.settings.initialCapital||0;
-  const r=gRange();
+  const ops=anOps();
+  const s=anSummary(ops);
+  document.getElementById('anI').textContent=fmtBRL(s.won+s.lost);
+  document.getElementById('anG').textContent=fmtBRL(s.won);
+  document.getElementById('anL').textContent=fmtBRL(s.lost);
+  const ne=document.getElementById('anN'); ne.textContent=(s.net>=0?'+':'')+fmtBRL(s.net); ne.style.color=s.net>=0?PAL.up:PAL.down;
+
+  /* ── 1 · Evolução do capital por DIA ── */
+  const r=gRange(); let base=S.settings.initialCapital||0;
   if(r.s){ for(const o of gSorted(S.operations)){ if(o.date<r.s) base+=(o.result==='WIN'?o.value:-o.value); } }
-  let cv=Math.max(0,base),ca=[cv];ops.forEach(op=>{cv=op.result==='WIN'?cv+op.value:cv-op.value;ca.push(Math.max(0,cv));});
-  dk('anCap');const ctxAC=document.getElementById('anCapC').getContext('2d');const gAC=ctxAC.createLinearGradient(0,0,0,210);
-  gAC.addColorStop(0,PAL.accentFill);gAC.addColorStop(.6,PAL.accentFill.replace(/[\d.]+\)$/,'.12)'));gAC.addColorStop(1,PAL.accentFill0);
-  CH.anCap=new Chart(ctxAC,{type:'line',data:{labels:['Início',...ops.map((_,i)=>`Op${i+1}`)],datasets:[{data:ca,borderColor:PAL.accent,backgroundColor:gAC,borderWidth:2.5,fill:true,tension:.42,pointRadius:2,pointHoverRadius:6,pointBackgroundColor:'#fff',pointBorderColor:PAL.accent,pointBorderWidth:2}]},
-    options:{...CD,scales:{x:{display:false},y:{grid:{color:PAL.grid,drawBorder:false},ticks:{color:PAL.tick,font:{size:9},callback:v=>fmtS(v)}}}}});
-  const w=ops.filter(o=>o.result==='WIN').length,l=ops.filter(o=>o.result==='LOSS').length;
-  dk('anW');CH.anW=new Chart(document.getElementById('anWC').getContext('2d'),{type:'doughnut',data:{labels:['Wins','Losses'],datasets:[{data:[w||.001,l||.001],backgroundColor:[PAL.win,PAL.loss],borderWidth:0,hoverOffset:6}]},
-    options:{responsive:true,maintainAspectRatio:false,cutout:'68%',plugins:{legend:{display:true,position:'right',labels:{color:PAL.muted,font:{size:11,family:'Inter'},boxWidth:9,usePointStyle:true,pointStyle:'circle'}},tooltip:CD.plugins.tooltip}}});
+  const sorted=gSorted(ops);
+  const days=[]; sorted.forEach(o=>{ if(days[days.length-1]!==o.date) days.push(o.date); });
+  let cv=Math.max(0,base), prev=cv;
+  const pts=[{label:'Início',day:null,v:cv,net:0}];
+  days.forEach(d=>{
+    sorted.filter(o=>o.date===d).forEach(o=>{ cv=o.result==='WIN'?cv+o.value:cv-o.value; });
+    cv=Math.max(0,cv);
+    pts.push({label:d,day:d,v:cv,net:cv-prev}); prev=cv;
+  });
+  const up=pts[pts.length-1].v>=pts[0].v, lc=up?PAL.up:PAL.down;
+  dk('anCap');
+  const ctxAC=document.getElementById('anCapC').getContext('2d');
+  const gAC=ctxAC.createLinearGradient(0,0,0,320);
+  gAC.addColorStop(0,up?PAL.upFill:PAL.downFill); gAC.addColorStop(1,up?PAL.upFill0:PAL.downFill0);
+  CH.anCap=new Chart(ctxAC,{type:'line',
+    data:{labels:pts.map(p=>p.label),datasets:[{data:pts.map(p=>p.v),borderColor:lc,backgroundColor:gAC,borderWidth:2.5,fill:true,tension:.32,pointRadius:pts.length<=16?3.5:2.5,pointHoverRadius:6,pointBackgroundColor:'#fff',pointBorderColor:lc,pointBorderWidth:2}]},
+    options:{...CD,
+      interaction:{mode:'nearest',intersect:false,axis:'x'},
+      onClick:(evt,els)=>{ if(!els||!els.length) return; const p=pts[els[0].index]; if(p&&p.day) anShowDay(p.day); },
+      onHover:(evt,els)=>{ const c=document.getElementById('anCapC'); if(c) c.style.cursor=(els&&els.length)?'pointer':'default'; },
+      plugins:{...CD.plugins,tooltip:{...CD.plugins.tooltip,callbacks:{
+        title:items=>{ const p=pts[items[0].dataIndex]; return p?p.label:''; },
+        label:item=>{ const p=pts[item.dataIndex]; return p?`Saldo ${fmtBRL(p.v)}${p.day?` · dia ${(p.net>=0?'+':'')}${fmtBRL(p.net)}`:''}`:''; }}}},
+      scales:{x:{display:false},y:{grid:{color:PAL.grid,drawBorder:false},ticks:{color:PAL.tick,font:{size:10},callback:v=>fmtS(v)}}}}});
+
+  /* ── 2 · Donut de resultados (win rate central) ── */
+  dk('anW');
+  CH.anW=new Chart(document.getElementById('anWC').getContext('2d'),{type:'doughnut',
+    data:{labels:['Wins','Losses'],datasets:[{data:[s.w||.001,s.l||.001],backgroundColor:[PAL.win,PAL.loss],borderWidth:0,hoverOffset:10}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'68%',
+      onClick:(evt,els)=>{ if(!els||!els.length) return; const kind=els[0].index===0?'WIN':'LOSS';
+        AN.filter={kind:'result',key:kind,title:(kind==='WIN'?'✅ Wins':'❌ Losses')+' — operações'};
+        anShowOps(AN.filter.title, ops.filter(o=>o.result===kind)); },
+      onHover:(evt,els)=>{ const c=document.getElementById('anWC'); if(c) c.style.cursor=(els&&els.length)?'pointer':'default'; },
+      plugins:{legend:{display:true,position:'right',labels:{color:PAL.muted,font:{size:11,family:'Inter'},boxWidth:9,usePointStyle:true,pointStyle:'circle'}},tooltip:CD.plugins.tooltip,
+        anCenter:{sub:'Win rate',value:s.wr.toFixed(1)+'%',valueColor:s.wr>=50?anCssVar('--green'):anCssVar('--red'),subColor:anCssVar('--dim')}}},
+    plugins:[ANcenter]});
+
+  /* ── 3 · CALL vs PUT ── */
   const cW=ops.filter(o=>o.type==='CALL'&&o.result==='WIN').length,cL=ops.filter(o=>o.type==='CALL'&&o.result==='LOSS').length,pW=ops.filter(o=>o.type==='PUT'&&o.result==='WIN').length,pL=ops.filter(o=>o.type==='PUT'&&o.result==='LOSS').length;
-  dk('anCP');CH.anCP=new Chart(document.getElementById('anCPC').getContext('2d'),{type:'bar',data:{labels:['CALL Wins','CALL Losses','PUT Wins','PUT Losses'],datasets:[{data:[cW,cL,pW,pL],backgroundColor:[PAL.win,PAL.loss,PAL.win,PAL.loss],borderRadius:7,borderSkipped:false}]},
-    options:{...CD,scales:{x:{grid:{display:false,drawBorder:false},ticks:{color:PAL.muted,font:{size:10}}},y:{grid:{color:PAL.grid,drawBorder:false},ticks:{color:PAL.tick,font:{size:10}}}}}});
+  dk('anCP');
+  CH.anCP=new Chart(document.getElementById('anCPC').getContext('2d'),{type:'bar',
+    data:{labels:['CALL Wins','CALL Losses','PUT Wins','PUT Losses'],datasets:[{data:[cW,cL,pW,pL],backgroundColor:[PAL.win,PAL.loss,PAL.win,PAL.loss],borderRadius:7,borderSkipped:false,maxBarThickness:72}]},
+    options:{...CD,
+      onClick:(evt,els)=>{ if(!els||!els.length) return; const m=[['CALL','WIN'],['CALL','LOSS'],['PUT','WIN'],['PUT','LOSS']][els[0].index];
+        AN.filter={kind:'type',key:m[0]+'|'+m[1],title:`${m[0]} · ${m[1]} — operações`};
+        anShowOps(AN.filter.title, ops.filter(o=>o.type===m[0]&&o.result===m[1])); },
+      onHover:(evt,els)=>{ const c=document.getElementById('anCPC'); if(c) c.style.cursor=(els&&els.length)?'pointer':'default'; },
+      scales:{x:{grid:{display:false,drawBorder:false},ticks:{color:PAL.muted,font:{size:10.5}}},y:{grid:{color:PAL.grid,drawBorder:false},ticks:{color:PAL.tick,font:{size:10},stepSize:1}}}}});
+
+  /* ── 4 · Com vs Sem plano ── */
   const pYW=ops.filter(o=>o.plan==='yes'&&o.result==='WIN').length,pYL=ops.filter(o=>o.plan==='yes'&&o.result==='LOSS').length,pNW=ops.filter(o=>o.plan==='no'&&o.result==='WIN').length,pNL=ops.filter(o=>o.plan==='no'&&o.result==='LOSS').length;
-  dk('anP');CH.anP=new Chart(document.getElementById('anPC').getContext('2d'),{type:'bar',data:{labels:['Com Plano','Sem Plano'],datasets:[{label:'Wins',data:[pYW,pNW],backgroundColor:PAL.win,borderRadius:6,borderSkipped:false},{label:'Losses',data:[pYL,pNL],backgroundColor:PAL.loss,borderRadius:6,borderSkipped:false}]},
-    options:{...CD,plugins:{...CD.plugins,legend:{display:true,labels:{color:PAL.muted,font:{size:10,family:'Inter'},boxWidth:9,usePointStyle:true,pointStyle:'circle'}}},scales:{x:{grid:{display:false,drawBorder:false},ticks:{color:PAL.muted,font:{size:11}}},y:{grid:{color:PAL.grid,drawBorder:false},ticks:{color:PAL.tick,font:{size:10}}}}}});
+  dk('anP');
+  CH.anP=new Chart(document.getElementById('anPC').getContext('2d'),{type:'bar',
+    data:{labels:['Com Plano','Sem Plano'],datasets:[
+      {label:'Wins',data:[pYW,pNW],backgroundColor:PAL.win,borderRadius:6,borderSkipped:false,maxBarThickness:64},
+      {label:'Losses',data:[pYL,pNL],backgroundColor:PAL.loss,borderRadius:6,borderSkipped:false,maxBarThickness:64}]},
+    options:{...CD,
+      onClick:(evt,els)=>{ if(!els||!els.length) return; const res=els[0].datasetIndex===0?'WIN':'LOSS', plan=els[0].index===0?'yes':'no';
+        AN.filter={kind:'plan',key:plan+'|'+res,title:`${plan==='yes'?'Com Plano':'Sem Plano'} · ${res} — operações`};
+        anShowOps(AN.filter.title, ops.filter(o=>o.plan===plan&&o.result===res)); },
+      onHover:(evt,els)=>{ const c=document.getElementById('anPC'); if(c) c.style.cursor=(els&&els.length)?'pointer':'default'; },
+      plugins:{...CD.plugins,legend:{display:true,labels:{color:PAL.muted,font:{size:10,family:'Inter'},boxWidth:9,usePointStyle:true,pointStyle:'circle'}}},
+      scales:{x:{grid:{display:false,drawBorder:false},ticks:{color:PAL.muted,font:{size:11}}},y:{grid:{color:PAL.grid,drawBorder:false},ticks:{color:PAL.tick,font:{size:10},stepSize:1}}}}});
+
+  /* ── 5 · Assertividade por gatilho de entrada ── */
+  const types=anTriggers(ops);
+  dk('anTp');
+  const tpc=anResetCanvas('anTpWC');
+  if(!types.length){
+    const box=tpc.parentElement||tpc.parentNode;
+    if(box) box.innerHTML='<canvas id="anTpWC"></canvas><div class="gc-empty">Cadastre tipos de operacionais (Fibonacci, Order Block…) para ver a assertividade de cada gatilho de entrada.</div>';
+  } else {
+    CH.anTp=new Chart(tpc.getContext('2d'),{type:'bar',
+      data:{labels:types.map(t=>t.label),datasets:[{label:'Win rate',data:types.map(t=>Math.round(t.rate*10)/10),backgroundColor:PAL.accent,borderRadius:7,borderSkipped:false,maxBarThickness:64}]},
+      options:{...CD,
+        onClick:(evt,els)=>{ if(!els||!els.length) return; const t=types[els[0].index]; if(!t) return;
+          AN.filter={kind:'check',key:t.label,title:`🧩 ${t.label} — operações`};
+          anShowOps(AN.filter.title, ops.filter(o=>(o.checks||[]).some(c=>c.label===t.label))); },
+        onHover:(evt,els)=>{ const c=document.getElementById('anTpWC'); if(c) c.style.cursor=(els&&els.length)?'pointer':'default'; },
+        plugins:{...CD.plugins,tooltip:{...CD.plugins.tooltip,callbacks:{label:item=>{const t=types[item.dataIndex]; return `${t.rate.toFixed(1)}% win (${t.w}/${t.n} ops)`;}}}},
+        scales:{x:{grid:{display:false,drawBorder:false},ticks:{color:PAL.muted,font:{size:10}}},y:{grid:{color:PAL.grid,drawBorder:false},min:0,max:100,ticks:{color:PAL.tick,font:{size:10},callback:v=>v+'%'}}}}});
+  }
+
+  /* re-aplica os drill-downs abertos (refletem o filtro mês/semana atual) */
+  const dc=document.getElementById('anDayCard'), oc=document.getElementById('anOpsCard');
+  if(AN.day && dc && dc.style.display!=='none') anShowDay(AN.day, false);
+  else if(AN.filter && oc && oc.style.display!=='none') anShowOps(AN.filter.title, anFilteredOps(AN.filter, ops), false);
 }
 
 /* ══════════════════════════════════════
