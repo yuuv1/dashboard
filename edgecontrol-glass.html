@@ -964,6 +964,265 @@ input[type="file"].h{display:none!important;}
 @keyframes pGlow{0%,100%{box-shadow:0 10px 28px color-mix(in srgb, var(--accent) 32%, transparent);}50%{box-shadow:0 14px 38px color-mix(in srgb, var(--accent) 55%, transparent);}}
 .pulse{animation:pGlow 2.4s infinite;}
 
+/* ══════════════════════════════════════════════════════════
+   RELATÓRIO (exportação em PDF)
+   O documento tem tema próprio (claro / escuro / papel / edge),
+   layout de folha e folha de estilo de impressão (A4).
+══════════════════════════════════════════════════════════ */
+#rview{position:fixed;inset:0;z-index:1500;display:none;flex-direction:column;
+  background:var(--rbg);color:var(--rink);font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;
+  /* ── tema CLARO (padrão) ── */
+  --rbg:#eceef6;--rpaper:#fff;--rink:#151a2c;--rmut:#59607a;--rdim:#868ca3;--rline:#e3e6f0;--rsoft:#f4f6fb;
+  --racc:#4f46e5;--racc2:#0891b2;--rpos:#0b8f6a;--rneg:#d81b4a;--rwarn:#b45309;
+  --rposbg:rgba(11,143,106,.11);--rnegbg:rgba(216,27,74,.10);--rwarnbg:rgba(180,83,9,.11);
+  --rhead:linear-gradient(135deg,#312e81 0%,#4f46e5 55%,#0891b2 100%);--rheadink:#fff;--rheadsub:rgba(255,255,255,.74);}
+#rview.show{display:flex;}
+#rview[data-rtheme="escuro"]{--rbg:#070a10;--rpaper:#121722;--rink:#eef2fb;--rmut:#a7b0c6;--rdim:#79839b;--rline:#232b3a;--rsoft:#181f2b;
+  --racc:#9aa6ff;--racc2:#4fd6f5;--rpos:#37d39b;--rneg:#fb7a94;--rwarn:#f5c451;
+  --rposbg:rgba(55,211,155,.15);--rnegbg:rgba(251,122,148,.15);--rwarnbg:rgba(245,196,81,.15);
+  --rhead:linear-gradient(135deg,#1a2140 0%,#2c3a68 55%,#0d4f63 100%);--rheadink:#f4f7ff;--rheadsub:rgba(244,247,255,.72);}
+#rview[data-rtheme="papel"]{--rbg:#f2f2ef;--rpaper:#fff;--rink:#111111;--rmut:#4d4d4d;--rdim:#8b8b8b;--rline:#dededa;--rsoft:#f8f8f6;
+  --racc:#2f2f2f;--racc2:#5a5a5a;--rpos:#146c43;--rneg:#a41f2c;--rwarn:#7a5300;
+  --rposbg:rgba(20,108,67,.10);--rnegbg:rgba(164,31,44,.09);--rwarnbg:rgba(122,83,0,.10);
+  --rhead:#fff;--rheadink:#111;--rheadsub:#5a5a5a;}
+#rview[data-rtheme="edge"]{--rbg:#e7ebf7;--rpaper:#fff;--rink:#141a30;--rmut:#575f7d;--rdim:#848ba4;--rline:#e0e5f4;--rsoft:#f3f5fd;
+  --racc:#4338ca;--racc2:#22d3ee;--rpos:#0b8f6a;--rneg:#d81b4a;--rwarn:#b45309;
+  --rposbg:rgba(11,143,106,.11);--rnegbg:rgba(216,27,74,.10);--rwarnbg:rgba(180,83,9,.11);
+  --rhead:linear-gradient(140deg,#1b2145 0%,#2c2f63 55%,#0e7490 100%);--rheadink:#fff;--rheadsub:rgba(255,255,255,.74);}
+
+/* ── barra de ferramentas do relatório ── */
+.rbar{flex-shrink:0;display:flex;align-items:center;gap:10px;padding:9px 14px;background:var(--rpaper);
+  border-bottom:1px solid var(--rline);box-shadow:0 2px 16px rgba(15,20,45,.07);flex-wrap:wrap;position:relative;z-index:3;}
+.rbar-t{display:flex;flex-direction:column;min-width:0;}
+.rbar-t b{font-family:'Space Grotesk',sans-serif;font-size:14px;letter-spacing:-.3px;}
+.rbar-t span{font-size:10.5px;color:var(--rmut);}
+.rbar-a{margin-left:auto;display:flex;align-items:center;gap:7px;flex-wrap:wrap;}
+.rth{display:flex;align-items:center;gap:5px;padding:5px 9px;border-radius:9px;cursor:pointer;border:1px solid var(--rline);
+  background:var(--rsoft);color:var(--rmut);font-size:10.5px;font-weight:700;font-family:'Inter',sans-serif;transition:all .16s;}
+.rth i{width:11px;height:11px;border-radius:4px;display:block;flex-shrink:0;}
+.rth:hover{color:var(--rink);}
+.rth.sel{border-color:var(--racc);color:var(--racc);box-shadow:0 0 0 2px color-mix(in srgb,var(--racc) 22%,transparent);}
+.rbt{display:inline-flex;align-items:center;gap:6px;padding:7px 13px;border-radius:10px;cursor:pointer;
+  font-family:'Inter',sans-serif;font-size:11.5px;font-weight:700;border:1px solid var(--rline);
+  background:var(--rsoft);color:var(--rmut);transition:all .16s;white-space:nowrap;}
+.rbt:hover{color:var(--rink);border-color:var(--racc);}
+.rbt.pri{background:linear-gradient(135deg,var(--racc),var(--racc2));color:#fff;border:none;box-shadow:0 6px 18px color-mix(in srgb,var(--racc) 34%,transparent);}
+.rbt.pri:hover{transform:translateY(-1px);}
+#rscroll{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px;display:flex;justify-content:center;}
+.rload{display:flex;align-items:center;justify-content:center;gap:9px;padding:60px 10px;color:var(--rmut);font-size:12.5px;font-weight:600;}
+.rsp{width:15px;height:15px;border-radius:50%;border:2px solid var(--rline);border-top-color:var(--racc);animation:rspin .8s linear infinite;}
+@keyframes rspin{to{transform:rotate(360deg);}}
+
+/* ── folha ── */
+.rpage{width:100%;max-width:840px;background:var(--rpaper);color:var(--rink);border-radius:16px;overflow:hidden;
+  box-shadow:0 14px 44px rgba(12,18,45,.17);padding-bottom:22px;}
+.rcov{background:var(--rhead);color:var(--rheadink);padding:18px 20px 16px;display:flex;flex-direction:column;gap:12px;}
+.rcov-t{display:flex;align-items:center;gap:12px;}
+.rcov-av{width:46px;height:46px;border-radius:14px;object-fit:cover;background:rgba(255,255,255,.16);
+  border:1px solid rgba(255,255,255,.28);flex-shrink:0;}
+.rcov-nm{font-family:'Space Grotesk',sans-serif;font-size:19px;font-weight:800;letter-spacing:-.5px;line-height:1.15;}
+.rcov-su{font-size:11px;color:var(--rheadsub);margin-top:3px;}
+.rcov-per{font-size:11.5px;font-weight:700;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.2);
+  padding:5px 10px;border-radius:9px;display:inline-flex;align-items:center;gap:6px;align-self:flex-start;}
+.rcov-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;}
+.rcov-k{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:9px 11px;}
+.rcov-k b{display:block;font-family:'Space Grotesk',sans-serif;font-size:19px;font-weight:800;letter-spacing:-.6px;line-height:1.1;}
+.rcov-k span{font-size:9px;text-transform:uppercase;letter-spacing:.7px;color:var(--rheadsub);font-weight:800;}
+#rview[data-rtheme="papel"] .rcov{border-bottom:2px solid var(--rink);}
+#rview[data-rtheme="papel"] .rcov-k,#rview[data-rtheme="papel"] .rcov-per{background:#f6f6f4;border-color:#e2e2de;color:var(--rink);}
+#rview[data-rtheme="papel"] .rcov-av{border-color:#d8d8d4;background:#f6f6f4;}
+.rbody{padding:16px 20px 0;}
+
+/* ── seções ── */
+.rsec{margin-top:18px;}
+.rsec:first-child{margin-top:2px;}
+.rsec-h{display:flex;align-items:flex-start;gap:9px;margin-bottom:9px;break-after:avoid;page-break-after:avoid;}
+.rsec-n{width:22px;height:22px;border-radius:8px;background:var(--racc);color:#fff;display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:800;font-family:'Space Grotesk',sans-serif;flex-shrink:0;margin-top:1px;}
+.rsec-t{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:800;letter-spacing:-.3px;line-height:1.2;}
+.rsec-s{font-size:10.5px;color:var(--rmut);margin-top:3px;line-height:1.5;}
+.rgrid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.rgrid2>*{min-width:0;}
+.rcard{background:var(--rsoft);border:1px solid var(--rline);border-radius:13px;padding:11px 12px;}
+.rcard-h{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.7px;color:var(--rmut);margin-bottom:8px;}
+.rkpis{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;}
+.rkpi{background:var(--rsoft);border:1px solid var(--rline);border-radius:12px;padding:10px 11px;}
+.rkpi.hi{background:color-mix(in srgb,var(--racc) 8%,var(--rsoft));border-color:color-mix(in srgb,var(--racc) 26%,var(--rline));}
+.rkpi-l{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:var(--rmut);margin-bottom:5px;line-height:1.35;}
+.rkpi-v{font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:800;letter-spacing:-.6px;line-height:1.05;word-break:break-word;}
+.rkpi-s{font-size:9.5px;color:var(--rdim);margin-top:4px;line-height:1.4;}
+.rpos{color:var(--rpos);} .rneg{color:var(--rneg);} .rwrn{color:var(--rwarn);} .rmut{color:var(--rmut);}
+.rch{position:relative;height:200px;}
+.rch.sm{height:168px;}
+.rdonut{position:relative;height:172px;}
+.rdonut.leg{padding-right:8px;}
+.rnote{font-size:10.5px;color:var(--rmut);line-height:1.6;background:var(--rsoft);border:1px dashed var(--rline);border-radius:11px;padding:10px 12px;}
+.rnote b{color:var(--rink);}
+.rnote ul{margin:6px 0 0 16px;}
+.rnote li{margin-bottom:3px;}
+
+/* ── tabelas do relatório ── */
+.rtbl{width:100%;border-collapse:collapse;font-size:11px;}
+.rtbl thead tr{position:static;background:var(--rsoft);box-shadow:none;backdrop-filter:none;}
+.rtbl th{background:var(--rsoft);color:var(--rmut);font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;
+  padding:7px 8px;text-align:left;white-space:nowrap;border-bottom:1px solid var(--rline);}
+.rtbl td{padding:7px 8px;border-bottom:1px solid var(--rline);white-space:nowrap;color:var(--rink);vertical-align:top;}
+.rtbl tr:last-child td{border-bottom:none;}
+.rtbl .num{text-align:right;font-family:'Space Grotesk',sans-serif;font-weight:800;}
+.rtbl .wrap{white-space:normal;max-width:230px;color:var(--rmut);font-size:10.5px;}
+.rtbl tfoot td{font-weight:800;background:var(--rsoft);border-top:1px solid var(--rline);border-bottom:none;}
+.rbdg{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:7px;font-size:9.5px;font-weight:800;white-space:nowrap;}
+.rbdg.w{background:var(--rposbg);color:var(--rpos);}
+.rbdg.l{background:var(--rnegbg);color:var(--rneg);}
+.rbdg.d{background:var(--rsoft);color:var(--rmut);border:1px solid var(--rline);}
+.rbdg.n{background:color-mix(in srgb,var(--racc) 13%,transparent);color:var(--racc);}
+
+/* ── análises automáticas ── */
+.rins{display:flex;flex-direction:column;gap:8px;}
+.rins-i{display:flex;gap:9px;background:var(--rsoft);border:1px solid var(--rline);border-left:3px solid var(--racc);
+  border-radius:11px;padding:9px 11px;break-inside:avoid;page-break-inside:avoid;}
+.rins-i.g{border-left-color:var(--rpos);} .rins-i.b{border-left-color:var(--rneg);} .rins-i.w{border-left-color:var(--rwarn);}
+.rins-ic{font-size:15px;line-height:1.15;flex-shrink:0;}
+.rins-t{font-size:11.5px;font-weight:800;margin-bottom:2px;}
+.rins-d{font-size:10.5px;color:var(--rmut);line-height:1.55;}
+
+/* ── fichas das operações (com prints) ── */
+.rops{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.rop{background:var(--rsoft);border:1px solid var(--rline);border-radius:12px;padding:10px 11px;
+  break-inside:avoid;page-break-inside:avoid;min-width:0;}
+.rop-h{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:7px;}
+.rop-d{font-family:'Space Grotesk',sans-serif;font-size:11.5px;font-weight:800;}
+.rop-v{margin-left:auto;font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:800;white-space:nowrap;}
+.rop-k{font-size:8.5px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--rdim);margin-bottom:3px;}
+.rop-x{font-size:10.5px;color:var(--rink);line-height:1.55;background:var(--rpaper);border:1px solid var(--rline);
+  border-radius:9px;padding:7px 9px;margin-bottom:6px;}
+.rshots{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:6px;}
+.rshots.one{grid-template-columns:1fr;}
+.rshot{border:1px solid var(--rline);border-radius:9px;overflow:hidden;background:#05070c;break-inside:avoid;}
+.rshot img{width:100%;display:block;height:auto;}
+.rshot-cap{font-size:9px;color:var(--rmut);padding:4px 6px;background:var(--rpaper);line-height:1.4;}
+.rfoot{margin-top:18px;padding-top:10px;border-top:1px solid var(--rline);display:flex;justify-content:space-between;
+  gap:10px;font-size:9.5px;color:var(--rdim);flex-wrap:wrap;}
+.rgloss{margin:0;}
+.rgloss dt{font-size:11px;font-weight:800;margin-top:9px;color:var(--rink);}
+.rgloss dt:first-child{margin-top:0;}
+.rgloss dd{font-size:10.5px;color:var(--rmut);line-height:1.6;margin:3px 0 0;}
+
+/* ── controles do relatório na página do app ── */
+.rchips{display:flex;gap:6px;flex-wrap:wrap;}
+.rchip{padding:6px 10px;border-radius:9px;border:1px solid var(--border);background:color-mix(in srgb,var(--surf) 60%,transparent);
+  color:var(--lgray);font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:all .16s;}
+.rchip:hover{background:var(--surf);color:var(--accent);}
+.rchip.sel{background:color-mix(in srgb,var(--accent) 13%,transparent);border-color:color-mix(in srgb,var(--accent) 44%,transparent);color:var(--accent);}
+.rsw{display:flex;gap:7px;flex-wrap:wrap;}
+.rsw-b{display:flex;align-items:center;gap:7px;padding:7px 10px;border-radius:11px;border:1px solid var(--border);
+  background:color-mix(in srgb,var(--surf) 60%,transparent);cursor:pointer;font-family:'Inter',sans-serif;font-size:11px;
+  font-weight:600;color:var(--lgray);transition:all .16s;}
+.rsw-b:hover{color:var(--white);}
+.rsw-b.sel{border-color:var(--accent);color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 22%,transparent);}
+.rsw-c{width:16px;height:16px;border-radius:6px;border:1px solid rgba(0,0,0,.14);flex-shrink:0;}
+.rchk{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--white);padding:5px 0;line-height:1.35;}
+.rchk input{width:16px;height:16px;accent-color:var(--accent);cursor:pointer;flex-shrink:0;}
+.rchk em{font-style:normal;color:var(--dim);font-size:10px;display:block;}
+.rp-info{font-size:11.5px;color:var(--lgray);line-height:1.6;background:color-mix(in srgb,var(--surf) 55%,transparent);
+  border:1px solid var(--border);border-radius:12px;padding:10px 12px;}
+.rp-info b{color:var(--white);}
+
+/* ══════════════════════════════════════════════════════════
+   IMPRESSÃO / PDF  (A4)
+   Todo o app sai de cena: imprime apenas a folha do relatório.
+══════════════════════════════════════════════════════════ */
+@media print{
+  @page{size:A4;margin:11mm 10mm;}
+  html,body{width:auto!important;height:auto!important;overflow:visible!important;background:#fff!important;font-size:12px;}
+  #bg,#app,#fab,.mol,#shotViewer,.pwa-bar,#ecT{display:none!important;}
+  #rview:not(.show){display:none!important;}   /* Ctrl+P fora do relatório não imprime folha velha */
+  #rview.show{position:static!important;inset:auto!important;display:block!important;opacity:1!important;pointer-events:auto!important;
+    background:#fff!important;height:auto!important;overflow:visible!important;}
+  #rview.show #rscroll{display:block!important;}
+  .rbar{display:none!important;}
+  #rscroll{display:block!important;padding:0!important;overflow:visible!important;}
+  .rpage{max-width:none!important;width:auto!important;box-shadow:none!important;border-radius:0!important;padding-bottom:0!important;
+    background:var(--rpaper)!important;}
+  .rpage,.rpage *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}
+  .rcov{border-radius:0!important;padding:14px 0 12px!important;}
+  .rbody{padding:0!important;}
+  .rsec{margin-top:13px!important;}
+  .rsec::before{content:'';display:block;}
+  .rcard,.rkpi,.rop,.rins-i,.rnote,.rshot,.rgloss dt{break-inside:avoid;page-break-inside:avoid;}
+  .rsec-h{break-after:avoid;page-break-after:avoid;}
+  .rtbl tr{break-inside:avoid;page-break-inside:avoid;}
+  .rtbl thead{display:table-header-group;}
+  .rtbl tfoot{display:table-footer-group;}
+  .rch,.rch.sm{height:150px!important;}
+  .rdonut{height:140px!important;}
+  .rpagebreak{break-before:page;page-break-before:always;}
+  .rsec-keep{break-inside:avoid;page-break-inside:avoid;}
+  #rview[data-rtheme="escuro"]{background:#080b12!important;}
+}
+
+/* ══════════════════════════════════════════════════════════
+   CELULAR — o app inteiro (e o relatório) utilizável no telefone
+══════════════════════════════════════════════════════════ */
+@media (max-width:820px){
+  #app{flex-direction:column;padding:6px;gap:6px;height:100dvh;}
+  #sidebar{width:100%;min-width:0;height:auto;flex-direction:row;align-items:center;gap:4px;padding:6px 7px;border-radius:15px;overflow:visible;}
+  .sb-logo{padding:0;border:none;}
+  .sb-profile{display:none;}
+  .sb-nav{display:flex;gap:4px;padding:0;overflow-x:auto;overflow-y:hidden;flex:1;}
+  .nav-sec{display:none;}
+  .nav-item{margin:0;padding:7px 9px;font-size:11px;white-space:nowrap;flex:0 0 auto;}
+  .nav-icon{width:18px;height:18px;font-size:10px;border-radius:6px;}
+  .nav-badge{margin-left:2px;padding:1px 5px;}
+  .sb-bot{display:none;}
+  #main{gap:6px;}
+  #hdr{height:auto;min-height:44px;padding:6px 9px;gap:7px;border-radius:14px;flex-wrap:wrap;}
+  .hdr-status{display:none!important;}
+  #hdr .bc{font-size:10.5px;}
+  #hdr .btn-o{padding:6px 10px;font-size:10px;}
+  #content{overflow-y:auto;overflow-x:hidden;}
+  .page{height:auto;overflow:visible;}
+  .page.active{display:block;padding-bottom:84px;}
+  #page-dashboard,#page-analytics,#page-operations{flex-direction:column;}
+  .dash-head{padding-bottom:7px;gap:7px;flex-wrap:wrap;}
+  .dash-body,.an-body{display:block;}
+  .r1,.r2,.r3,.an-top,.an-bot,.an-sr{display:block;}
+  .r1>*,.r2>*,.r3>*,.an-top>*,.an-bot>*,.an-sr>*{margin-bottom:8px;}
+  .card,.ov,.donut-card,.rec-card,.an-card,.an-st,.set-card,.ops-tbl .card{margin-bottom:8px;flex:none;}
+  .chart-big{font-size:22px;}
+  .chbox{height:200px!important;flex:none!important;}
+  .donut-wrap{min-height:0;height:auto;}
+  .donut-canvas-box{height:134px;width:134px;margin:0 auto;}
+  .rec-bd{max-height:none;overflow:visible;}
+  .sg{flex:none;}
+  .ms-val{font-size:19px;}
+  .an-card .ch{height:190px;flex:none;min-height:0;}
+  .ops-hd{flex-direction:column;gap:7px;}
+  .ops-tbl{flex:none;}
+  .ops-tbl .card{overflow:visible;}
+  .tbl-sc{overflow:auto;}
+  .set-grid{grid-template-columns:1fr!important;}
+  .theme-grid,.preset-grid{grid-template-columns:repeat(2,1fr);}
+  #fab{right:14px;bottom:14px;}
+  .mol{align-items:flex-start;padding:10px 0;}
+  .mod{width:94%;max-height:none;margin:auto;}
+  .rbar{padding:8px 10px;}
+  .rbar-a{width:100%;justify-content:flex-end;}
+  #rscroll{padding:8px;}
+  .rpage{border-radius:12px;}
+  .rbody{padding:12px 12px 0;}
+  .rgrid2,.rops,.rkpis{grid-template-columns:1fr;}
+  .rkpis{grid-template-columns:1fr 1fr;}
+  .rcov-grid{grid-template-columns:1fr 1fr;}
+  .rtbl{font-size:10.5px;}
+  .rtbl .wrap{max-width:130px;}
+  .rch{height:172px;}
+  .rch.sm{height:150px;}
+  .rdonut{height:150px;}
+  .rcov{padding:14px 14px 13px;}
+  .rsec-t{font-size:14px;}
+}
+
 </style>
 </head>
 <body>
@@ -995,10 +1254,11 @@ input[type="file"].h{display:none!important;}
   <nav class="sb-nav">
     <div class="nav-sec">Menu</div>
     <div class="nav-item active" onclick="nav('dashboard',this)"><span class="nav-icon">⊞</span> Dashboard</div>
-    <div class="nav-item" onclick="nav('operations',this)"><span class="nav-icon">📋</span> Operações <span class="nav-badge" id="opsBadge">0</span></div>
+    <div class="nav-item" id="navOps" onclick="nav('operations',this)"><span class="nav-icon">📋</span> Operações <span class="nav-badge" id="opsBadge">0</span></div>
     <div class="nav-item" onclick="nav('analytics',this)"><span class="nav-icon">📊</span> Analytics</div>
+    <div class="nav-item" id="navReport" onclick="nav('report',this)"><span class="nav-icon">📄</span> Relatório</div>
     <div class="nav-sec" style="margin-top:6px;">Sistema</div>
-    <div class="nav-item" onclick="nav('settings',this)"><span class="nav-icon">⚙️</span> Configurações</div>
+    <div class="nav-item" id="navSettings" onclick="nav('settings',this)"><span class="nav-icon">⚙️</span> Configurações</div>
   </nav>
   <div class="sb-bot">
     <div class="uc">
@@ -1006,7 +1266,7 @@ input[type="file"].h{display:none!important;}
       <div class="uc-s">Gestão de risco profissional para traders sérios.</div>
       <div class="uc-row">
         <button class="btn-o xs" style="flex:1;justify-content:center;" onclick="openProfileModal()">Perfil</button>
-        <button class="btn-s xs" style="flex:1;justify-content:center;" onclick="nav('settings',document.querySelectorAll('.nav-item')[3])">Config</button>
+        <button class="btn-s xs" style="flex:1;justify-content:center;" onclick="nav('settings',document.getElementById('navSettings'))">Config</button>
       </div>
     </div>
   </div>
@@ -1017,11 +1277,12 @@ input[type="file"].h{display:none!important;}
   <header id="hdr">
     <div class="bc"><span>EdgeControl</span><span style="color:var(--dim);">›</span><span class="cur" id="hdrTit">Dashboard</span></div>
     <div style="flex:1;"></div>
-    <div style="font-size:11px;color:var(--lgray);display:flex;align-items:center;gap:6px;margin-right:10px;font-weight:500;">
+    <div class="hdr-status" style="font-size:11px;color:var(--lgray);display:flex;align-items:center;gap:6px;margin-right:10px;font-weight:500;">
       <span class="dot dg"></span><span id="statusTxt">Operando normalmente</span>
     </div>
     <div style="display:flex;align-items:center;gap:6px;">
       <div class="upill">💵 $1 = <strong id="hdrUsd" style="color:var(--white);">R$ 5,00</strong></div>
+      <div class="hbtn" title="Relatório em PDF" onclick="nav('report',document.getElementById('navReport'))">📄</div>
       <div class="hbtn" title="Exportar JSON" onclick="exportData()">⬆</div>
       <div class="hbtn" title="Importar JSON" onclick="document.getElementById('impHdr').click()">⬇</div>
       <input type="file" id="impHdr" class="h" accept=".json" onchange="importData(event)">
@@ -1052,7 +1313,7 @@ input[type="file"].h{display:none!important;}
               <span class="cbadge pos" id="dashCapChg">+0,00%</span>
               <span style="font-size:10px;color:var(--hero-sub);">hoje</span>
             </div>
-            <div class="to" style="font-size:11px;font-weight:600;cursor:pointer;flex-shrink:0;" onclick="nav('operations',document.querySelectorAll('.nav-item')[1])">Ver operações →</div>
+            <div class="to" style="font-size:11px;font-weight:600;cursor:pointer;flex-shrink:0;" onclick="nav('operations',document.getElementById('navOps'))">Ver operações →</div>
           </div>
           <div class="ov" id="stopCard">
             <span class="ov-menu">···</span>
@@ -1102,7 +1363,7 @@ input[type="file"].h{display:none!important;}
             </div>
             <div class="cbd" style="padding-top:0;">
               <div class="chart-big" id="chartBig">R$ 0,00</div>
-              <div style="flex:1;min-height:0;position:relative;"><canvas id="capChart"></canvas></div>
+              <div class="chbox" style="flex:1;min-height:0;position:relative;"><canvas id="capChart"></canvas></div>
             </div>
           </div>
         </div>
@@ -1353,11 +1614,103 @@ input[type="file"].h{display:none!important;}
       </div>
     </div>
 
+    <!-- RELATÓRIO -->
+    <div id="page-report" class="page">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-shrink:0;padding:0 2px 9px;flex-wrap:wrap;">
+        <div>
+          <div class="pg-title">Relatório</div>
+          <div class="pg-sub">Monte o relatório do período e exporte em PDF — didático e legível no celular</div>
+        </div>
+        <div style="display:flex;gap:7px;flex-wrap:wrap;">
+          <button class="btn-s" onclick="rptOpen()">👁️ Ver relatório</button>
+          <button class="btn-o" onclick="rptOpen({print:true})">🖨️ Baixar PDF</button>
+        </div>
+      </div>
+      <div class="set-grid" style="margin-top:4px;">
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <div class="set-card">
+            <div class="set-tit">📅 Período</div>
+            <div class="rchips" id="rpChips"></div>
+            <div class="s2" style="margin-top:11px;">
+              <div class="fg"><label class="fl">De</label><input class="fi" type="date" id="rpFrom" onchange="rptSetCustom()"></div>
+              <div class="fg"><label class="fl">Até</label><input class="fi" type="date" id="rpTo" onchange="rptSetCustom()"></div>
+            </div>
+            <div class="rp-info" id="rpInfo">—</div>
+          </div>
+          <div class="set-card">
+            <div class="set-tit">🧩 O que incluir</div>
+            <div id="rpOpts"></div>
+            <div class="s2" style="margin-top:10px;">
+              <div class="fg"><label class="fl">Fichas das operações</label>
+                <select class="fi" id="rpCardMode" onchange="rptCfgChange()">
+                  <option value="withShots">Somente as que têm print</option>
+                  <option value="all">Todas as operações</option>
+                  <option value="none">Não incluir fichas</option>
+                </select></div>
+              <div class="fg"><label class="fl">Tamanho dos prints</label>
+                <select class="fi" id="rpShotSize" onchange="rptCfgChange()">
+                  <option value="mini">Miniaturas (3 por linha)</option>
+                  <option value="full">Grandes (1 por linha)</option>
+                </select></div>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <div class="set-card">
+            <div class="set-tit">🎨 Tema do relatório</div>
+            <div class="rsw" id="rpThemeRow"></div>
+            <div style="font-size:10.5px;color:var(--dim);line-height:1.55;margin-top:10px;">
+              O tema vale só para o relatório — o painel segue com o tema atual do app.
+            </div>
+          </div>
+          <div class="set-card">
+            <div class="set-tit">🔎 Filtros (opcional)</div>
+            <div class="s2">
+              <div class="fg"><label class="fl">Resultado</label>
+                <select class="fi" id="rfRes" onchange="rptCfgChange()">
+                  <option value="">Todos</option><option value="WIN">Somente WIN</option>
+                  <option value="LOSS">Somente LOSS</option><option value="DRAW">Somente empates</option>
+                </select></div>
+              <div class="fg"><label class="fl">Tipo / ativo</label><select class="fi" id="rfType" onchange="rptCfgChange()"></select></div>
+            </div>
+            <div class="fg" style="margin-bottom:0;"><label class="fl">Seguiu o plano</label>
+              <select class="fi" id="rfPlan" onchange="rptCfgChange()">
+                <option value="">Todas</option><option value="yes">Somente as que seguiram</option><option value="no">Somente as que não seguiram</option>
+              </select></div>
+          </div>
+          <div class="set-card">
+            <div class="set-tit">💡 Como salvar em PDF</div>
+            <div class="rp-info" style="font-size:11px;">
+              <b>1.</b> Toque em <b>Baixar PDF</b> — abre a tela de impressão do aparelho.<br>
+              <b>2.</b> Em <b>Destino / Impressora</b>, escolha <b>“Salvar como PDF”</b>.<br>
+              <b>3.</b> Papel <b>A4</b> e marque <b>“Gráficos de fundo”</b> para o tema escuro sair colorido.<br>
+              <b>4.</b> Celular: Chrome → ⋮ → <b>Compartilhar</b> → <b>Imprimir</b>; iPhone: Safari → <b>Compartilhar</b> → <b>Imprimir</b>.<br>
+              <b>5.</b> Quer a folha limpa? Desligue “Cabeçalhos e rodapés”.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div><!-- #content -->
 </main>
 </div><!-- #app -->
 
 <div id="fab" onclick="openNewOpModal()">＋</div>
+
+<!-- RELATÓRIO EM TELA CHEIA — é este documento que vira PDF -->
+<div id="rview" data-rtheme="claro">
+  <div class="rbar">
+    <div class="rbar-t"><b>📄 Relatório</b><span id="rbarSub">—</span></div>
+    <div class="rbar-a">
+      <div class="rsw" id="rbarThemes" style="gap:5px;"></div>
+      <button class="rbt" onclick="rptRebuild()" title="Recalcular com as operações atuais">🔄 Atualizar</button>
+      <button class="rbt pri" onclick="rPrint()">🖨️ Baixar PDF</button>
+      <button class="rbt" onclick="closeReportView()">✕ Fechar</button>
+    </div>
+  </div>
+  <div id="rscroll"><div class="rpage" id="rdoc"><div class="rload"><span class="rsp"></span> Montando o relatório…</div></div></div>
+</div>
 
 <!-- MODALS -->
 <div class="mol" id="profileModal">
@@ -1879,7 +2232,7 @@ function nav(page,el){
   document.getElementById('page-'+page).classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   if(el) el.classList.add('active');
-  const t={dashboard:'Dashboard',operations:'Operações',analytics:'Analytics',settings:'Configurações'};
+  const t={dashboard:'Dashboard',operations:'Operações',analytics:'Analytics',report:'Relatório',settings:'Configurações'};
   document.getElementById('hdrTit').textContent=t[page]||page;
   document.getElementById('fab').style.display=page==='operations'?'flex':'none';
   if(page==='dashboard') updateDash();
@@ -1887,6 +2240,7 @@ function nav(page,el){
   mtApplyAll();
   if(page==='operations'){ renderOps(); syncOpsUsd(); }
   if(page==='analytics') updateAn();
+  if(page==='report') rptLoadPage();
 }
 
 /* ══════════════════════════════════════
@@ -2804,11 +3158,827 @@ window.addEventListener('appinstalled',()=>{
   const b=document.getElementById('installBtn'); if(b) b.style.display='none';
 });
 
+/* ═══════════════════════════════════════════════════════════
+   RELATÓRIO DE PERFORMANCE  (PDF)
+   ─────────────────────────────────────────────────────────
+   O núcleo abaixo é PURO (não toca no DOM) de propósito:
+   todo número do relatório nasce aqui e pode ser conferido
+   fora do navegador. Depois vêm: montagem do documento,
+   gráficos, prints e a exportação em PDF.
+═══════════════════════════════════════════════════════════ */
+/*RPT-CORE-START*/
+const RPT_THEMES=[
+  {id:'claro', nm:'Claro',  sw:['#ffffff','#4f46e5','#0b8f6a']},
+  {id:'escuro',nm:'Escuro', sw:['#121722','#9aa6ff','#37d39b']},
+  {id:'papel', nm:'Papel',  sw:['#ffffff','#2f2f2f','#a41f2c']},
+  {id:'edge',  nm:'Edge',   sw:['#ffffff','#4338ca','#22d3ee']}
+];
+const RPT_SECTIONS=[
+  {k:'kpi',      nm:'Resumo executivo',            ds:'os números principais do período'},
+  {k:'compare',  nm:'Comparação com o período anterior', ds:'o que melhorou e o que piorou'},
+  {k:'charts',   nm:'Gráficos',                    ds:'capital, resultados, tipos, dias e horários'},
+  {k:'daily',    nm:'Dia a dia',                   ds:'tabela com o resultado de cada dia'},
+  {k:'insights', nm:'Análise automática',          ds:'leitura dos números em linguagem simples'},
+  {k:'ops',      nm:'Todas as operações',          ds:'tabela completa do período'},
+  {k:'cards',    nm:'Fichas por operação',         ds:'cada operação com os prints anexados'},
+  {k:'gloss',    nm:'Como ler este relatório',     ds:'glossário curto das métricas'}
+];
+const RPT_MONTHS=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+const RPT_WDFULL=['Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado','Domingo'];
+const RPT_WDSHORT=['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
+function rpPad(n){return String(n).padStart(2,'0');}
+function rpISO(d){return d.getFullYear()+'-'+rpPad(d.getMonth()+1)+'-'+rpPad(d.getDate());}
+function rpToday(){return rpISO(new Date());}
+function rpParse(iso){const p=String(iso||'').split('-');return new Date(+p[0]||1970,(+p[1]||1)-1,+p[2]||1);}
+function rpAdd(iso,n){const d=rpParse(iso);d.setDate(d.getDate()+n);return rpISO(d);}
+function rpDays(a,b){return Math.max(1,Math.round((rpParse(b)-rpParse(a))/86400000)+1);}
+function rpBR(iso){if(!iso)return '—';const p=String(iso).split('-');return p.length<3?iso:(p[2]+'/'+p[1]+'/'+p[0]);}
+function rpBRshort(iso){if(!iso)return '—';const p=String(iso).split('-');return p.length<3?iso:(p[2]+'/'+p[1]);}
+function rpBRlong(iso){if(!iso)return '—';const p=String(iso).split('-');return (+p[2])+' de '+RPT_MONTHS[(+p[1])-1]+' de '+p[0];}
+function rpWd(iso){const g=rpParse(iso).getDay();return isNaN(g)?0:(g+6)%7;}   // 0=segunda
+function rpMoney(v){return new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(v||0);}
+function rpMoneyS(v){const s=(v||0)<0?'-':'';return s+'R$ '+new Intl.NumberFormat('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}).format(Math.abs(v||0));}
+function rpUSD(v){return 'US$ '+new Intl.NumberFormat('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}).format(v||0);}
+function rpPct(v,d){return (v||0).toFixed(d===undefined?1:d).replace('.',',')+'%';}
+function rpNum(v,d){return (v||0).toFixed(d===undefined?2:d).replace('.',',');}
+function rpNet(o){return o.result==='WIN'?(+o.value||0):(o.result==='LOSS'?-(+o.value||0):0);}
+function rpKey(o){return String(o.date||'')+' '+String(o.time||'')+' '+String(o.createdAt||'');}
+function rpSort(ops){return [...ops].sort((a,b)=>{const x=rpKey(a),y=rpKey(b);return x<y?-1:x>y?1:0;});}
+function rpResultLabel(r){return r==='WIN'?'WIN':r==='LOSS'?'LOSS':r==='DRAW'?'EMPATE':(r||'—');}
+/* período a partir de um preset (custom devolve o que veio) */
+function rpRange(preset,from,to){
+  const t=rpToday(),d=rpParse(t);
+  switch(preset){
+    case 'hoje': return {from:t,to:t};
+    case '7d':   return {from:rpAdd(t,-6),to:t};
+    case 'semana':{const wd=(d.getDay()+6)%7;return {from:rpAdd(t,-wd),to:t};}
+    case 'mes':  return {from:t.slice(0,8)+'01',to:t};
+    case 'mespassado':{return {from:rpISO(new Date(d.getFullYear(),d.getMonth()-1,1)),
+                               to:rpISO(new Date(d.getFullYear(),d.getMonth(),0))};}
+    case 'ano':  return {from:d.getFullYear()+'-01-01',to:t};
+    default:     return {from:from||null,to:to||null};
+  }
+}
+function rpIn(o,from,to){const k=o.date||'';if(from&&k<from)return false;if(to&&k>to)return false;return true;}
+function rpApplyFilters(ops,f){
+  f=f||{};
+  return ops.filter(o=>(!f.res||o.result===f.res)&&(!f.type||o.type===f.type)&&(!f.plan||o.plan===f.plan));
+}
+/* ── métricas do período ── */
+function rpMetrics(ops,capitalStart){
+  const M={n:ops.length,wins:0,losses:0,draws:0,grossWin:0,grossLoss:0,net:0,volume:0,
+    winRate:0,pf:0,avgWin:0,avgLoss:0,payoff:0,avgTicket:0,expectancy:0,
+    best:null,worst:null,streakCur:0,streakCurT:'',maxWinStreak:0,maxLossStreak:0,
+    plan:{y:0,n:0,yW:0,yL:0,nW:0,nL:0},byType:[],days:[],weekdays:[],hours:[],
+    capitalStart:capitalStart||0,capitalEnd:capitalStart||0,returnPct:0,
+    peak:capitalStart||0,trough:capitalStart||0,maxDD:0,maxDDpct:0,
+    tradedDays:0,positiveDays:0,negativeDays:0,flatDays:0,avgDayNet:0,
+    bestDay:null,worstDay:null,bestType:null,worstType:null,bestWd:null,worstWd:null,bestHour:null,worstHour:null,
+    first:ops[0]||null,last:ops[ops.length-1]||null};
+  const tmap=new Map(),dmap=new Map(),hmap=new Map();
+  const wd=Array.from({length:7},(_,i)=>({i,n:0,w:0,l:0,net:0}));
+  let run=capitalStart||0,peak=run,dd=0,cs=0,csT='',mw=0,ml=0;
+  ops.forEach(o=>{
+    const v=+o.value||0,r=o.result;
+    M.volume+=v;
+    if(r==='WIN'){M.wins++;M.grossWin+=v;}else if(r==='LOSS'){M.losses++;M.grossLoss+=v;}else M.draws++;
+    M.net+=rpNet(o);
+    if(r==='WIN'||r==='LOSS'){ if(r===csT)cs++;else{cs=1;csT=r;}
+      if(csT==='WIN')mw=Math.max(mw,cs);else ml=Math.max(ml,cs); } else {cs=0;csT='';}
+    if(r==='WIN'&&(!M.best||v>+(M.best.value||0)))M.best=o;
+    if(r==='LOSS'&&(!M.worst||v>+(M.worst.value||0)))M.worst=o;
+    if(o.plan==='no'){M.plan.n++;if(r==='WIN')M.plan.nW++;else if(r==='LOSS')M.plan.nL++;}
+    else{M.plan.y++;if(r==='WIN')M.plan.yW++;else if(r==='LOSS')M.plan.yL++;}
+    const tk=o.type||'(sem tipo)';
+    if(!tmap.has(tk))tmap.set(tk,{type:tk,n:0,w:0,l:0,d:0,net:0,vol:0});
+    const T=tmap.get(tk);T.n++;T.vol+=v;T.net+=rpNet(o);
+    if(r==='WIN')T.w++;else if(r==='LOSS')T.l++;else T.d++;
+    const dk=o.date||'(sem data)';
+    if(!dmap.has(dk))dmap.set(dk,{date:dk,n:0,w:0,l:0,d:0,net:0});
+    const D=dmap.get(dk);D.n++;D.net+=rpNet(o);
+    if(r==='WIN')D.w++;else if(r==='LOSS')D.l++;else D.d++;
+    const wi=rpWd(dk);wd[wi].n++;wd[wi].net+=rpNet(o);if(r==='WIN')wd[wi].w++;else if(r==='LOSS')wd[wi].l++;
+    const hh=parseInt(String(o.time||'').slice(0,2),10);
+    if(!isNaN(hh)){const b=Math.floor(hh/2)*2;
+      if(!hmap.has(b))hmap.set(b,{h:b,n:0,w:0,l:0,net:0});
+      const H=hmap.get(b);H.n++;H.net+=rpNet(o);if(r==='WIN')H.w++;else if(r==='LOSS')H.l++;}
+    run+=rpNet(o);
+    if(run>peak)peak=run;
+    const drop=peak-run;if(drop>dd)dd=drop;
+    if(run<M.trough)M.trough=run;
+  });
+  M.peak=peak;M.maxDD=dd;M.maxDDpct=peak>0?dd/peak*100:0;
+  M.winRate=(M.wins+M.losses)>0?M.wins/(M.wins+M.losses)*100:0;
+  M.pf=M.grossLoss>0?M.grossWin/M.grossLoss:(M.grossWin>0?Infinity:0);
+  M.avgWin=M.wins?M.grossWin/M.wins:0;
+  M.avgLoss=M.losses?M.grossLoss/M.losses:0;
+  M.payoff=M.avgLoss>0?M.avgWin/M.avgLoss:0;
+  M.avgTicket=M.n?M.volume/M.n:0;
+  M.expectancy=M.n?M.net/M.n:0;
+  M.capitalEnd=(capitalStart||0)+M.net;
+  M.returnPct=M.capitalStart>0?M.net/M.capitalStart*100:0;
+  M.streakCur=cs;M.streakCurT=csT;M.maxWinStreak=mw;M.maxLossStreak=ml;
+  /* dias (ordem crescente, com acumulado) */
+  let cum=M.capitalStart;
+  M.days=[...dmap.values()].sort((a,b)=>a.date<b.date?-1:1).map(d=>{
+    cum+=d.net;
+    return {...d,cum,wr:(d.w+d.l)>0?d.w/(d.w+d.l)*100:0};
+  });
+  M.tradedDays=M.days.length;
+  M.positiveDays=M.days.filter(d=>d.net>0).length;
+  M.negativeDays=M.days.filter(d=>d.net<0).length;
+  M.flatDays=M.days.filter(d=>d.net===0).length;
+  M.avgDayNet=M.tradedDays?M.net/M.tradedDays:0;
+  M.bestDay=[...M.days].sort((a,b)=>b.net-a.net)[0]||null;
+  M.worstDay=[...M.days].sort((a,b)=>a.net-b.net)[0]||null;
+  M.byType=[...tmap.values()].map(t=>({...t,wr:(t.w+t.l)>0?t.w/(t.w+t.l)*100:0,avgt:t.n?t.vol/t.n:0}))
+            .sort((a,b)=>b.net-a.net);
+  M.bestType=M.byType[0]||null;
+  M.worstType=M.byType.length>1?M.byType[M.byType.length-1]:null;
+  M.weekdays=wd.filter(w=>w.n>0).map(w=>({...w,wr:(w.w+w.l)>0?w.w/(w.w+w.l)*100:0}));
+  const ws=[...M.weekdays].sort((a,b)=>b.net-a.net);
+  M.bestWd=ws[0]||null;M.worstWd=ws.length>1?ws[ws.length-1]:null;
+  M.hours=[...hmap.values()].sort((a,b)=>a.h-b.h).map(h=>({...h,wr:(h.w+h.l)>0?h.w/(h.w+h.l)*100:0}));
+  const hs=[...M.hours].sort((a,b)=>b.net-a.net);
+  M.bestHour=hs[0]||null;M.worstHour=hs.length>1?hs[hs.length-1]:null;
+  return M;
+}
+/* ── leitura automática dos números ── */
+function rpInsights(M,ctx){
+  ctx=ctx||{};
+  const out=[];
+  if(!M.n) return out;
+  const pos=M.net>=0;
+  out.push({ic:pos?'🎯':'⚠️',c:pos?'g':'b',
+    t:`Resultado do período: ${rpMoney(M.net)} (${pos?'lucro':'prejuízo'})`,
+    d:`Foram ${M.n} operação(ões): ${M.wins} vitória(s), ${M.losses} derrota(s)${M.draws?` e ${M.draws} empate(s)`:''}. `+
+      `Isso equivale a ${rpPct(M.returnPct)} sobre o capital de ${rpMoney(M.capitalStart)} que existia no início do período.`});
+  if(M.wins+M.losses>0){
+    const wr=M.winRate;
+    out.push({ic:wr>=55?'🏆':wr>=45?'⚖️':'📉',c:wr>=55?'g':wr>=45?'':'b',
+      t:`Taxa de acerto (win rate) de ${rpPct(wr)}`,
+      d:wr>=55?`Acima da referência de 50%: de cada 10 operações decididas, você ganhou cerca de ${(wr/10).toFixed(1).replace('.',',')}.`
+        :wr>=45?`Praticamente empatado com a referência de 50% — o lucro aqui vem mais do tamanho das entradas do que da frequência.`
+        :`Abaixo da referência de 50%: ganhar menos vezes que perder exige que as vitórias sejam bem maiores que as perdas. Hoje o ganho médio é ${rpMoney(M.avgWin)} contra perda média de ${rpMoney(M.avgLoss)}.`});
+  }
+  if(M.grossLoss>0){
+    const pf=M.pf;
+    out.push({ic:pf>=1.5?'✅':pf>=1?'⚖️':'🚩',c:pf>=1.5?'g':pf>=1?'w':'b',
+      t:`Profit factor de ${isFinite(pf)?rpNum(pf):'∞'}`,
+      d:`Para cada R$ 1,00 perdido, você ganhou ${isFinite(pf)?rpMoney(pf):'tudo'} — ganhos de ${rpMoney(M.grossWin)} contra perdas de ${rpMoney(M.grossLoss)}. `+
+        (pf>=1.5?'Um profit factor acima de 1,5 costuma indicar uma estratégia saudável.':pf>=1?'Está positivo, mas com pouca folga: pequenas pioras viram prejuízo.':'Abaixo de 1,00 o período fechou negativo: vale revisar filtros e tamanho de entrada.')});
+  }
+  if(M.avgLoss>0){
+    const risco=M.avgLoss>0?M.avgWin/M.avgLoss:0;
+    out.push({ic:risco>=1.5?'💪':risco>=1?'🙂':'❗',c:risco>=1.5?'g':risco>=1?'':'w',
+      t:`Payoff (ganho médio ÷ perda média) de ${rpNum(risco)}`,
+      d:`Ganho médio ${rpMoney(M.avgWin)} x perda média ${rpMoney(M.avgLoss)}. `+
+        (risco<1?'Quando a perda média é maior que o ganho médio, uma sequência ruim derruba o capital rápido — considere reduzir a mão nas perdas.':'Esse é o número que sustenta o resultado quando o win rate oscila.')});
+  }
+  if(M.plan.y+M.plan.n>0){
+    if(M.plan.n>0){
+      const wrY=(M.plan.yW+M.plan.yL)>0?M.plan.yW/(M.plan.yW+M.plan.yL)*100:0;
+      const wrN=(M.plan.nW+M.plan.nL)>0?M.plan.nW/(M.plan.nW+M.plan.nL)*100:0;
+      out.push({ic:'🧭',c:wrY>=wrN?'g':'w',
+        t:'Disciplina: com plano x sem plano',
+        d:`Seguindo o plano o win rate foi ${rpPct(wrY)} (${M.plan.y} ops); fora do plano, ${rpPct(wrN)} (${M.plan.n} ops). `+
+          (wrY>=wrN?'Os números confirmam: o plano está ajudando.':'Atenção — as operações fora do plano estão rendendo igual ou mais; vale revisar se o plano está bem definido.')});
+    }else if(M.plan.y>0){
+      out.push({ic:'🧭',c:'g',t:'100% das operações seguiram o plano',
+        d:`Todas as ${M.plan.y} operações do período respeitaram o plano — disciplina total é o que permite medir a estratégia de verdade.`});
+    }
+  }
+  if(M.bestType){
+    const bt=M.bestType, wt=M.worstType;
+    out.push({ic:'🏅',c:'g',
+      t:`Melhor ativo/tipo: ${bt.type}`,
+      d:`${bt.n} operação(ões), ${rpPct(bt.wr)} de acerto e ${rpMoney(bt.net)} de resultado.`+
+        (wt?` Na outra ponta ficou ${wt.type}, com ${rpMoney(wt.net)} em ${wt.n} operação(ões) — ${wt.net<0?'ponto de atenção':'ainda positivo, mas mais fraco'}.`:''),
+      });
+  }
+  if(M.tradedDays>0){
+    const posRate=M.positiveDays/M.tradedDays*100;
+    out.push({ic:'📅',c:posRate>=50?'g':'w',
+      t:`${M.tradedDays} dia(s) operado(s), ${M.positiveDays} fecharam no positivo (${rpPct(posRate,0)})`,
+      d:M.bestDay&&M.worstDay?`Melhor dia: ${rpBR(M.bestDay.date)} com ${rpMoney(M.bestDay.net)}. Pior dia: ${rpBR(M.worstDay.date)} com ${rpMoney(M.worstDay.net)}. Média por dia operado: ${rpMoney(M.avgDayNet)}.`:'',
+      });
+  }
+  if(M.maxDD>0){
+    out.push({ic:'📉',c:M.maxDDpct>=15?'b':'w',
+      t:`Maior queda dentro do período: ${rpMoney(M.maxDD)} (${rpPct(M.maxDDpct)})`,
+      d:`O capital saiu de ${rpMoney(M.peak)} e chegou a ${rpMoney(M.trough)} antes de se recuperar. Quanto menor essa queda, mais confortável é seguir a estratégia.`,
+      });
+  }
+  if(M.maxWinStreak>1||M.maxLossStreak>1){
+    out.push({ic:M.maxLossStreak>M.maxWinStreak?'🌧️':'🔥',c:M.maxLossStreak>M.maxWinStreak?'w':'g',
+      t:`Sequências: até ${M.maxWinStreak} win(s) seguidos e até ${M.maxLossStreak} loss(es) seguidos`,
+      d:`Terminou o período ${M.streakCur>0?`com ${M.streakCur} ${M.streakCurT==='WIN'?'win':'loss'} em sequência`:'sem sequência aberta'}. `+
+        `Com perda média de ${rpMoney(M.avgLoss)}, uma sequência de ${M.maxLossStreak} perdas custa cerca de ${rpMoney(M.avgLoss*M.maxLossStreak)} — precisa caber no seu stop.`});
+  }
+  if(M.n>1){
+    out.push({ic:'🧮',c:M.expectancy>=0?'g':'b',
+      t:`Expectativa de ${rpMoney(M.expectancy)} por operação`,
+      d:`Média considerando todas as ${M.n} entradas (ganhos menos perdas dividido pelo número de operações). `+
+        `Ticket médio movimentado: ${rpMoney(M.avgTicket)}.`});
+  }
+  if(M.bestWd&&M.weekdays.length>1){
+    out.push({ic:'🗓️',c:'',
+      t:`Melhor dia da semana: ${RPT_WDFULL[M.bestWd.i]}`,
+      d:`${M.bestWd.n} operação(ões) e ${rpMoney(M.bestWd.net)} de resultado.`+
+        (M.worstWd?` O dia mais fraco foi ${RPT_WDFULL[M.worstWd.i]} (${rpMoney(M.worstWd.net)}).`:''),
+      });
+  }
+  if(M.bestHour&&M.hours.length>1){
+    out.push({ic:'⏰',c:'',
+      t:`Melhor faixa de horário: ${rpPad(M.bestHour.h)}h–${rpPad(M.bestHour.h+2)}h`,
+      d:`${M.bestHour.n} operação(ões), ${rpPct(M.bestHour.wr)} de acerto e ${rpMoney(M.bestHour.net)}.`+
+        (M.worstHour?` A faixa ${rpPad(M.worstHour.h)}h–${rpPad(M.worstHour.h+2)}h rendeu ${rpMoney(M.worstHour.net)}.`:''),
+      });
+  }
+  if(ctx.prev){
+    /* aceita tanto um objeto de métricas quanto {label,n,...,M} */
+    const pm=ctx.prev.M||ctx.prev, lbl=ctx.prev.label||'período anterior';
+    if(pm&&pm.n){
+      const diff=M.net-pm.net;
+      out.push({ic:diff>=0?'📈':'📉',c:diff>=0?'g':'b',
+        t:`Comparado ao período anterior (${lbl})`,
+        d:`Antes: ${pm.n} op(s) e ${rpMoney(pm.net)}; agora: ${M.n} op(s) e ${rpMoney(M.net)} — variação de ${rpMoney(diff)}. `+
+          `Win rate passou de ${rpPct(pm.winRate)} para ${rpPct(M.winRate)}.`});
+    }
+  }
+  return out;
+}
+/*RPT-CORE-END*/
+
+/* ══════════════════════════════════════════════════════════
+   ESTADO / PREFERÊNCIAS DO RELATÓRIO
+══════════════════════════════════════════════════════════ */
+let RPT={preset:'mes',from:'',to:'',theme:'claro',cardMode:'withShots',shotSize:'mini',
+  inc:{kpi:true,compare:true,charts:true,daily:true,insights:true,ops:true,cards:true,gloss:true},
+  filt:{res:'',type:'',plan:''}};
+const RPT_PRESETS=[['hoje','Hoje'],['7d','7 dias'],['semana','Esta semana'],['mes','Este mês'],
+                   ['mespassado','Mês passado'],['ano','Este ano'],['tudo','Tudo'],['custom','Personalizado']];
+const RPT_PAL={
+  claro :{ink:'#151a2c',mut:'#59607a',line:'#e3e6f0',pos:'#0b8f6a',neg:'#d81b4a',acc:'#4f46e5',acc2:'#0891b2',grid:'rgba(21,26,44,.09)',tip:'rgba(255,255,255,.98)',soft:'#f4f6fb'},
+  escuro:{ink:'#eef2fb',mut:'#a7b0c6',line:'#232b3a',pos:'#37d39b',neg:'#fb7a94',acc:'#9aa6ff',acc2:'#4fd6f5',grid:'rgba(238,242,251,.12)',tip:'rgba(18,23,34,.98)',soft:'#181f2b'},
+  papel :{ink:'#111111',mut:'#4d4d4d',line:'#dededa',pos:'#146c43',neg:'#a41f2c',acc:'#2f2f2f',acc2:'#5a5a5a',grid:'rgba(17,17,17,.10)',tip:'rgba(255,255,255,.98)',soft:'#f8f8f6'},
+  edge  :{ink:'#141a30',mut:'#575f7d',line:'#e0e5f4',pos:'#0b8f6a',neg:'#d81b4a',acc:'#4338ca',acc2:'#22d3ee',grid:'rgba(20,26,48,.09)',tip:'rgba(255,255,255,.98)',soft:'#f3f5fd'}
+};
+const RCH={};
+function rptInitFromState(){
+  const r=S.report;
+  if(!r||typeof r!=='object') return;
+  RPT={...RPT,...r,inc:{...RPT.inc,...(r.inc||{})},filt:{...RPT.filt,...(r.filt||{})}};
+  if(!RPT_THEMES.some(t=>t.id===RPT.theme)) RPT.theme='claro';
+  if(!RPT.inc.kpi&&!RPT.inc.charts&&!RPT.inc.ops&&!RPT.inc.cards) RPT.inc.kpi=true;
+}
+function rptSave(){
+  S.report={preset:RPT.preset,from:RPT.from,to:RPT.to,theme:RPT.theme,cardMode:RPT.cardMode,
+            shotSize:RPT.shotSize,inc:{...RPT.inc},filt:{...RPT.filt}};
+  save();
+}
+function rptCurrentRange(){
+  if(RPT.preset==='custom'){
+    let f=RPT.from||rpToday(),t=RPT.to||rpToday();
+    if(f>t){const x=f;f=t;t=x;}
+    return {from:f,to:t};
+  }
+  if(RPT.preset==='tudo'){
+    const ds=(S.operations||[]).map(o=>o.date).filter(Boolean).sort();
+    return {from:ds[0]||rpToday(),to:ds[ds.length-1]||rpToday()};
+  }
+  return rpRange(RPT.preset);
+}
+/* modelo completo do relatório (período + comparação + métricas) */
+function rptModel(){
+  const rng=rptCurrentRange(),all=S.operations||[];
+  let capStart=S.settings.initialCapital||0;
+  all.forEach(o=>{if(o.date&&o.date<rng.from)capStart+=rpNet(o);});
+  const inRange=all.filter(o=>rpIn(o,rng.from,rng.to));
+  const ops=rpSort(rpApplyFilters(inRange,RPT.filt));
+  const M=rpMetrics(ops,capStart);
+  const span=rpDays(rng.from,rng.to);
+  const pTo=rpAdd(rng.from,-1),pFrom=rpAdd(pTo,-(span-1));
+  let prevCap=S.settings.initialCapital||0;
+  all.forEach(o=>{if(o.date&&o.date<pFrom)prevCap+=rpNet(o);});
+  const PM=rpMetrics(rpSort(rpApplyFilters(all.filter(o=>rpIn(o,pFrom,pTo)),RPT.filt)),prevCap);
+  const shotsCount=ops.reduce((a,o)=>a+((o.shots||[]).length),0);
+  return {rng,span,ops,M,PM,capStart,prevCap,
+    prev:{from:pFrom,to:pTo,n:PM.n,label:span===1?rpBR(pFrom):(rpBR(pFrom)+' → '+rpBR(pTo)),M:PM},
+    trades:inRange.length,all,shotsCount,
+    label:rng.from===rng.to?rpBRlong(rng.from):(rpBRlong(rng.from)+' a '+rpBRlong(rng.to)),
+    labelShort:rng.from===rng.to?rpBR(rng.from):(rpBR(rng.from)+' → '+rpBR(rng.to))};
+}
+
+/* ══════════════════════════════════════════════════════════
+   PÁGINA DO RELATÓRIO (controles dentro do app)
+══════════════════════════════════════════════════════════ */
+function rptLoadPage(){
+  rptInitFromState();
+  rptBuildChips();
+  rptBuildThemes();
+  rptBuildOpts();
+  rptBuildTypes();
+  const f=document.getElementById('rpFrom'),t=document.getElementById('rpTo');
+  const r=rptCurrentRange();
+  if(f) f.value=r.from||'';
+  if(t) t.value=r.to||'';
+  const cm=document.getElementById('rpCardMode'),ss=document.getElementById('rpShotSize');
+  if(cm) cm.value=RPT.cardMode; if(ss) ss.value=RPT.shotSize;
+  const rr=document.getElementById('rfRes'),rp=document.getElementById('rfPlan'),rt=document.getElementById('rfType');
+  if(rr) rr.value=RPT.filt.res||''; if(rp) rp.value=RPT.filt.plan||'';
+  if(rt) rt.value=RPT.filt.type||'';
+  rptSyncInfo();
+}
+function rptBuildChips(){
+  const w=document.getElementById('rpChips'); if(!w) return;
+  w.innerHTML=RPT_PRESETS.map(([id,nm])=>
+    `<button class="rchip ${RPT.preset===id?'sel':''}" data-p="${id}" onclick="rptSetPreset('${id}')">${nm}</button>`).join('');
+}
+function rptBuildThemes(){
+  const w=document.getElementById('rpThemeRow'); if(!w) return;
+  w.innerHTML=RPT_THEMES.map(t=>
+    `<button class="rsw-b ${RPT.theme===t.id?'sel':''}" data-t="${t.id}" onclick="rptSetTheme('${t.id}')">
+       <span class="rsw-c" style="background:linear-gradient(135deg,${t.sw[0]} 0 34%,${t.sw[1]} 34% 67%,${t.sw[2]} 67% 100%);"></span>${t.nm}
+     </button>`).join('');
+}
+function rptBuildOpts(){
+  const w=document.getElementById('rpOpts'); if(!w) return;
+  w.innerHTML=RPT_SECTIONS.map(s=>
+    `<label class="rchk"><input type="checkbox" data-k="${s.k}" ${RPT.inc[s.k]?'checked':''} onchange="rptCfgChange()">
+       <span>${s.nm}<em>${s.ds}</em></span></label>`).join('');
+}
+function rptBuildTypes(){
+  const w=document.getElementById('rfType'); if(!w) return;
+  const types=[...new Set((S.operations||[]).map(o=>o.type||'(sem tipo)'))].sort();
+  w.innerHTML='<option value="">Todos os tipos</option>'+
+    types.map(t=>`<option value="${escHtml(t)}">${escHtml(t)}</option>`).join('');
+}
+function rptReadForm(){
+  const g=id=>document.getElementById(id);
+  const boxes=[...document.querySelectorAll('#rpOpts input[type=checkbox]')];
+  if(boxes.length){const inc={};boxes.forEach(c=>inc[c.dataset.k]=c.checked);RPT.inc=inc;}
+  RPT.filt={res:(g('rfRes')||{}).value||'',type:(g('rfType')||{}).value||'',plan:(g('rfPlan')||{}).value||''};
+  RPT.cardMode=(g('rpCardMode')||{}).value||'withShots';
+  RPT.shotSize=(g('rpShotSize')||{}).value||'mini';
+  if(RPT.preset==='custom'){RPT.from=(g('rpFrom')||{}).value||'';RPT.to=(g('rpTo')||{}).value||'';}
+  /* nenhuma seção marcada? o resumo executivo volta, senão o PDF sai vazio */
+  if(!RPT.inc.kpi&&!RPT.inc.compare&&!RPT.inc.charts&&!RPT.inc.daily&&!RPT.inc.insights&&!RPT.inc.ops&&!RPT.inc.cards) RPT.inc.kpi=true;
+  rptSave();
+}
+/* aplicar uma mudança de configuração direto no documento aberto */
+function rptLive(){ if(document.getElementById('rview').classList.contains('show')) rptRender(); }
+function rptCfgChange(){ rptReadForm(); rptSyncInfo(); rptLive(); }
+function rptSetPreset(p){
+  RPT.preset=p;
+  const r=(p==='custom')?{from:RPT.from||rpToday(),to:RPT.to||rpToday()}:(p==='tudo'?rptCurrentRange():rpRange(p));
+  if(p!=='custom'){RPT.from=r.from||'';RPT.to=r.to||'';}
+  const f=document.getElementById('rpFrom'),t=document.getElementById('rpTo');
+  if(f) f.value=r.from||''; if(t) t.value=r.to||'';
+  rptSave(); rptBuildChips(); rptSyncInfo(); rptLive();
+}
+function rptSetCustom(){
+  RPT.preset='custom';
+  RPT.from=(document.getElementById('rpFrom')||{}).value||'';
+  RPT.to=(document.getElementById('rpTo')||{}).value||'';
+  rptSave(); rptBuildChips(); rptSyncInfo(); rptLive();
+}
+function rptSetTheme(id){
+  RPT.theme=RPT_THEMES.some(t=>t.id===id)?id:'claro';
+  rptSave(); rptBuildThemes(); rptBuildToolbarThemes();
+  const v=document.getElementById('rview'); if(v) v.dataset.rtheme=RPT.theme;
+  if(document.getElementById('rview').classList.contains('show')) rptRebuild();
+}
+function rptSyncInfo(){
+  const el=document.getElementById('rpInfo'); if(!el) return;
+  try{
+    const m=rptModel();
+    const col=m.M.net>=0?'var(--green)':'var(--red)';
+    el.innerHTML=`<b>${escHtml(m.labelShort)}</b> · ${m.span} dia(s) · `+
+      `<b>${m.M.n}</b> operação(ões) no relatório${m.trades!==m.M.n?` (de ${m.trades} no período)`:''} · `+
+      `resultado <b style="color:${col}">${rpMoney(m.M.net)}</b> · win rate <b>${(m.M.wins+m.M.losses)?rpPct(m.M.winRate):'—'}</b>`+
+      (m.shotsCount?` · <b>${m.shotsCount}</b> print(s) serão anexados`:''); 
+  }catch(e){ el.textContent='—'; }
+}
+
+/* ══════════════════════════════════════════════════════════
+   PRINTS: resolve os ids (IndexedDB) para URL antes de montar
+══════════════════════════════════════════════════════════ */
+async function rptShotURLs(m){
+  const ids=[];
+  if(RPT.inc.cards&&RPT.cardMode!=='none')
+    m.ops.forEach(o=>(o.shots||[]).forEach(id=>ids.push(id)));
+  const map=new Map();
+  await Promise.all(ids.map(async id=>{ try{ const u=await imgURL(id); if(u) map.set(id,u); }catch(e){} }));
+  return map;
+}
+function rptWaitImages(root,timeout=3500){
+  const imgs=[...(root||document).querySelectorAll('img')];
+  if(!imgs.length) return Promise.resolve();
+  return Promise.race([
+    Promise.all(imgs.map(im=>im.complete&&im.naturalWidth?Promise.resolve():
+      new Promise(res=>{im.addEventListener('load',res,{once:true});im.addEventListener('error',res,{once:true});}))),
+    new Promise(res=>setTimeout(res,timeout))
+  ]);
+}
+
+/* ══════════════════════════════════════════════════════════
+   MONTAGEM DO DOCUMENTO
+══════════════════════════════════════════════════════════ */
+function rptResBadge(r){
+  const cls=r==='WIN'?'w':r==='LOSS'?'l':'d';
+  const ic=r==='WIN'?'✅':r==='LOSS'?'❌':'➖';
+  return `<span class="rbdg ${cls}">${ic} ${rpResultLabel(r)}</span>`;
+}
+function rptKpi(l,v,s,cls,hi){
+  return `<div class="rkpi${hi?' hi':''}"><div class="rkpi-l">${l}</div>
+    <div class="rkpi-v ${cls||''}">${v}</div>${s?`<div class="rkpi-s">${s}</div>`:''}</div>`;
+}
+function rptSecHead(n,t,s){
+  return `<div class="rsec-h"><div class="rsec-n">${n}</div><div><div class="rsec-t">${t}</div>${s?`<div class="rsec-s">${s}</div>`:''}</div></div>`;
+}
+function rptAvatarSrc(p){
+  const src=(p&&(p.avatarData||p.avatar))||'';
+  if(src) return src;
+  /* sem foto: avatar local com as iniciais — funciona offline, sem serviço externo */
+  const nm=(String((p&&p.name)||'Trader').trim()||'Trader');
+  const ini=(nm.split(/\s+/).slice(0,2).map(w=>w[0]||'').join('')||'T').toUpperCase().replace(/[^0-9A-ZÀ-Þ]/g,'')||'T';
+  const svg='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">'+
+    '<stop offset="0" stop-color="#4f46e5"/><stop offset="1" stop-color="#0891b2"/></linearGradient></defs>'+
+    '<rect width="96" height="96" rx="48" fill="url(#g)"/><text x="48" y="62" font-family="Inter,Arial,sans-serif" font-size="40" font-weight="700" fill="#fff" text-anchor="middle">'+ini+'</text></svg>';
+  return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
+}
+function rptCover(m){
+  const p=S.profile||{};
+  const av=rptAvatarSrc(p);
+  return `<div class="rcov">
+    <div class="rcov-t">
+      <img class="rcov-av" src="${escHtml(av)}" alt="" onerror="this.style.display='none'">
+      <div style="min-width:0;">
+        <div class="rcov-nm">${escHtml(p.name||'Trader')}</div>
+        <div class="rcov-su">Relatório de performance · EdgeControl</div>
+      </div>
+    </div>
+    <div class="rcov-per">📅 ${escHtml(m.label)}${m.span>1?` · ${m.span} dias`:''}</div>
+    <div class="rcov-grid">
+      <div class="rcov-k"><span>Resultado do período</span><b>${rpMoney(m.M.net)}</b></div>
+      <div class="rcov-k"><span>Operações</span><b>${m.M.n}</b></div>
+      <div class="rcov-k"><span>Win rate</span><b>${(m.M.wins+m.M.losses)?rpPct(m.M.winRate):'—'}</b></div>
+    </div>
+  </div>`;
+}
+function rptSectionKPI(m){
+  const M=m.M,pos=M.net>=0,pfTxt=isFinite(M.pf)?rpNum(M.pf):'∞';
+  return `<section class="rsec">${rptSecHead(1,'Resumo executivo','Os números que resumem o período — leia de cima para baixo. Se precisar de uma frase só: o período fechou em '+rpMoney(M.net)+', com '+M.n+' operações.')}
+    <div class="rkpis">
+      ${rptKpi('Resultado do período',rpMoney(M.net),(pos?'lucro':'prejuízo')+' de '+rpPct(M.returnPct)+' sobre '+rpMoney(M.capitalStart),(pos?'rpos':'rneg'),true)}
+      ${rptKpi('Operações',String(M.n),`${M.wins} win · ${M.losses} loss${M.draws?` · ${M.draws} empate`:''}`)}
+      ${rptKpi('Win rate',(M.wins+M.losses)?rpPct(M.winRate):'—',(M.wins+M.losses)?`${M.wins} acertos em ${M.wins+M.losses} decididas`:'sem operações decididas')}
+      ${rptKpi('Profit factor',pfTxt,isFinite(M.pf)?'ganhos ÷ perdas':'sem perdas no período')}
+      ${rptKpi('Capital no início',rpMoney(M.capitalStart),'antes da 1ª operação do período')}
+      ${rptKpi('Capital no fim',rpMoney(M.capitalEnd),'início + resultado do período')}
+      ${rptKpi('Maior ganho',M.best?rpMoney(M.best.value):'—',M.best?`${M.best.type||''} · ${rpBR(M.best.date)}`:'—',M.best?'rpos':'')}
+      ${rptKpi('Maior perda',M.worst?rpMoney(M.worst.value):'—',M.worst?`${M.worst.type||''} · ${rpBR(M.worst.date)}`:'—',M.worst?'rneg':'')}
+      ${rptKpi('Ganho médio',rpMoney(M.avgWin),M.wins?`em ${M.wins} vitória(s)`:'—')}
+      ${rptKpi('Perda média',rpMoney(M.avgLoss),M.losses?`em ${M.losses} derrota(s)`:'—')}
+      ${rptKpi('Payoff',M.avgLoss>0?rpNum(M.payoff):'—','ganho médio ÷ perda média')}
+      ${rptKpi('Expectativa por op',rpMoney(M.expectancy),'quanto cada entrada rende em média',M.expectancy>=0?'rpos':'rneg')}
+      ${rptKpi('Giro movimentado',rpMoney(M.volume),'soma de todas as entradas')}
+      ${rptKpi('Ticket médio',rpMoney(M.avgTicket),'entrada média por operação')}
+      ${rptKpi('Dias operados',String(M.tradedDays),M.tradedDays?`${M.positiveDays} positivos · ${M.negativeDays} negativos`:'—')}
+      ${rptKpi('Sequências',`${M.maxWinStreak}W / ${M.maxLossStreak}L`,'maior sequência de wins e de losses')}
+    </div>
+    <div class="rnote" style="margin-top:10px;">
+      <b>Como este valor foi calculado:</b> o capital no início do período é reconstruído a partir do capital inicial cadastrado
+      (${rpMoney(S.settings.initialCapital||0)}) somando o resultado de todas as operações anteriores ao período.
+      O capital no fim é esse valor mais o resultado das operações do período.
+      ${M.draws?`Empates (${M.draws}) não contam como ganho nem perda nesta conta.`:''}
+    </div>
+  </section>`;
+}
+function rptSectionCompare(m){
+  if(!m.prev.n) return `<section class="rsec">${rptSecHead('2','Comparação com o período anterior',`Período anterior (${escHtml(m.prev.label)}) não teve operações — não há o que comparar.`)}</section>`;
+  const A=m.M,B=m.PM;
+  const rows=[
+    ['Resultado líquido',rpMoney(A.net),rpMoney(B.net),A.net-B.net],
+    ['Operações',String(A.n),String(B.n),A.n-B.n],
+    ['Win rate',rpPct(A.winRate),rpPct(B.winRate),A.winRate-B.winRate],
+    ['Profit factor',isFinite(A.pf)?rpNum(A.pf):'∞',isFinite(B.pf)?rpNum(B.pf):'∞',(isFinite(A.pf)?A.pf:0)-(isFinite(B.pf)?B.pf:0)],
+    ['Ganho médio',rpMoney(A.avgWin),rpMoney(B.avgWin),A.avgWin-B.avgWin],
+    ['Perda média',rpMoney(A.avgLoss),rpMoney(B.avgLoss),A.avgLoss-B.avgLoss],
+    ['Maior queda',rpMoney(A.maxDD),rpMoney(B.maxDD),A.maxDD-B.maxDD],
+    ['Dias operados',String(A.tradedDays),String(B.tradedDays),A.tradedDays-B.tradedDays]
+  ];
+  const fmtDiff=(label,d)=>{
+    if(Math.abs(d)<1e-9) return '<span class="rmut">=</span>';
+    const isRate=label==='Win rate',isPf=label==='Profit factor',isCount=label==='Operações'||label==='Dias operados';
+    const v=isRate?rpPct(Math.abs(d)):isPf?rpNum(Math.abs(d)):isCount?String(Math.abs(d)):rpMoney(Math.abs(d));
+    const good=label==='Maior queda'?d<0:d>0;
+    return `<span class="${good?'rpos':'rneg'}">${d>0?'▲':'▼'} ${v}</span>`;
+  };
+  return `<section class="rsec">${rptSecHead(2,'Comparação com o período anterior',`Mesma quantidade de dias, imediatamente antes: ${escHtml(m.prev.label)} (${m.prev.n} operação(ões)).`)}
+    <div class="rcard" style="padding:0;overflow:hidden;">
+      <table class="rtbl">
+        <thead><tr><th>Métrica</th><th style="text-align:right">Período atual</th><th style="text-align:right">Anterior</th><th style="text-align:right">Variação</th></tr></thead>
+        <tbody>${rows.map(r=>`<tr><td>${r[0]}</td><td class="num">${r[1]}</td><td class="num rmut">${r[2]}</td><td class="num">${fmtDiff(r[0],r[3])}</td></tr>`).join('')}</tbody>
+      </table>
+    </div>
+  </section>`;
+}
+function rptSectionCharts(m){
+  const M=m.M;
+  if(!M.n) return `<section class="rsec">${rptSecHead(3,'Gráficos','Sem operações no período selecionado — nada para desenhar.')}</section>`;
+  const tipo=M.byType.length>1,wd=M.weekdays.length>1,hour=M.hours.length>1,plan=M.plan.n>0&&M.plan.y>0;
+  return `<section class="rsec">${rptSecHead(3,'Gráficos','Cada gráfico responde a uma pergunta: como o capital andou, quanto cada dia rendeu, de que lado você acertou mais e em que momento do dia rendeu melhor.')}
+    <div class="rcard"><div class="rcard-h">Evolução do capital no período (${rpMoney(M.capitalStart)} → ${rpMoney(M.capitalEnd)})</div>
+      <div class="rch"><canvas id="rch_eq"></canvas></div></div>
+    <div class="rgrid2" style="margin-top:10px;">
+      <div class="rcard"><div class="rcard-h">Resultado de cada dia operado</div><div class="rch sm"><canvas id="rch_daily"></canvas></div></div>
+      <div class="rcard"><div class="rcard-h">Distribuição das operações</div><div class="rdonut leg"><canvas id="rch_wr"></canvas></div></div>
+    </div>
+    <div class="rgrid2" style="margin-top:10px;">
+      ${tipo?`<div class="rcard"><div class="rcard-h">Resultado por tipo / ativo</div><div class="rch sm"><canvas id="rch_type"></canvas></div></div>`:''}
+      ${wd?`<div class="rcard"><div class="rcard-h">Resultado por dia da semana</div><div class="rch sm"><canvas id="rch_wd"></canvas></div></div>`:''}
+      ${hour?`<div class="rcard"><div class="rcard-h">Resultado por faixa de horário (2 em 2 horas)</div><div class="rch sm"><canvas id="rch_hour"></canvas></div></div>`:''}
+      ${plan?`<div class="rcard"><div class="rcard-h">Seguiu o plano x não seguiu (wins e losses)</div><div class="rch sm"><canvas id="rch_plan"></canvas></div></div>`:''}
+    </div>
+  </section>`;
+}
+function rptSectionDaily(m){
+  const M=m.M;
+  if(!M.days.length) return '';
+  const rows=M.days.map(d=>{
+    const cls=d.net>0?'rpos':d.net<0?'rneg':'rmut';
+    return `<tr>
+      <td>${rpBR(d.date)}</td><td class="rmut">${RPT_WDSHORT[rpWd(d.date)]}</td>
+      <td class="num">${d.n}</td><td class="num">${d.w}</td><td class="num">${d.l}</td>
+      <td class="num">${(d.w+d.l)?rpPct(d.wr):'—'}</td>
+      <td class="num ${cls}">${rpMoney(d.net)}</td>
+      <td class="num rmut">${rpMoney(d.cum)}</td></tr>`;
+  }).join('');
+  return `<section class="rsec">${rptSecHead(4,'Dia a dia','O resultado de cada dia em que você operou e como o capital ficou ao final dele.')}
+    <div class="rcard" style="padding:0;overflow:hidden;">
+      <table class="rtbl">
+        <thead><tr><th>Data</th><th>Dia</th><th style="text-align:right">Ops</th><th style="text-align:right">W</th><th style="text-align:right">L</th>
+          <th style="text-align:right">Win rate</th><th style="text-align:right">Resultado</th><th style="text-align:right">Capital</th></tr></thead>
+        <tbody>${rows}</tbody>
+        <tfoot><tr><td colspan="2">Total (${M.tradedDays} dia(s))</td>
+          <td class="num">${M.n}</td><td class="num">${M.wins}</td><td class="num">${M.losses}</td>
+          <td class="num">${(M.wins+M.losses)?rpPct(M.winRate):'—'}</td>
+          <td class="num ${M.net>=0?'rpos':'rneg'}">${rpMoney(M.net)}</td>
+          <td class="num">${rpMoney(M.capitalEnd)}</td></tr></tfoot>
+      </table>
+    </div>
+    <div class="rnote" style="margin-top:9px;">Média por dia operado: <b>${rpMoney(M.avgDayNet)}</b> ·
+      melhor dia <b>${M.bestDay?rpBR(M.bestDay.date)+' ('+rpMoney(M.bestDay.net)+')':'—'}</b> ·
+      pior dia <b>${M.worstDay?rpBR(M.worstDay.date)+' ('+rpMoney(M.worstDay.net)+')':'—'}</b>.</div>
+  </section>`;
+}
+function rptSectionInsights(m){
+  const ins=rpInsights(m.M,{prev:m.prev.n?m.prev:null});
+  if(!ins.length) return '';
+  return `<section class="rsec">${rptSecHead(5,'Análise automática','Leitura direta dos seus números — sem julgamento, só o que os dados mostram.')}
+    <div class="rins">${ins.map(i=>`<div class="rins-i ${i.c||''}">
+      <div class="rins-ic">${i.ic}</div><div><div class="rins-t">${i.t}</div><div class="rins-d">${i.d}</div></div></div>`).join('')}</div>
+  </section>`;
+}
+function rptSectionOps(m){
+  const M=m.M;
+  if(!m.ops.length) return '';
+  const rows=m.ops.map((o,i)=>{
+    const ns=(o.shots||[]).length;
+    const det=[o.reason,o.notes].filter(Boolean).join(' · ');
+    return `<tr>
+      <td class="rmut">${i+1}</td>
+      <td>${rpBR(o.date)} <span class="rmut">${o.time||''}</span></td>
+      <td>${escHtml(o.type||'—')}</td>
+      <td>${rptResBadge(o.result)}</td>
+      <td class="num">${rpMoney(o.value)}</td>
+      <td class="num rmut">${rpUSD(o.usd||0)}</td>
+      <td>${o.plan==='no'?'<span class="rbdg l">não</span>':'<span class="rbdg w">sim</span>'}</td>
+      <td>${ns?`📸 ${ns}`:(o.yt?'🎬':(o.img?'🖼':'—'))}</td>
+      <td class="wrap">${det?escHtml(det):'—'}</td></tr>`;
+  }).join('');
+  return `<section class="rsec">${rptSecHead(6,'Todas as operações','A lista completa, na ordem em que aconteceu.')}
+    <div class="rcard" style="padding:0;overflow:hidden;">
+      <table class="rtbl">
+        <thead><tr><th>#</th><th>Data/hora</th><th>Tipo</th><th>Resultado</th><th style="text-align:right">Valor</th>
+          <th style="text-align:right">USD</th><th>Plano</th><th>Mídia</th><th>Motivo / observações</th></tr></thead>
+        <tbody>${rows}</tbody>
+        <tfoot><tr><td colspan="4">${m.ops.length} operação(ões)</td>
+          <td class="num ${M.net>=0?'rpos':'rneg'}">${rpMoney(M.net)}</td><td colspan="4"></td></tr></tfoot>
+      </table>
+    </div>
+  </section>`;
+}
+function rptSectionCards(m,urls){
+  if(RPT.cardMode==='none'||!RPT.inc.cards) return '';
+  const list=RPT.cardMode==='all'?m.ops:m.ops.filter(o=>(o.shots||[]).length);
+  if(!list.length) return `<section class="rsec">${rptSecHead(7,'Fichas por operação','Nenhuma operação do período tem print anexado. Para anexar, abra a operação, edite e cole a imagem (Ctrl+V) no campo de prints.')}</section>`;
+  let shown=0;
+  const cards=list.map(o=>{
+    const ids=(o.shots||[]).filter(id=>urls.get(id));
+    const imgs=ids.map(id=>{
+      if(shown>=80) return '';
+      shown++;
+      return `<div class="rshot"><img src="${urls.get(id)}" alt="print da operação">
+        <div class="rshot-cap">${rpBR(o.date)} ${o.time||''} · ${escHtml(o.type||'')} · print ${shown}</div></div>`;
+    }).join('');
+    return `<div class="rop">
+      <div class="rop-h">
+        <span class="rop-d">${rpBR(o.date)}</span>
+        <span class="rmut" style="font-size:10.5px;">${o.time||''}</span>
+        ${rptResBadge(o.result)}
+        <span class="rop-v ${o.result==='WIN'?'rpos':o.result==='LOSS'?'rneg':'rmut'}">${o.result==='LOSS'?'-':'+'}${rpMoney(o.value)}</span>
+      </div>
+      <div class="rop-k">Tipo</div><div style="font-size:11px;font-weight:700;margin-bottom:6px;">${escHtml(o.type||'—')}${o.usd?` <span class="rmut" style="font-weight:400">· ${rpUSD(o.usd)}</span>`:''}</div>
+      ${o.reason?`<div class="rop-k">Motivo da entrada</div><div class="rop-x">${escHtml(o.reason)}</div>`:''}
+      ${o.notes?`<div class="rop-k">Observações</div><div class="rop-x">${escHtml(o.notes)}</div>`:''}
+      ${o.plan==='no'?'<div class="rop-k" style="color:var(--rneg)">⚠️ Não seguiu o plano</div>':''}
+      ${o.yt?`<div class="rop-k">Vídeo</div><div class="rop-x"><a href="${escHtml(o.yt)}" style="color:var(--racc)">${escHtml(o.yt)}</a></div>`:''}
+      ${imgs?`<div class="rop-k" style="margin-top:6px;">Prints (${ids.length})</div><div class="rshots ${RPT.shotSize==='full'?'one':''}">${imgs}</div>`:''}
+    </div>`;
+  }).join('');
+  return `<section class="rsec">${rptSecHead(7,'Fichas por operação',`${list.length} ficha(s)${RPT.cardMode==='withShots'?' — somente as operações com print anexado':''}, com motivo, observações e imagens.`)}
+    <div class="rops">${cards}</div>
+    ${shown>=80?`<div class="rnote" style="margin-top:9px;">Mostrando os 80 primeiros prints para o PDF não ficar pesado.</div>`:''}
+  </section>`;
+}
+function rptSectionGloss(m){
+  const M=m.M;
+  return `<section class="rsec">${rptSecHead(8,'Como ler este relatório','Um minuto de leitura para entender cada número acima.')}
+    <div class="rcard">
+      <dl class="rgloss">
+        <dt>Win rate (taxa de acerto)</dt><dd>De cada 100 operações <b>decididas</b> (wins + losses), quantas ganharam. Empates não entram na conta. No período: <b>${(M.wins+M.losses)?rpPct(M.winRate):'—'}</b>.</dd>
+        <dt>Profit factor</dt><dd>Todo o dinheiro ganho dividido por todo o dinheiro perdido. Acima de 1,00 o período foi lucrativo. No período: <b>${isFinite(M.pf)?rpNum(M.pf):'∞'}</b>.</dd>
+        <dt>Payoff</dt><dd>Ganho médio dividido pela perda média. Mostra se você ganha mais do que arrisca por operação. No período: <b>${M.avgLoss>0?rpNum(M.payoff):'—'}</b>.</dd>
+        <dt>Expectativa por operação</dt><dd>Resultado do período dividido pelo número de operações: quanto cada entrada rendeu, em média. No período: <b>${rpMoney(M.expectancy)}</b>.</dd>
+        <dt>Maior queda (drawdown)</dt><dd>A maior distância entre um pico do capital e o ponto mais baixo seguinte. É o "pior momento" que você teria de aguentar dentro do período. No período: <b>${rpMoney(M.maxDD)}</b> (${rpPct(M.maxDDpct)}).</dd>
+        <dt>Giro movimentado</dt><dd>Some o valor de todas as entradas do período — não é lucro, é o quanto passou pela conta. No período: <b>${rpMoney(M.volume)}</b>.</dd>
+        <dt>Capital no início / fim</dt><dd>Linha do tempo reconstruída: capital inicial cadastrado + resultado de todas as operações até o início do período; depois, o resultado do próprio período. Se você já ajustou o capital manualmente nas Configurações, o valor final cadastrado pode ser diferente (hoje: ${rpMoney(S.settings.currentCapital||0)}).</dd>
+        <dt>Empates</dt><dd>Operações sem WIN nem LOSS. Aparecem na contagem, mas não somam nem subtraem do resultado. No período: <b>${M.draws}</b>.</dd>
+      </dl>
+    </div>
+  </section>`;
+}
+function rptHTML(m,urls){
+  const inc=RPT.inc;
+  const secs=[];
+  if(inc.kpi)      secs.push(rptSectionKPI(m));
+  if(inc.compare)  secs.push(rptSectionCompare(m));
+  if(inc.charts)   secs.push(rptSectionCharts(m));
+  if(inc.daily)    secs.push(rptSectionDaily(m));
+  if(inc.insights) secs.push(rptSectionInsights(m));
+  if(inc.ops)      secs.push(rptSectionOps(m));
+  if(inc.cards)    secs.push(rptSectionCards(m,urls));
+  if(inc.gloss)    secs.push(rptSectionGloss(m));
+  if(!secs.filter(Boolean).length)
+    secs.push(`<section class="rsec">${rptSecHead('!','Nada selecionado','Marque pelo menos uma seção em “O que incluir” na página Relatório.')}</section>`);
+  const now=new Date();
+  return rptCover(m)+`<div class="rbody">
+    ${secs.filter(Boolean).join('')}
+    <div class="rfoot">
+      <span>Gerado por EdgeControl em ${now.toLocaleDateString('pt-BR')} às ${now.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</span>
+      <span>${escHtml(S.profile.name||'Trader')} · ${m.M.n} operação(ões) · ${escHtml(m.labelShort)}</span>
+    </div>
+  </div>`;
+}
+
+/* ══════════════════════════════════════════════════════════
+   GRÁFICOS DO RELATÓRIO
+══════════════════════════════════════════════════════════ */
+function rptPal(){return RPT_PAL[RPT.theme]||RPT_PAL.claro;}
+function rptDestroyCharts(){Object.keys(RCH).forEach(k=>{try{RCH[k].destroy();}catch(e){}delete RCH[k];});}
+function rptCharts(m){
+  if(typeof Chart==='undefined') return;
+  const p=rptPal(),M=m.M;
+  const base=()=>({responsive:true,maintainAspectRatio:false,animation:false,devicePixelRatio:Math.min(2.5,window.devicePixelRatio||1.5),
+    plugins:{legend:{display:false},tooltip:{backgroundColor:p.tip,borderColor:p.line,borderWidth:1,titleColor:p.ink,bodyColor:p.mut,padding:9,cornerRadius:9,displayColors:false,
+      titleFont:{family:'Inter',weight:'700',size:11},bodyFont:{family:'Inter',size:11}}}});
+  const axis=(extra)=>Object.assign({grid:{color:p.grid,drawBorder:false},ticks:{color:p.mut,font:{size:10,family:'Inter'}}},extra||{});
+  const el=id=>document.getElementById(id);
+  if(el('rch_eq')){
+    const labels=['Início',...M.days.map(d=>rpBRshort(d.date))];
+    const data=[M.capitalStart,...M.days.map(d=>d.cum)];
+    const up=data[data.length-1]>=data[0],col=up?p.pos:p.neg;
+    const ctx=el('rch_eq').getContext('2d');
+    const g=ctx.createLinearGradient(0,0,0,190);
+    g.addColorStop(0,up?'rgba(11,143,106,.30)':'rgba(216,27,74,.28)');
+    g.addColorStop(1,up?'rgba(11,143,106,0)':'rgba(216,27,74,0)');
+    RCH.eq=new Chart(ctx,{type:'line',data:{labels,datasets:[{data,borderColor:col,backgroundColor:g,borderWidth:2.4,fill:true,
+      tension:.35,pointRadius:data.length<=14?3:0,pointBackgroundColor:p.ink,pointBorderColor:col,pointBorderWidth:1.5}]},
+      options:{...base(),scales:{x:{display:false},y:{...axis(),ticks:{color:p.mut,font:{size:9,family:'Inter'},callback:v=>fmtS(v)}}}}});
+  }
+  if(el('rch_daily')){
+    const d=M.days;
+    RCH.daily=new Chart(el('rch_daily').getContext('2d'),{type:'bar',
+      data:{labels:d.map(x=>rpBRshort(x.date)),datasets:[{data:d.map(x=>x.net),
+        backgroundColor:d.map(x=>x.net>=0?p.pos:p.neg),borderRadius:5,borderSkipped:false}]},
+      options:{...base(),scales:{x:{grid:{display:false},ticks:{color:p.mut,font:{size:9,family:'Inter'}}},
+        y:{...axis(),ticks:{color:p.mut,font:{size:9,family:'Inter'},callback:v=>fmtS(v)}}}}});
+  }
+  if(el('rch_wr')){
+    const lbl=['Wins','Losses'],dat=[M.wins||0,M.losses||0],cols=[p.pos,p.neg];
+    if(M.draws){lbl.push('Empates');dat.push(M.draws);cols.push(p.mut);}
+    RCH.wr=new Chart(el('rch_wr').getContext('2d'),{type:'doughnut',
+      data:{labels:lbl,datasets:[{data:dat.map(v=>v||0.001),backgroundColor:cols,borderWidth:0,hoverOffset:4}]},
+      options:{...base(),cutout:'62%',plugins:{legend:{display:true,position:'right',labels:{color:p.mut,font:{size:11,family:'Inter'},boxWidth:9,usePointStyle:true,pointStyle:'circle'}},tooltip:base().plugins.tooltip}}});
+  }
+  const barNet=(canvasId,key,labels,vals,horiz)=>{
+    if(!el(canvasId)) return;
+    const cfg={...base(),scales:horiz?
+      {x:{...axis(),ticks:{color:p.mut,font:{size:9,family:'Inter'},callback:v=>fmtS(v)}},y:{grid:{display:false},ticks:{color:p.mut,font:{size:10,family:'Inter'}}}}:
+      {x:{grid:{display:false},ticks:{color:p.mut,font:{size:10,family:'Inter'}}},y:{...axis(),ticks:{color:p.mut,font:{size:9,family:'Inter'},callback:v=>fmtS(v)}}}};
+    RCH[key]=new Chart(el(canvasId).getContext('2d'),{type:'bar',
+      data:{labels,datasets:[{data:vals,backgroundColor:vals.map(v=>v>=0?p.pos:p.neg),borderRadius:5,borderSkipped:false}]},options:cfg});
+  };
+  barNet('rch_type','type',M.byType.map(t=>t.type),M.byType.map(t=>t.net),true);
+  barNet('rch_wd','wd',M.weekdays.map(w=>RPT_WDSHORT[w.i]),M.weekdays.map(w=>w.net));
+  barNet('rch_hour','hour',M.hours.map(h=>rpPad(h.h)+'h'),M.hours.map(h=>h.net));
+  if(el('rch_plan')){
+    RCH.plan=new Chart(el('rch_plan').getContext('2d'),{type:'bar',
+      data:{labels:['Seguiu o plano','Não seguiu'],datasets:[
+        {label:'Wins',data:[M.plan.yW,M.plan.nW],backgroundColor:p.pos,borderRadius:5,borderSkipped:false},
+        {label:'Losses',data:[M.plan.yL,M.plan.nL],backgroundColor:p.neg,borderRadius:5,borderSkipped:false}]},
+      options:{...base(),plugins:{legend:{display:true,labels:{color:p.mut,font:{size:10,family:'Inter'},boxWidth:9,usePointStyle:true,pointStyle:'circle'}},tooltip:base().plugins.tooltip},
+        scales:{x:{grid:{display:false},ticks:{color:p.mut,font:{size:10,family:'Inter'}}},y:{...axis(),ticks:{color:p.mut,font:{size:9,family:'Inter'}}}}}});
+  }
+}
+
+/* ══════════════════════════════════════════════════════════
+   VISUALIZADOR / EXPORTAÇÃO EM PDF
+══════════════════════════════════════════════════════════ */
+let RPTBUSY=false,RPTQUEUE=false,RPTVER=0;
+async function rptRender(){
+  if(RPTBUSY){RPTQUEUE=true;return;}          // já montando: remonta quando terminar
+  RPTBUSY=true;
+  const doc=document.getElementById('rdoc');
+  try{
+    doc.dataset.ready='';
+    doc.innerHTML='<div class="rload"><span class="rsp"></span> Montando o relatório…</div>';
+    const m=rptModel();
+    const urls=await rptShotURLs(m);
+    rptDestroyCharts();
+    doc.innerHTML=rptHTML(m,urls);
+    doc.dataset.ready='1';
+    rptCharts(m);
+    await rptWaitImages(doc);
+    const sub=document.getElementById('rbarSub');
+    if(sub) sub.textContent=`${m.labelShort} · ${m.M.n} operação(ões)${m.shotsCount?` · ${m.shotsCount} print(s)`:''}`;
+    RPTVER++;
+  }catch(e){
+    doc.innerHTML='<div class="rload">⚠️ Não foi possível montar o relatório: '+escHtml(e&&e.message?e.message:'erro desconhecido')+'</div>';
+  }finally{
+    RPTBUSY=false;
+    if(RPTQUEUE){RPTQUEUE=false;setTimeout(rptRender,0);}
+  }
+}
+async function rptRebuild(){ await rptRender(); toast('Relatório atualizado!','s'); }
+function rptBuildToolbarThemes(){
+  const w=document.getElementById('rbarThemes'); if(!w) return;
+  w.innerHTML=RPT_THEMES.map(t=>
+    `<button class="rth ${RPT.theme===t.id?'sel':''}" onclick="rptSetTheme('${t.id}')" title="Tema ${t.nm}">
+      <i style="background:linear-gradient(135deg,${t.sw[0]} 0 34%,${t.sw[1]} 34% 67%,${t.sw[2]} 67% 100%);"></i>${t.nm}</button>`).join('');
+}
+async function rptOpen(opts){
+  opts=opts||{};
+  rptLoadPage();          // garante que os controles existem (mesmo abrindo pelo atalho 📄)
+  rptReadForm();
+  const v=document.getElementById('rview');
+  v.dataset.rtheme=RPT.theme;
+  v.classList.add('show');
+  rptBuildToolbarThemes();
+  await rptRender();
+  if(opts.print) await rPrint();
+}
+function closeReportView(){
+  document.getElementById('rview').classList.remove('show');
+}
+async function rPrint(){
+  const doc=document.getElementById('rdoc');
+  if(!document.getElementById('rview').classList.contains('show')) await rptOpen();
+  if(!doc.dataset.ready) await rptRender();
+  await rptWaitImages(doc);
+  toast('Na tela de impressão, escolha “Salvar como PDF”.','w');
+  setTimeout(()=>{ try{ window.print(); }catch(e){ toast('Não foi possível abrir a impressão.','e'); } },250);
+}
+/* Ctrl+P dentro do app abre a impressão do relatório, não da interface */
+document.addEventListener('keydown',e=>{
+  if(!(e.ctrlKey||e.metaKey)||String(e.key).toLowerCase()!=='p') return;
+  if(document.getElementById('rview').classList.contains('show')) return;
+  e.preventDefault();
+  rptOpen({print:true});
+});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'&&document.getElementById('rview').classList.contains('show')) closeReportView();
+});
+
 /* ══════════════════════════════════════
    INIT
 ══════════════════════════════════════ */
 function init(){
   load();
+  rptInitFromState();
   applyTheme(S.theme||'default',{silent:true});
   applyProfUI();
   updateDash();
