@@ -1,0 +1,14 @@
+{
+  "name": "edgecontrol",
+  "version": "1.0.0",
+  "private": true,
+  "description": "EdgeControl - painel de operações em um único HTML. Testes de desenvolvimento (não fazem parte do app publicado).",
+  "scripts": {
+    "test": "node tests/test-core.js && node tests/test-dom.js",
+    "test:core": "node tests/test-core.js",
+    "test:dom": "node tests/test-dom.js"
+  },
+  "devDependencies": {
+    "jsdom": "^26.0.0"
+  }
+}
