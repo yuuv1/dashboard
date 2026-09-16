@@ -24,8 +24,8 @@
   --border:rgba(255,255,255,.62);
   --hair:rgba(23,27,51,.08);
   --white:#171b33;                          /* compat: agora = tinta principal */
-  --lgray:#6b7290;
-  --dim:#959bb8;
+  --lgray:#5c6382;   /* era #6b7290 — contraste 3.7:1, agora 4.6:1 */
+  --dim:#6f799a;   /* era #959bb8 — 2.1:1, agora 3.4:1 */
   --sh:0 8px 30px rgba(29,36,92,.10);
   --sh-lg:0 18px 50px rgba(29,36,92,.16);
   --alert-ink:#be123c;
@@ -479,6 +479,11 @@ input[type="file"].h{display:none!important;}
 
 /* ══ SELETOR DE TEMAS ══ */
 .theme-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.theme-group{grid-column:1/-1;display:flex;align-items:center;gap:7px;margin:2px 0 -2px;
+  font-size:9.5px;font-weight:800;letter-spacing:.9px;text-transform:uppercase;color:var(--dim);}
+.theme-group::after{content:'';flex:1;height:1px;background:var(--hair);}
+.theme-group em{font-style:normal;font-weight:700;letter-spacing:0;text-transform:none;color:var(--lgray);}
+.theme-group:not(:first-child){margin-top:6px;}
 .theme-btn{border:1px solid var(--border);background:var(--glass-2);border-radius:12px;padding:0;cursor:pointer;
   overflow:hidden;transition:all .18s;text-align:left;font-family:'Inter',sans-serif;box-shadow:0 2px 8px rgba(0,0,0,.06);}
 .theme-btn:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(0,0,0,.14);}
@@ -522,7 +527,7 @@ input[type="file"].h{display:none!important;}
 [data-theme="lemon"]{
   --sph-op:.12;--sheen:rgba(252,245,165,.16);--sheen-hi:rgba(252,245,165,.34);--sheen-op:.20;--sheen-spd:13s;--marble-spd:46s;
   --glass-inset:rgba(255,255,255,.06);
-  --surf:#8E8E86;
+  --surf:#55554E;
   --accent:#FCF5A5;--accent2:#E8DF7E;--cyan:#FFFACC;--teal:#D9D06A;
   --orange:#FCF5A5;--od:#DCD375;
   --green:#5BD48A;--red:#FF7A7A;--warn:#FFD24D;
@@ -606,7 +611,7 @@ input[type="file"].h{display:none!important;}
 [data-theme="peach"]{
   --sph-op:.13;--sheen:rgba(245,115,90,.16);--sheen-hi:rgba(255,190,170,.34);--sheen-op:.22;--sheen-spd:11s;--marble-spd:40s;
   --glass-inset:rgba(255,255,255,.06);
-  --surf:#8C8A88;
+  --surf:#221F1F;
   --accent:#F5735A;--accent2:#FF8D77;--cyan:#FFB3A1;--teal:#F5936F;
   --orange:#F5735A;--od:#D25A44;
   --green:#3ED9A0;--red:#FF6B6B;--warn:#FFB84D;
@@ -634,7 +639,7 @@ input[type="file"].h{display:none!important;}
 [data-theme="space"]{
   --sph-op:.12;--sheen:rgba(255,186,73,.18);--sheen-hi:rgba(255,215,140,.40);--sheen-op:.24;--sheen-spd:13s;--marble-spd:50s;
   --glass-inset:rgba(255,255,255,.07);
-  --surf:#9A98C0;
+  --surf:#2A2B54;
   --accent:#FFBA49;--accent2:#FFC96B;--cyan:#FFD98F;--teal:#F0A93A;
   --orange:#FFBA49;--od:#E09F2C;
   --green:#45D69B;--red:#FF7070;--warn:#FFBA49;
@@ -681,8 +686,8 @@ input[type="file"].h{display:none!important;}
   --hero-ink:#F5E4CF;--hero-sub:rgba(245,228,207,.76);--hero-lbl:rgba(245,228,207,.98);
   --hero-link:#F5E4CF;
   --hero-glow:radial-gradient(circle at 40% 40%,rgba(245,228,207,.24) 0%,rgba(94,143,232,.12) 45%,rgba(94,143,232,0) 72%);
-  --pos-bg:rgba(245,228,207,.26);--pos-fg:#F5E4CF;
-  --neg-bg:rgba(255,155,155,.26);--neg-fg:#FFC2C2;
+  --pos-bg:rgba(8,72,52,.62);--pos-fg:#B9F0D3;
+  --neg-bg:rgba(110,16,40,.62);--neg-fg:#FFC7CE;
   --bg-op:.24;--bg-blend:normal;--bg-blur:0px;
 }
 
@@ -692,7 +697,7 @@ input[type="file"].h{display:none!important;}
 [data-theme="emerald"]{
   --sph-op:.12;--sheen:rgba(52,231,167,.16);--sheen-hi:rgba(140,255,214,.34);--sheen-op:.22;--sheen-spd:12s;--marble-spd:44s;
   --glass-inset:rgba(255,255,255,.06);
-  --surf:#7E9A8E;
+  --surf:#16231E;
   --accent:#34E7A7;--accent2:#5BF0BC;--cyan:#8CFFD6;--teal:#22C98E;
   --orange:#34E7A7;--od:#1FB88A;
   --green:#34E7A7;--red:#FF6B6B;--warn:#FFC24D;
@@ -720,7 +725,7 @@ input[type="file"].h{display:none!important;}
 [data-theme="neon"]{
   --sph-op:.14;--sheen:rgba(255,45,190,.16);--sheen-hi:rgba(120,240,255,.32);--sheen-op:.24;--sheen-spd:10s;--marble-spd:42s;
   --glass-inset:rgba(255,255,255,.07);
-  --surf:#9A86AE;
+  --surf:#1E1233;
   --accent:#FF2DBE;--accent2:#C860FF;--cyan:#4DE8FF;--teal:#7A5CFF;
   --orange:#FF2DBE;--od:#D41E9C;
   --green:#3DE8B0;--red:#FF5C7A;--warn:#FFC24D;
@@ -748,7 +753,7 @@ input[type="file"].h{display:none!important;}
 [data-theme="arctic"]{
   --sph-op:.12;--sheen:rgba(90,220,255,.16);--sheen-hi:rgba(190,245,255,.36);--sheen-op:.22;--sheen-spd:14s;--marble-spd:50s;
   --glass-inset:rgba(255,255,255,.07);
-  --surf:#7C97A8;
+  --surf:#122029;
   --accent:#4FD6F5;--accent2:#7AE3FF;--cyan:#BDF3FF;--teal:#2FB6D9;
   --orange:#4FD6F5;--od:#31AFCE;
   --green:#3EE0A8;--red:#FF7086;--warn:#FFC24D;
@@ -778,7 +783,7 @@ input[type="file"].h{display:none!important;}
 [data-theme="obsidian"]{
   --sph-op:.09;--sheen:rgba(212,175,110,.14);--sheen-hi:rgba(240,215,160,.28);--sheen-op:.18;--sheen-spd:16s;--marble-spd:54s;
   --glass-inset:rgba(255,255,255,.05);
-  --surf:#8A8580;
+  --surf:#141311;
   --accent:#D9B871;--accent2:#EBD09A;--cyan:#F2E4C4;--teal:#BFA05C;
   --orange:#D9B871;--od:#B8985A;
   --green:#4ED9A4;--red:#FF6B6B;--warn:#E8B84D;
@@ -802,11 +807,118 @@ input[type="file"].h{display:none!important;}
   --bg-op:.40;--bg-blend:normal;--bg-blur:0px;
 }
 
+/* ── GRAPHITE · cinza chumbo neutro + aço fosco (dark sutil) ── */
+[data-theme="graphite"]{
+  --sph-op:.06;--sheen:rgba(255,255,255,.05);--sheen-hi:rgba(255,255,255,.09);--sheen-op:.10;--sheen-spd:24s;--marble-spd:64s;
+  --glass-inset:rgba(255,255,255,.045);
+  --surf:#22242A;
+  --accent:#7C8FA6;--accent2:#93A7BD;--cyan:#9FB4C9;--teal:#6E8497;
+  --orange:#7C8FA6;--od:#66788D;
+  --green:#4FA98A;--red:#C4696F;--warn:#C09A54;
+  --bg:#17181B;
+  --glass:rgba(34,36,42,.62);
+  --glass-2:rgba(40,43,50,.76);
+  --glass-3:rgba(47,51,59,.90);
+  --card:rgba(34,36,42,.64);
+  --navy:linear-gradient(150deg,#101114 0%,#191B20 55%,#23262D 100%);
+  --border:rgba(255,255,255,.10);
+  --hair:rgba(255,255,255,.07);
+  --white:#E7E9EC;--lgray:#A6ACB6;--dim:#7F868F;
+  --sh:0 8px 30px rgba(0,0,0,.55);
+  --sh-lg:0 18px 50px rgba(0,0,0,.68);
+  --alert-ink:#F0BABF;
+  --hero-ink:#DCE3EC;--hero-sub:rgba(200,210,224,.66);--hero-lbl:rgba(255,255,255,.96);
+  --hero-link:#9DB4CC;
+  --hero-glow:radial-gradient(circle at 40% 40%,rgba(124,143,166,.20) 0%,rgba(124,143,166,.05) 45%,rgba(124,143,166,0) 72%);
+  --pos-bg:rgba(79,169,138,.18);--pos-fg:#8FD3B6;
+  --neg-bg:rgba(196,105,111,.20);--neg-fg:#E9A6AB;
+  --bg-op:.34;--bg-blend:normal;--bg-blur:0px;
+}
+
+/* ── GUNMETAL · chumbo frio + âmbar seco (dark sutil) ── */
+[data-theme="gunmetal"]{
+  --sph-op:.06;--sheen:rgba(233,208,160,.05);--sheen-hi:rgba(240,222,186,.09);--sheen-op:.11;--sheen-spd:26s;--marble-spd:68s;
+  --glass-inset:rgba(255,255,255,.045);
+  --surf:#1F2226;
+  --accent:#A98A4E;--accent2:#C0A167;--cyan:#B9C0C6;--teal:#7E8B7C;
+  --orange:#A98A4E;--od:#8E7440;
+  --green:#5FA383;--red:#C26A66;--warn:#CBA55A;
+  --bg:#141619;
+  --glass:rgba(31,34,38,.62);
+  --glass-2:rgba(37,41,46,.76);
+  --glass-3:rgba(44,48,54,.90);
+  --card:rgba(31,34,38,.64);
+  --navy:linear-gradient(150deg,#0D0F11 0%,#16191C 55%,#1F2327 100%);
+  --border:rgba(233,208,160,.13);
+  --hair:rgba(255,255,255,.07);
+  --white:#E9E7E1;--lgray:#A9A7A0;--dim:#82807A;
+  --sh:0 8px 30px rgba(0,0,0,.56);
+  --sh-lg:0 18px 50px rgba(0,0,0,.70);
+  --alert-ink:#EFBDB4;
+  --hero-ink:#D8C7A4;--hero-sub:rgba(216,199,164,.66);--hero-lbl:rgba(255,255,255,.96);
+  --hero-link:#C0A167;
+  --hero-glow:radial-gradient(circle at 40% 40%,rgba(169,138,78,.20) 0%,rgba(169,138,78,.05) 45%,rgba(169,138,78,0) 72%);
+  --pos-bg:rgba(95,163,131,.18);--pos-fg:#96CBAD;
+  --neg-bg:rgba(194,106,102,.20);--neg-fg:#E5A9A5;
+  --bg-op:.34;--bg-blend:normal;--bg-blur:0px;
+}
+
+/* ── BASALT · preto mineral + jade fosco (dark sutil) ── */
+[data-theme="basalt"]{
+  --sph-op:.06;--sheen:rgba(180,220,205,.05);--sheen-hi:rgba(200,235,222,.09);--sheen-op:.10;--sheen-spd:22s;--marble-spd:60s;
+  --glass-inset:rgba(255,255,255,.045);
+  --surf:#1A1D1B;
+  --accent:#6FA08C;--accent2:#86B39F;--cyan:#8FA9A0;--teal:#6E8F82;
+  --orange:#6FA08C;--od:#5C8874;
+  --green:#5FA083;--red:#B9706A;--warn:#BE9A56;
+  --bg:#101211;
+  --glass:rgba(26,29,27,.62);
+  --glass-2:rgba(32,35,33,.76);
+  --glass-3:rgba(39,42,40,.90);
+  --card:rgba(26,29,27,.64);
+  --navy:linear-gradient(150deg,#0B0D0C 0%,#141715 55%,#1D201E 100%);
+  --border:rgba(180,220,205,.12);
+  --hair:rgba(255,255,255,.07);
+  --white:#E6E9E6;--lgray:#A4AAA5;--dim:#7D837E;
+  --sh:0 8px 30px rgba(0,0,0,.55);
+  --sh-lg:0 18px 50px rgba(0,0,0,.68);
+  --alert-ink:#EDBAB4;
+  --hero-ink:#CFE0D6;--hero-sub:rgba(207,224,214,.66);--hero-lbl:rgba(255,255,255,.96);
+  --hero-link:#86B39F;
+  --hero-glow:radial-gradient(circle at 40% 40%,rgba(111,160,140,.20) 0%,rgba(111,160,140,.05) 45%,rgba(111,160,140,0) 72%);
+  --pos-bg:rgba(95,160,131,.18);--pos-fg:#93C9AE;
+  --neg-bg:rgba(185,112,106,.20);--neg-fg:#DFA5A0;
+  --bg-op:.34;--bg-blend:normal;--bg-blur:0px;
+}
+
+/* fundo decorativo dos temas novos: esferas em tons de chumbo, bem discretas */
+[data-theme="graphite"] .sp1{background:radial-gradient(circle at 34% 30%,#39404A 0%,#23262C 55%,#14161A 100%);animation:silkA 30s ease-in-out infinite;}
+[data-theme="graphite"] .sp2{background:radial-gradient(circle at 36% 28%,#2E343D 0%,#1D2026 60%,#0F1114 100%);animation:silkB 34s ease-in-out infinite;}
+[data-theme="graphite"] .sp3{background:radial-gradient(circle at 34% 30%,#333A44 0%,#20242A 62%,#111318 100%);animation:silkA 27s ease-in-out infinite reverse;}
+[data-theme="graphite"] .sp4{background:radial-gradient(circle at 34% 30%,#8FA3B8 0%,#3A4351 76%);animation:twinkle 11s ease-in-out infinite;}
+[data-theme="graphite"] .g1{background:radial-gradient(circle,#7C8FA6 0%,rgba(124,143,166,0) 70%);opacity:.13;}
+[data-theme="graphite"] .g2{background:radial-gradient(circle,#2A2E36 0%,rgba(42,46,54,0) 70%);opacity:.30;}
+[data-theme="graphite"] .g3{background:radial-gradient(circle,#9FB4C9 0%,rgba(159,180,201,0) 70%);opacity:.09;}
+[data-theme="gunmetal"] .sp1{background:radial-gradient(circle at 34% 30%,#3A362C 0%,#23211C 55%,#131211 100%);animation:silkA 32s ease-in-out infinite;}
+[data-theme="gunmetal"] .sp2{background:radial-gradient(circle at 36% 28%,#2F2C24 0%,#1D1C18 60%,#0E0E0C 100%);animation:silkB 36s ease-in-out infinite;}
+[data-theme="gunmetal"] .sp3{background:radial-gradient(circle at 34% 30%,#34302A 0%,#201E1A 62%,#100F0E 100%);animation:silkA 29s ease-in-out infinite reverse;}
+[data-theme="gunmetal"] .sp4{background:radial-gradient(circle at 34% 30%,#C0A167 0%,#4A422F 77%);animation:twinkle 12s ease-in-out infinite;}
+[data-theme="gunmetal"] .g1{background:radial-gradient(circle,#A98A4E 0%,rgba(169,138,78,0) 70%);opacity:.13;}
+[data-theme="gunmetal"] .g2{background:radial-gradient(circle,#2A2823 0%,rgba(42,40,35,0) 70%);opacity:.30;}
+[data-theme="gunmetal"] .g3{background:radial-gradient(circle,#C0A167 0%,rgba(192,161,103,0) 70%);opacity:.09;}
+[data-theme="basalt"] .sp1{background:radial-gradient(circle at 34% 30%,#2F3A35 0%,#1D2320 55%,#111412 100%);animation:silkA 28s ease-in-out infinite;}
+[data-theme="basalt"] .sp2{background:radial-gradient(circle at 36% 28%,#28312D 0%,#191E1B 60%,#0C0F0D 100%);animation:silkB 32s ease-in-out infinite;}
+[data-theme="basalt"] .sp3{background:radial-gradient(circle at 34% 30%,#2C3531 0%,#1B211E 62%,#0E110F 100%);animation:silkA 26s ease-in-out infinite reverse;}
+[data-theme="basalt"] .sp4{background:radial-gradient(circle at 34% 30%,#86B39F 0%,#33463E 76%);animation:twinkle 10.5s ease-in-out infinite;}
+[data-theme="basalt"] .g1{background:radial-gradient(circle,#6FA08C 0%,rgba(111,160,140,0) 70%);opacity:.13;}
+[data-theme="basalt"] .g2{background:radial-gradient(circle,#232A27 0%,rgba(35,42,39,0) 70%);opacity:.30;}
+[data-theme="basalt"] .g3{background:radial-gradient(circle,#8FA9A0 0%,rgba(143,169,160,0) 70%);opacity:.09;}
+
 /* ── CRIMSON · preto absoluto + vermelho lava ── */
 [data-theme="crimson"]{
   --sph-op:.12;--sheen:rgba(255,60,60,.16);--sheen-hi:rgba(255,140,110,.32);--sheen-op:.22;--sheen-spd:9s;--marble-spd:38s;
   --glass-inset:rgba(255,255,255,.05);
-  --surf:#8E7A78;
+  --surf:#1A0F0E;
   --accent:#FF3B30;--accent2:#FF6B52;--cyan:#FFA48F;--teal:#E02C22;
   --orange:#FF3B30;--od:#D42A20;
   --green:#3EE08C;--red:#FF9F1C;--warn:#FFC94D;
@@ -1939,20 +2051,30 @@ const BG={
 /* ══════════════════════════════════════
    TEMAS
 ══════════════════════════════════════ */
+/* dark:true marca os temas escuros — a grade do app separa claro/escuro e o
+   relatório usa isso para o modo "Automático" (segue o painel). */
 const THEMES=[
-  {id:'default',   name:'Indigo',     sub:'padrão',      sw:['#dfe3f2','var(--accent)','var(--cyan)'], metal:'platinum'},
-  {id:'lemon',     name:'Asphalt',    sub:'lemon',       sw:['#434345','#FCF5A5','#8A8340'], metal:'gold'},
-  {id:'buttermilk',name:'Buttermilk', sub:'midnight',    sw:['#FFF2BA','#0F3C65','#7bb8e8'], metal:'gold'},
-  {id:'berry',     name:'Acid Berry', sub:'frost smoke', sw:['#F2F2F2','#961B2B','#d98c96'], metal:'silver'},
-  {id:'peach',     name:'Peach',      sub:'covert',      sw:['#F5735A','#141414','#ffb3a1'], metal:'copper'},
-  {id:'space',     name:'Space Cadet',sub:'xanthous',    sw:['#1F2041','#FFBA49','#ffd88a'], metal:'gold'},
-  {id:'denim',     name:'Denim',      sub:'givry',       sw:['#F5E4CF','#275CCC','#7aa0f0'], metal:'platinum'},
-  {id:'emerald',   name:'Emerald',    sub:'onyx',        sw:['#0D1512','#34E7A7','#8CFFD6'], metal:'emerald'},
-  {id:'neon',      name:'Neon',       sub:'synthwave',   sw:['#120A1C','#FF2DBE','#4DE8FF'], metal:'neon'},
-  {id:'arctic',    name:'Arctic',     sub:'glacier',     sw:['#0A151C','#4FD6F5','#BDF3FF'], metal:'silver'},
-  {id:'obsidian',  name:'Obsidian',   sub:'black gold',  sw:['#050505','#D9B871','#EBD09A'], metal:'gold'},
-  {id:'crimson',   name:'Crimson',    sub:'lava',        sw:['#070404','#FF3B30','#FFA48F'], metal:'crimson'},
+  /* ── claros ── */
+  {id:'default',   name:'Indigo',     sub:'padrão',      sw:['#dfe3f2','#4f46e5','#22d3ee'], metal:'platinum', dark:false},
+  {id:'buttermilk',name:'Buttermilk', sub:'midnight',    sw:['#FFF2BA','#0F3C65','#7bb8e8'], metal:'gold',     dark:false},
+  {id:'berry',     name:'Acid Berry', sub:'frost smoke', sw:['#F2F2F2','#961B2B','#d98c96'], metal:'silver',   dark:false},
+  {id:'denim',     name:'Denim',      sub:'givry',       sw:['#F5E4CF','#275CCC','#7aa0f0'], metal:'platinum', dark:false},
+  /* ── escuros discretos (chumbo) ── */
+  {id:'graphite',  name:'Graphite',   sub:'aço fosco',   sw:['#17181B','#7C8FA6','#3A414B'], metal:'chrome',   dark:true},
+  {id:'gunmetal',  name:'Gunmetal',   sub:'âmbar seco',  sw:['#141619','#A98A4E','#2A2E34'], metal:'copper',   dark:true},
+  {id:'basalt',    name:'Basalt',     sub:'jade fosco',  sw:['#101211','#6FA08C','#7E9488'], metal:'silver',   dark:true},
+  {id:'obsidian',  name:'Obsidian',   sub:'black gold',  sw:['#050505','#D9B871','#EBD09A'], metal:'gold',     dark:true},
+  {id:'crimson',   name:'Crimson',    sub:'lava',        sw:['#070404','#FF3B30','#FFA48F'], metal:'crimson',  dark:true},
+  /* ── escuros vibrantes ── */
+  {id:'arctic', vivid:true,    name:'Arctic',     sub:'glacier',     sw:['#0A151C','#4FD6F5','#BDF3FF'], metal:'silver',   dark:true},
+  {id:'emerald', vivid:true,   name:'Emerald',    sub:'onyx',        sw:['#0D1512','#34E7A7','#8CFFD6'], metal:'emerald',  dark:true},
+  {id:'neon', vivid:true,      name:'Neon',       sub:'synthwave',   sw:['#120A1C','#FF2DBE','#4DE8FF'], metal:'neon',     dark:true},
+  {id:'lemon', vivid:true,     name:'Asphalt',    sub:'lemon',       sw:['#434345','#FCF5A5','#8A8340'], metal:'gold',     dark:true},
+  {id:'peach', vivid:true,     name:'Peach',      sub:'covert',      sw:['#F5735A','#141414','#ffb3a1'], metal:'copper',   dark:true},
+  {id:'space', vivid:true,     name:'Space Cadet',sub:'xanthous',    sw:['#1F2041','#FFBA49','#ffd88a'], metal:'gold',     dark:true},
 ];
+/* tema escuro? (usado pela grade e pelo modo automático do relatório) */
+function isDarkTheme(id){ const t=THEMES.find(x=>x.id===id); return !!(t&&t.dark); }
 
 function applyTheme(id,{silent=false}={}){
   const t=THEMES.find(x=>x.id===id)||THEMES[0];
@@ -1964,6 +2086,7 @@ function applyTheme(id,{silent=false}={}){
   const mt=document.querySelector('meta[name="theme-color"]');
   if(mt) mt.setAttribute('content',getComputedStyle(document.documentElement).getPropertyValue('--bg').trim()||'#dfe3f2');
   syncPalette();                       // gráficos seguem o tema
+  if(typeof rptApplyTheme==='function') rptApplyTheme();   // relatório em "Automático" acompanha
   if(window.buildManifest) buildManifest();
   buildThemeGrid();
   if(!silent){
@@ -1981,11 +2104,19 @@ function applyBg(){
 function buildThemeGrid(){
   const g=document.getElementById('themeGrid');
   if(!g) return;
-  g.innerHTML=THEMES.map(t=>`
-    <button class="theme-btn ${S.theme===t.id?'sel':''}" onclick="pickTheme('${t.id}')" title="${t.name}">
+  const cartao=t=>`
+    <button class="theme-btn ${S.theme===t.id?'sel':''}" onclick="pickTheme('${t.id}')" title="${t.name} — ${t.sub}">
       <span class="theme-sw">${t.sw.map(c=>`<i style="background:${c}"></i>`).join('')}</span>
       <span class="theme-nm">${t.name}<em>${t.sub}</em></span>
-    </button>`).join('');
+    </button>`;
+  const grupos=[
+    ['Claros', THEMES.filter(t=>!t.dark)],
+    ['Escuros discretos', THEMES.filter(t=>t.dark&&!t.vivid)],
+    ['Escuros vibrantes', THEMES.filter(t=>t.dark&&t.vivid)]
+  ].filter(([,l])=>l.length);
+  g.innerHTML=grupos.map(([titulo,lista])=>
+    `<div class="theme-group">${titulo}<em>${lista.length}</em></div>`+lista.map(cartao).join('')
+  ).join('');
 }
 function pickTheme(id){
   const t=THEMES.find(x=>x.id===id);
@@ -3239,6 +3370,7 @@ window.addEventListener('appinstalled',()=>{
 ═══════════════════════════════════════════════════════════ */
 /*RPT-CORE-START*/
 const RPT_THEMES=[
+  {id:'auto',  nm:'Automático', sub:'segue o painel', sw:['#e7e9ec','#7c8fa6','#17181b']},
   {id:'claro', nm:'Claro',  sw:['#ffffff','#4f46e5','#0b8f6a']},
   {id:'escuro',nm:'Escuro', sw:['#121722','#9aa6ff','#37d39b']},
   {id:'papel', nm:'Papel',  sw:['#ffffff','#2f2f2f','#a41f2c']},
@@ -3617,7 +3749,7 @@ function rptSetCustom(){
 function rptSetTheme(id){
   RPT.theme=RPT_THEMES.some(t=>t.id===id)?id:'claro';
   rptSave(); rptBuildThemes(); rptBuildToolbarThemes();
-  const v=document.getElementById('rview'); if(v) v.dataset.rtheme=RPT.theme;
+  rptApplyTheme();
   if(document.getElementById('rview').classList.contains('show')) rptRebuild();
 }
 function rptSyncInfo(){
@@ -3918,7 +4050,16 @@ function rptHTML(m,urls){
 /* ══════════════════════════════════════════════════════════
    GRÁFICOS DO RELATÓRIO
 ══════════════════════════════════════════════════════════ */
-function rptPal(){return RPT_PAL[RPT.theme]||RPT_PAL.claro;}
+/* tema efetivo do relatório: "auto" acompanha o painel (escuro → escuro) */
+function rptResolvedTheme(){
+  if(RPT.theme!=='auto') return RPT.theme;
+  return isDarkTheme(S.theme)?'escuro':'claro';
+}
+function rptApplyTheme(){
+  const v=document.getElementById('rview');
+  if(v) v.dataset.rtheme=rptResolvedTheme();
+}
+function rptPal(){const t=rptResolvedTheme();return RPT_PAL[t]||RPT_PAL.claro;}
 function rptDestroyCharts(){Object.keys(RCH).forEach(k=>{try{RCH[k].destroy();}catch(e){}delete RCH[k];});}
 function rptCharts(m){
   if(typeof Chart==='undefined') return;
@@ -4008,7 +4149,7 @@ async function rptRebuild(){ await rptRender(); toast('Relatório atualizado!','
 function rptBuildToolbarThemes(){
   const w=document.getElementById('rbarThemes'); if(!w) return;
   w.innerHTML=RPT_THEMES.map(t=>
-    `<button class="rth ${RPT.theme===t.id?'sel':''}" onclick="rptSetTheme('${t.id}')" title="Tema ${t.nm}">
+    `<button class="rth ${RPT.theme===t.id?'sel':''}" onclick="rptSetTheme('${t.id}')" title="Tema ${t.nm}${t.sub?' — '+t.sub:''}">
       <i style="background:linear-gradient(135deg,${t.sw[0]} 0 34%,${t.sw[1]} 34% 67%,${t.sw[2]} 67% 100%);"></i><span class="rth-n">${t.nm}</span></button>`).join('');
 }
 async function rptOpen(opts){
@@ -4016,8 +4157,8 @@ async function rptOpen(opts){
   rptLoadPage();          // garante que os controles existem (mesmo abrindo pelo atalho 📄)
   rptReadForm();
   const v=document.getElementById('rview');
-  v.dataset.rtheme=RPT.theme;
   v.classList.add('show');
+  rptApplyTheme();
   document.body.classList.add('rpt-open');
   try{ if(typeof closeShotViewer==='function') closeShotViewer(); }catch(e){}
   rptBuildToolbarThemes();

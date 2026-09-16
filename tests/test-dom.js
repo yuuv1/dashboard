@@ -85,7 +85,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   w.nav('report', d.getElementById('navReport'));
   ok(d.getElementById('page-report').classList.contains('active'), 'navegação abre a página Relatório');
   ok(d.querySelectorAll('#rpChips .rchip').length >= 7, 'chips de período montados', String(d.querySelectorAll('#rpChips .rchip').length));
-  ok(d.querySelectorAll('#rpThemeRow .rsw-b').length === 4, '4 temas de relatório');
+  ok(d.querySelectorAll('#rpThemeRow .rsw-b').length === 5, '5 temas de relatório (inclui Automático)', String(d.querySelectorAll('#rpThemeRow .rsw-b').length));
   ok(d.querySelectorAll('#rpOpts input').length === 8, '8 seções para marcar');
   // o padrão é "Este mês": o backup termina em 03/09/2026, então setembro tem 5 operações
   ok(ev('RPT.preset') === 'mes', 'período padrão é "Este mês"');
@@ -112,6 +112,31 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 
   const secs = d.querySelectorAll('#rdoc .rsec');
   ok(secs.length === 8, '8 seções montadas', String(secs.length));
+
+  /* ── temas do painel: grade agrupada e temas chumbo ── */
+  const grupos = [...d.querySelectorAll('#themeGrid .theme-group')].map(x => x.textContent.replace(/\d+$/, '').trim());
+  ok(grupos.length === 3, 'grade de temas em 3 seções', grupos.join(' | '));
+  ok(grupos.some(g => /Claros/.test(g)) && grupos.some(g => /Escuros discretos/.test(g)) && grupos.some(g => /Escuros vibrantes/.test(g)),
+     'seções Claro / Escuro discreto / Escuro vibrante');
+  ok(d.querySelectorAll('#themeGrid .theme-btn').length === 15, '15 temas na grade', String(d.querySelectorAll('#themeGrid .theme-btn').length));
+  w.pickTheme('graphite');
+  ok(ev('S.theme') === 'graphite', 'tema Graphite aplicado');
+  ok(d.documentElement.getAttribute('data-theme') === 'graphite', 'atributo data-theme no <html>');
+  ok(ev('isDarkTheme("graphite") === true && isDarkTheme("denim") === false'), 'classificação claro/escuro correta');
+  ok(!!d.querySelector('#themeGrid .theme-btn.sel'), 'tema atual marcado na grade');
+  /* relatório em Automático acompanha o painel */
+  w.rptSetTheme('auto');
+  await fresh(() => w.rptRender());
+  ok(d.getElementById('rview').dataset.rtheme === 'escuro', 'relatório "Automático" + painel escuro → tema escuro',
+     d.getElementById('rview').dataset.rtheme);
+  w.pickTheme('denim');
+  await sleep(120);
+  ok(d.getElementById('rview').dataset.rtheme === 'claro', 'trocar o painel para claro muda o relatório automático',
+     d.getElementById('rview').dataset.rtheme);
+  w.pickTheme('graphite');
+  w.rptSetTheme('claro');
+  await fresh(() => w.rptRender());
+  ok(d.getElementById('rview').dataset.rtheme === 'claro', 'tema fixo do relatório ignora o painel');
 
   /* ── tabelas: invólucro rolável + classes de coluna (correção de recorte) ── */
   const wraps = () => d.querySelectorAll('#rdoc .rtbl-wrap');
@@ -194,7 +219,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   ok(!d.getElementById('rview').classList.contains('show'), 'overlay fechado');
   ok(!d.body.classList.contains('rpt-open'), 'body destravado ao fechar');
   w.rptOpen();
-  ok(ev('RPT.theme') === 'papel', 'tema do relatório persistido entre aberturas');
+  ok(ev('RPT.theme') === 'papel', 'tema do relatório persistido entre aberturas', ev('RPT.theme'));
   const key = (k, o) => d.dispatchEvent(new w.KeyboardEvent('keydown', Object.assign({ key: k, bubbles: true, cancelable: true }, o || {})));
   key('Escape');
   ok(!d.getElementById('rview').classList.contains('show'), 'Escape fecha o relatório');
