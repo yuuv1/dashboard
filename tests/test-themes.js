@@ -159,6 +159,72 @@ for (const id of Object.keys(blocosContraste)) {
   ok(c >= 3, `${id}: dicas (--dim) ≥ 3:1 sobre o fundo`, c.toFixed(2));
 }
 
+/* ── 4d. REGRA DE SEMÂNTICA: win = frio/verde · loss = quente/vermelho ──
+   Tokens que pintam resultado:
+     WIN  → --green (texto/série), --teal (série "Wins" dos gráficos),
+            --pos-fg / --pos-bg (selo de resultado)
+     LOSS → --red, --neg-fg / --neg-bg
+   Critério de matiz: frio = 85°–215° (verde/ciano/azul), quente = ≥330° ou ≤55°.
+   Exceção: cor quase neutra (saturação < 12%) não conta matiz. */
+const matiz = cor => {
+  const h = hex(cor);
+  if (!h) return null;
+  const r = h[0] / 255, g = h[1] / 255, b = h[2] / 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b), d = max - min;
+  const l = (max + min) / 2;
+  const s = d === 0 ? 0 : d / (1 - Math.abs(2 * l - 1));
+  let hh = 0;
+  if (d !== 0) {
+    if (max === r) hh = 60 * (((g - b) / d) % 6);
+    else if (max === g) hh = 60 * ((b - r) / d + 2);
+    else hh = 60 * ((r - g) / d + 4);
+  }
+  return { h: (hh + 360) % 360, s: s * 100 };
+};
+const FAMILIA = { frio: 'FRIO (verde/ciano/azul)', quente: 'QUENTE (vermelho/laranja)' };
+const corDaFamilia = (cor, qual) => {
+  const m = matiz(cor);
+  if (!m) return { ok: false, motivo: 'cor inválida ' + cor };
+  if (m.s < 12) return { ok: false, motivo: `neutra (${cor}) — sem matiz` };
+  const frio = m.h >= 85 && m.h <= 215;
+  const quente = m.h >= 330 || m.h <= 55;
+  const ok = qual === 'frio' ? frio : quente;
+  return { ok, motivo: `${cor} h=${m.h.toFixed(0)}° s=${m.s.toFixed(0)}% ${ok ? '' : '(esperado ' + FAMILIA[qual] + ')'}` };
+};
+const TOKENS_WIN = ['--green', '--teal', '--pos-fg', '--pos-bg'];
+const TOKENS_LOSS = ['--red', '--neg-fg', '--neg-bg'];
+const corDoToken = (bloco, tok) => {
+  const v = valor(bloco, tok) || '';
+  if (v.startsWith('rgba') || v.startsWith('rgb')) {
+    const r = (v.match(/\(([^)]+)\)/) || [])[1];
+    return r ? '#' + r.split(',').slice(0, 3).map(x => (+x.trim()).toString(16).padStart(2, '0')).join('') : null;
+  }
+  return v.split(' ')[0];
+};
+for (const id of Object.keys(temasCSS)) {
+  const b = temasCSS[id];
+  for (const tok of TOKENS_WIN) {
+    const c = corDaFamilia(corDoToken(b, tok), 'frio');
+    ok(c.ok, `${id}: ${tok} (win) em cor fria`, c.motivo);
+  }
+  for (const tok of TOKENS_LOSS) {
+    const c = corDaFamilia(corDoToken(b, tok), 'quente');
+    ok(c.ok, `${id}: ${tok} (loss) em cor quente`, c.motivo);
+  }
+  /* win e loss não podem ser confundíveis: matizes bem separados */
+  const ag = matiz(corDoToken(b, '--green')), ar = matiz(corDoToken(b, '--red'));
+  const dist = Math.min(Math.abs(ag.h - ar.h), 360 - Math.abs(ag.h - ar.h));
+  ok(dist >= 60, `${id}: verde e vermelho bem distantes (${dist.toFixed(0)}°)`, dist.toFixed(0) + '°');
+}
+
+/* relatório: pos/neg também seguem a regra */
+for (const m of src.matchAll(/(\w+)\s*:\{[^}]*pos:'(#[0-9a-f]{6})'[^}]*neg:'(#[0-9a-f]{6})'/g)) {
+  const [, nome, pos, neg] = m;
+  const cp = corDaFamilia(pos, 'frio'), cn = corDaFamilia(neg, 'quente');
+  ok(cp.ok, `relatório ${nome}: pos (win) frio`, cp.motivo);
+  ok(cn.ok, `relatório ${nome}: neg (loss) quente`, cn.motivo);
+}
+
 /* ── 5. fundo decorativo por tema (esferas e glows) ───────────── */
 const semDecor = [];
 for (const id of Object.keys(temasCSS)) {
