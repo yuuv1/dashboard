@@ -4,9 +4,10 @@
   "private": true,
   "description": "EdgeControl - painel de operações em um único HTML. Testes de desenvolvimento (não fazem parte do app publicado).",
   "scripts": {
-    "test": "node tests/test-core.js && node tests/test-dom.js",
+    "test": "node tests/test-core.js && node tests/test-dom.js && node tests/test-print-css.js",
     "test:core": "node tests/test-core.js",
-    "test:dom": "node tests/test-dom.js"
+    "test:dom": "node tests/test-dom.js",
+    "test:print": "node tests/test-print-css.js"
   },
   "devDependencies": {
     "jsdom": "^26.0.0"

@@ -1145,7 +1145,9 @@ body.rpt-open{overflow:hidden;}
    Todo o app sai de cena: imprime apenas a folha do relatório.
 ══════════════════════════════════════════════════════════ */
 @media print{
-  @page{size:A4;margin:11mm 10mm;}
+  /* margem da folha + respiro interno = área segura de ~13mm em cada lado.
+     Com "Margens: Nenhuma" no diálogo, os 7mm internos ainda protegem o conteúdo. */
+  @page{size:A4;margin:6mm;}
   html,body{width:auto!important;height:auto!important;overflow:visible!important;background:#fff!important;font-size:12px;}
   #bg,#app,#fab,.mol,#shotViewer,.pwa-bar,#ecT{display:none!important;}
   #rview:not(.show){display:none!important;}   /* Ctrl+P fora do relatório não imprime folha velha */
@@ -1157,10 +1159,10 @@ body.rpt-open{overflow:hidden;}
   /* as cores do tema escolhido saem no PDF mesmo sem "gráficos de fundo" */
   #rview,#rview *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}
   /* folha: sem recorte e sem cantos arredondados */
-  .rpage{max-width:none!important;width:auto!important;box-shadow:none!important;border-radius:0!important;padding-bottom:0!important;
+  .rpage{max-width:none!important;width:auto!important;box-shadow:none!important;border-radius:0!important;padding-bottom:8mm!important;
     background:var(--rpaper)!important;overflow:visible!important;}
-  .rcov{border-radius:0!important;padding:14px 0 12px!important;}
-  .rbody{padding:0!important;}
+  .rcov{border-radius:0!important;padding:12mm 7mm 10mm!important;}
+  .rbody{padding:0 7mm!important;}
   .rsec{margin-top:13px!important;}
   .rsec-h{break-inside:avoid;page-break-inside:avoid;break-after:avoid;page-break-after:avoid;}
   .rcard,.rkpi,.rop,.rins-i,.rnote,.rshot,.rgloss dt,.rgloss dd,.rfoot{break-inside:avoid;page-break-inside:avoid;}
@@ -1216,6 +1218,8 @@ body.rpt-open{overflow:hidden;}
   .rshot img{max-height:92mm!important;width:auto!important;max-width:100%!important;margin:0 auto;}
   .rshots.one img{max-height:145mm!important;}
   #rview[data-rtheme="escuro"]{background:#080b12!important;}
+  /* a faixa de 6mm da @page fica só para cabeçalho/rodapé do navegador (se ligados) */
+  .rfoot{padding-bottom:2mm!important;}
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -1749,9 +1753,10 @@ body.rpt-open{overflow:hidden;}
             <div class="rp-info" style="font-size:11px;">
               <b>1.</b> Toque em <b>Baixar PDF</b> — abre a tela de impressão do aparelho.<br>
               <b>2.</b> Em <b>Destino / Impressora</b>, escolha <b>“Salvar como PDF”</b>.<br>
-              <b>3.</b> Papel <b>A4</b> e marque <b>“Gráficos de fundo”</b> para o tema escuro sair colorido.<br>
-              <b>4.</b> Celular: Chrome → ⋮ → <b>Compartilhar</b> → <b>Imprimir</b>; iPhone: Safari → <b>Compartilhar</b> → <b>Imprimir</b>.<br>
-              <b>5.</b> Quer a folha limpa? Desligue “Cabeçalhos e rodapés”.
+              <b>3.</b> Papel <b>A4</b> · <b>Margens: Padrão</b> · marque <b>“Gráficos de fundo”</b> (sem isso o tema escuro sai sem as cores).<br>
+              <b>4.</b> Desligue <b>“Cabeçalhos e rodapés”</b> para a folha sair limpa.<br>
+              <b>5.</b> Celular: Chrome → ⋮ → <b>Compartilhar</b> → <b>Imprimir</b>; iPhone: Safari → <b>Compartilhar</b> → <b>Imprimir</b>.<br>
+              <b>6.</b> Para gastar menos tinta, use os temas <b>Claro</b> ou <b>Papel</b> no PDF.
             </div>
           </div>
         </div>
