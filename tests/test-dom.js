@@ -39,7 +39,12 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
       });
       w.HTMLCanvasElement.prototype.getContext = () => ctx;
       // Chart.js não é carregado (CDN bloqueada): dublê mínimo
-      w.Chart = class { constructor(){ this.destroy = () => {}; } destroy(){} };
+      w.Chart = class {
+        constructor(ctx, cfg){ this.ctx = ctx; this.config = cfg || {}; }
+        get data(){ return this.config.data || {}; }
+        get options(){ return this.config.options || {}; }
+        destroy(){} update(){} resize(){} reset(){}
+      };
       w.Chart.defaults = {};
       w.URL.createObjectURL = () => 'blob:mock';
       w.URL.revokeObjectURL = () => {};
@@ -112,6 +117,108 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 
   const secs = d.querySelectorAll('#rdoc .rsec');
   ok(secs.length === 8, '8 seções montadas', String(secs.length));
+
+  /* ── gráficos avançados dentro do relatório ── */
+  const rids=['rch_dd','rch_seq','rch_scat','rch_buck'];
+  ok(rids.every(id=>d.getElementById(id)), 'relatório tem os canvas dos gráficos avançados',
+     rids.filter(id=>!d.getElementById(id)).join(','));
+  ok(/Maior queda:/.test(d.getElementById('rch_dd_note').textContent), 'relatório: nota do drawdown');
+  ok(/média/.test(d.getElementById('rch_seq_note').textContent), 'relatório: nota da sequência de entradas',
+     d.getElementById('rch_seq_note').textContent.slice(0,58));
+  ok(/Correlação/.test(d.getElementById('rch_scat_note').textContent), 'relatório: nota da dispersão');
+  ok(/Melhor faixa:/.test(d.getElementById('rch_buck_note').textContent), 'relatório: nota das faixas de valor');
+  ok(d.querySelectorAll('#rch_cal .cal-d').length>=35, 'relatório: calendário de resultados montado',
+     String(d.querySelectorAll('#rch_cal .cal-d').length));
+  ok(d.querySelectorAll('#rch_cal .cal-d.op').length===24, 'relatório: calendário marca os 24 dias operados',
+     String(d.querySelectorAll('#rch_cal .cal-d.op').length));
+  ok(ev("Object.keys(RCH).filter(k=>['dd','seq','scat','buck'].indexOf(k)>=0).length===4"),
+     'relatório: os 4 gráficos em canvas desenhados',
+     ev("Object.keys(RCH).join(',')"));
+  ok(ev("(()=>{const c=RCH.dd;return c.data.datasets[0].borderColor===rptPal().neg;})()"),
+     'relatório: drawdown na cor de loss do tema do relatório');
+  ok(ev("(()=>{const b=RCH.buck.data.datasets[0].backgroundColor;return b.length===4&&b.every(c=>/rgba|#/.test(c));})()"),
+     'relatório: faixas coloridas por sinal');
+
+  /* ── BUG CORRIGIDO: a meta do dia não pode fugir quando o capital sobe ──
+     Cenário do usuário: capital no início do dia 500, stop 8% → R$ 40,
+     meta 12% → R$ 60. Lançar o WIN de 60 leva o capital a 560; a meta e o stop
+     têm de continuar ancorados no capital de INÍCIO do dia (500). */
+  ev(`S.settings.initialCapital=500;S.settings.currentCapital=500;S.settings.stopLoss=8;
+      S.settings.target=12;S.operations=[];`);
+  w.updateDash();
+  const tHoje = new Date().toISOString().slice(0, 10);
+  ok(d.getElementById('dashTgt').textContent.includes('60,00'), 'meta do dia = 12% do capital inicial do dia (R$ 60)',
+     d.getElementById('dashTgt').textContent);
+  ok(d.getElementById('dashStop').textContent.includes('40,00'), 'stop do dia = 8% do capital inicial do dia (R$ 40)',
+     d.getElementById('dashStop').textContent);
+  /* lança o WIN de 60 (como o app faz: capital sobe junto) */
+  ev("S.operations.push({id:'t1',date:" + JSON.stringify(tHoje) + ",time:'09:00',value:60,result:'WIN',type:'EUR/USD',plan:'yes',usd:12});S.settings.currentCapital=560;");
+  w.updateDash();
+  ok(d.getElementById('dashTgt').textContent.includes('60,00'),
+     'meta continua R$ 60 depois do ganho (não pula para R$ 67,20)', d.getElementById('dashTgt').textContent);
+  ok(/Target atingido/i.test(d.getElementById('alertBar').textContent),
+     'app reconhece a meta batida', d.getElementById('alertBar').textContent.slice(0, 40));
+  ok(d.getElementById('tgtPct').textContent === '100%', 'progresso da meta em 100%', d.getElementById('tgtPct').textContent);
+  ok(/500,00/.test(d.getElementById('dayAnchor').textContent), 'rótulo mostra o capital do início do dia',
+     d.getElementById('dayAnchor').textContent);
+  /* perda do dia não move o stop tampouco */
+  ev("S.operations.push({id:'t2',date:" + JSON.stringify(tHoje) + ",time:'10:00',value:20,result:'LOSS',type:'EUR/USD',plan:'yes',usd:4});S.settings.currentCapital=540;");
+  w.updateDash();
+  ok(d.getElementById('dashStop').textContent.includes('40,00'), 'stop segue R$ 40 com perda no dia',
+     d.getElementById('dashStop').textContent);
+  ok(d.getElementById('dashTgt').textContent.includes('60,00'), 'meta segue R$ 60 com perda no dia');
+  /* sem operação hoje, a âncora é o próprio capital */
+  ev('S.operations=[];S.settings.currentCapital=777;');
+  w.updateDash();
+  ok(d.getElementById('dashTgt').textContent.includes('93,24'), 'sem operação hoje: meta = 12% do capital atual',
+     d.getElementById('dashTgt').textContent);
+
+  /* ── gráficos avançados do painel Analytics ── */
+  ev(`S.operations=${JSON.stringify(backup.state.operations)};S.settings=Object.assign(S.settings,${JSON.stringify(backup.state.settings)});`);
+  w.nav('analytics', null);
+  w.updateAn();
+  const ids=['anDD','anHIST','anHEAT','anROLL','anSEQ','anSCAT','anBUCK'];
+  const faltando=ids.filter(id=>!d.getElementById(id));
+  ok(faltando.length===0, 'os 7 canvas dos gráficos avançados existem', faltando.join(','));
+  const criados=ids.filter(id=>ev(`!!CH.${id}`));
+  ok(criados.length===7, 'gráficos avançados renderizados', criados.join(',')+' ('+criados.length+'/7)');
+  ok(d.querySelectorAll('#anCAL .cal-d').length>=35, 'calendário com as células dos dias',
+     String(d.querySelectorAll('#anCAL .cal-d').length));
+  ok(d.querySelectorAll('#anCAL .cal-d.op').length===24, 'calendário marca os 24 dias operados',
+     String(d.querySelectorAll('#anCAL .cal-d.op').length));
+  ok(/Maior queda:/.test(d.getElementById('anDDnote').textContent), 'nota do drawdown explica a maior queda',
+     d.getElementById('anDDnote').textContent.slice(0,54));
+  ok(/Ganho médio/.test(d.getElementById('anHISTnote').textContent), 'nota do histograma compara ganho e perda');
+  ok(/média/.test(d.getElementById('anSEQnote').textContent), 'nota da sequência compara dias de 1 e 2 entradas',
+     d.getElementById('anSEQnote').textContent.slice(0,60));
+  ok(/Correlação: r =/.test(d.getElementById('anSCATnote').textContent), 'nota da dispersão traz a correlação',
+     d.getElementById('anSCATnote').textContent.slice(0,60));
+  ok(/Melhor faixa:/.test(d.getElementById('anBUCKnote').textContent), 'nota das faixas aponta a melhor');
+  /* todos os gráficos usam as cores de win/loss do tema (verde frio / vermelho quente) */
+  ok(ev("(()=>{const c=CH.anHIST;return c.data.datasets[0].backgroundColor===PAL.up&&c.data.datasets[1].backgroundColor===PAL.down;})()"),
+     'histograma: ganhos na cor de win e perdas na de loss');
+  ok(ev("(()=>{const c=CH.anDD;return c.data.datasets[0].borderColor===PAL.down;})()"),
+     'drawdown pintado na cor de loss (quente)');
+  ok(ev("(()=>{const c=CH.anHIST;return c.data.datasets[0].backgroundColor===PAL.up&&c.data.datasets[1].backgroundColor===PAL.down;})()"),
+     'histograma: ganhos na cor de win e perdas na de loss');
+  ok(ev("(()=>{return CH.anDD.data.datasets[0].borderColor===PAL.down;})()"),
+     'drawdown pintado na cor de loss (quente)');
+  ok(ev("(()=>{const bg=CH.anSCAT.data.datasets[0].backgroundColor;return bg.length===24&&bg.every(c=>c.indexOf('rgba')===0);})()"),
+     'dispersão: um ponto por dia, colorido por sinal', ev("String(CH.anSCAT.data.datasets[0].backgroundColor.length)"));
+  ok(ev("(()=>{const b=CH.anBUCK.data.datasets[0];return b.backgroundColor.length===4&&b.backgroundColor.every(c=>/rgba|#/.test(c));})()"),
+     'faixas: 4 barras coloridas por sinal');
+  ok(ev("(()=>{const r=CH.anROLL.data.datasets;return r.length===2&&r[0].yAxisID==='y'&&r[1].yAxisID==='y1';})()"),
+     'média móvel: win rate e profit factor em eixos separados');
+  /* sem operações, o painel não quebra e avisa */
+  ev('S.operations=[];');
+  w.updateAn();
+  ok(true, 'painel Analytics sem operações não lança erro');
+  ok(/Sem operações/.test(d.getElementById('anCAL').textContent), 'calendário avisa quando não há operações',
+     d.getElementById('anCAL').textContent.slice(0,40));
+
+  /* restaura o cenário do backup para os testes seguintes */
+  ev(`S.operations=${JSON.stringify(backup.state.operations)};S.settings=Object.assign(S.settings,${JSON.stringify(backup.state.settings)});`);
+  w.updateDash();
 
   /* ── temas do painel: grade agrupada e temas chumbo ── */
   const grupos = [...d.querySelectorAll('#themeGrid .theme-group')].map(x => x.textContent.replace(/\d+$/, '').trim());

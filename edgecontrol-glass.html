@@ -313,7 +313,7 @@ tbody tr:last-child td{border-bottom:none;}
 .td-money{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:800;color:var(--white);}
 
 /* ══ ANALYTICS ══ */
-#page-analytics{flex-direction:column;overflow:hidden;}
+#page-analytics{flex-direction:column;overflow-y:auto;overflow-x:hidden;padding-right:4px;}
 .an-body{flex:1;min-height:0;display:flex;flex-direction:column;gap:10px;}
 .an-sr{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;flex-shrink:0;}
 .an-st{background:var(--card);backdrop-filter:blur(22px) saturate(170%);-webkit-backdrop-filter:blur(22px) saturate(170%);
@@ -327,6 +327,24 @@ tbody tr:last-child td{border-bottom:none;}
   border:1px solid var(--border);border-radius:18px;padding:12px 15px;display:flex;flex-direction:column;min-height:0;
   box-shadow:var(--sh),inset 0 1px 0 var(--glass-inset);}
 .an-card .ch{flex:1;min-height:0;position:relative;}
+/* gráficos avançados: altura explícita (canvas precisa de altura própria) */
+.an-body{flex:none;}
+.an-top{flex:none;min-height:330px;}
+.an-bot{flex:none;min-height:276px;}
+.adv-note{font-size:10px;color:var(--lgray);line-height:1.5;margin-top:6px;}
+.adv-badge{font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:7px;background:color-mix(in srgb,var(--surf) 70%,transparent);color:var(--lgray);border:1px solid var(--border);}
+/* mapa de calor */
+.heat{width:100%;height:100%;display:block;}
+/* calendário de resultado */
+.cal{display:flex;gap:3px;flex-wrap:wrap;}
+.cal-sem{display:flex;flex-direction:column;gap:3px;}
+.cal-d{width:13px;height:13px;border-radius:3px;background:color-mix(in srgb,var(--white) 7%,transparent);border:1px solid var(--hair);}
+.cal-d.fora{opacity:.25;}
+.cal-d.op{box-shadow:0 0 0 1px color-mix(in srgb,var(--white) 12%,transparent) inset;}
+.cal-leg{display:flex;align-items:center;gap:6px;font-size:9.5px;color:var(--dim);margin-top:8px;}
+.cal-leg i{width:11px;height:11px;border-radius:3px;display:block;}
+/* sequência intradiária */
+.seq-leg{display:flex;gap:10px;flex-wrap:wrap;font-size:10px;color:var(--lgray);margin-top:6px;}
 
 /* ══ SETTINGS ══ */
 #page-settings{flex-direction:column;overflow-y:auto;padding:0 4px 4px 0;}
@@ -1370,6 +1388,7 @@ body.rpt-open{overflow:hidden;}
   .sg{flex:none;}
   .ms-val{font-size:19px;}
   .an-card .ch{height:190px;flex:none;min-height:0;}
+  .an-top,.an-bot{min-height:0;}
   .ops-hd{flex-direction:column;gap:7px;}
   .ops-tbl{flex:none;}
   .ops-tbl .card{overflow:visible;}
@@ -1393,6 +1412,8 @@ body.rpt-open{overflow:hidden;}
   .rtbl .wrap{max-width:130px;}
   .rch{height:172px;}
   .rch.sm{height:150px;}
+.rch-note{font-size:9.5px;color:var(--dim);line-height:1.5;margin-top:6px;}
+.rcal{display:flex;gap:3px;flex-wrap:wrap;padding-top:2px;}
   .rdonut{height:150px;}
   .rcov{padding:14px 14px 13px;}
   .rsec-t{font-size:14px;}
@@ -1507,6 +1528,7 @@ body.rpt-open{overflow:hidden;}
             <div class="prog-bg"><div class="prog-fill" id="stopBar" style="width:0%;background:linear-gradient(90deg,color-mix(in srgb,var(--red) 65%,#fff),var(--red));"></div></div>
             <div style="font-size:11px;color:var(--lgray);flex-shrink:0;">Perda hoje: <span id="dashLossT" style="color:var(--red);font-weight:700;">R$ 0,00</span></div>
             <div style="font-size:10px;color:var(--dim);margin-top:3px;flex-shrink:0;" id="stopUsd">≈ $0.00 USD</div>
+            <div style="font-size:9.5px;color:var(--dim);margin-top:2px;flex-shrink:0;" id="dayAnchor">capital no início do dia: —</div>
           </div>
           <div class="ov" id="targetCard">
             <span class="ov-menu">···</span>
@@ -1516,7 +1538,7 @@ body.rpt-open{overflow:hidden;}
             <div class="tgt-amount" id="dashTgt">R$ 0,00</div>
             <div style="font-size:10px;color:var(--lgray);display:flex;justify-content:space-between;margin-bottom:2px;flex-shrink:0;"><span>Atingido</span><span id="tgtPct" style="font-weight:700;">0%</span></div>
             <div class="prog-bg"><div class="prog-fill" id="tgtBar" style="width:0%;background:linear-gradient(90deg,color-mix(in srgb,var(--green) 60%,#fff),var(--green));"></div></div>
-            <div style="font-size:11px;color:var(--lgray);flex-shrink:0;">Ganho hoje: <span id="dashProfT" style="color:var(--green);font-weight:700;">R$ 0,00</span></div>
+            <div style="font-size:11px;color:var(--lgray);flex-shrink:0;">Ganho hoje: <span id="dashProfT" style="color:var(--green);font-weight:700;">R$ 0,00</span> · líquido <span id="netToday" style="font-weight:700;">R$ 0,00</span></div>
             <div style="font-size:10px;color:var(--dim);margin-top:3px;flex-shrink:0;" id="tgtUsd">≈ $0.00 USD</div>
           </div>
         </div>
@@ -1627,6 +1649,44 @@ body.rpt-open{overflow:hidden;}
         <div class="an-bot">
           <div class="an-card"><div class="ctit" style="margin-bottom:6px;">Performance por Tipo (CALL vs PUT)</div><div class="ch"><canvas id="anCPC"></canvas></div></div>
           <div class="an-card"><div class="ctit" style="margin-bottom:6px;">Ops com vs sem Plano</div><div class="ch"><canvas id="anPC"></canvas></div></div>
+        </div>
+
+        <div class="an-top" style="min-height:300px;">
+          <div class="an-card"><div class="ctit" style="margin-bottom:6px;">Curva de Drawdown — quanto e por quanto tempo o capital ficou abaixo do pico</div>
+            <div class="ch"><canvas id="anDD"></canvas></div>
+            <div class="adv-note" id="anDDnote">—</div></div>
+          <div class="an-card"><div class="ctit" style="margin-bottom:6px;">Distribuição dos resultados — ganho médio × perda média</div>
+            <div class="ch"><canvas id="anHIST"></canvas></div>
+            <div class="adv-note" id="anHISTnote">—</div></div>
+        </div>
+
+        <div class="an-bot">
+          <div class="an-card"><div class="ctit" style="margin-bottom:6px;">Mapa de calor — dia da semana × hora (verde ganhou, vermelho perdeu)</div>
+            <div class="ch"><canvas id="anHEAT" class="heat"></canvas></div></div>
+          <div class="an-card"><div class="ctit" style="margin-bottom:6px;">Tendência — média móvel de 10 operações (win rate e profit factor)</div>
+            <div class="ch"><canvas id="anROLL"></canvas></div></div>
+        </div>
+
+        <div class="an-bot">
+          <div class="an-card"><div class="ctit" style="margin-bottom:6px;">Calendário de resultados</div>
+            <div class="ch" style="overflow-y:auto;"><div id="anCAL" class="cal"></div></div>
+            <div class="cal-leg"><span>pior</span><i style="background:var(--red)"></i><i style="background:color-mix(in srgb,var(--red) 40%,transparent)"></i>
+              <i style="background:color-mix(in srgb,var(--red) 16%,transparent)"></i>
+              <i style="background:color-mix(in srgb,var(--green) 16%,transparent)"></i>
+              <i style="background:color-mix(in srgb,var(--green) 40%,transparent)"></i><i style="background:var(--green)"></i><span>melhor</span></div>
+          </div>
+          <div class="an-card"><div class="ctit" style="margin-bottom:6px;">Como o dia se constrói — resultado médio por entrada do dia</div>
+            <div class="ch"><canvas id="anSEQ"></canvas></div>
+            <div class="adv-note" id="anSEQnote">—</div></div>
+        </div>
+
+        <div class="an-bot">
+          <div class="an-card"><div class="ctit" style="margin-bottom:6px;">Entradas por dia × resultado do dia</div>
+            <div class="ch"><canvas id="anSCAT"></canvas></div>
+            <div class="adv-note" id="anSCATnote">—</div></div>
+          <div class="an-card"><div class="ctit" style="margin-bottom:6px;">Resultado por faixa de valor de entrada</div>
+            <div class="ch"><canvas id="anBUCK"></canvas></div>
+            <div class="adv-note" id="anBUCKnote">—</div></div>
         </div>
       </div>
     </div>
@@ -2944,7 +3004,11 @@ function updateDash(){
   const today=new Date().toISOString().slice(0,10),tOps=ops.filter(o=>o.date===today);
   const profT=tOps.filter(o=>o.result==='WIN').reduce((a,o)=>a+o.value,0);
   const lossT=tOps.filter(o=>o.result==='LOSS').reduce((a,o)=>a+o.value,0);
-  const stopA=s.currentCapital*s.stopLoss/100,tgtA=s.currentCapital*s.target/100;
+  /* Meta e stop são % do capital do INÍCIO do dia (âncora), não do capital que já
+     subiu com os ganhos de hoje — senão a meta foge conforme você acerta.
+     capital de início do dia = capital atual − resultado líquido de hoje. */
+  const netT=profT-lossT;
+  const dayBase=Math.max(0,s.currentCapital-netT);
   const capChg=s.initialCapital>0?(s.currentCapital-s.initialCapital)/s.initialCapital*100:0;
 
   const capEl=document.getElementById('dashCap');
@@ -2953,7 +3017,12 @@ function updateDash(){
   document.getElementById('chartBig').textContent=fmtBRL(s.currentCapital);
   const cc=document.getElementById('dashCapChg');cc.textContent=(capChg>=0?'+':'')+capChg.toFixed(2)+'%';cc.className='cbadge '+(capChg>=0?'pos':'neg');
   document.getElementById('hdrUsd').textContent='R$ '+s.usdRate.toFixed(2);
+  const stopA=dayBase*s.stopLoss/100,tgtA=dayBase*s.target/100;
   document.getElementById('dashStop').textContent=fmtBRL(stopA);
+  const nEl=document.getElementById('netToday');
+  if(nEl){nEl.textContent=(netT>=0?'+':'')+fmtBRL(Math.abs(netT));nEl.style.color=netT>=0?'var(--green)':'var(--red)';}
+  const anEl=document.getElementById('dayAnchor');
+  if(anEl) anEl.textContent='capital no início do dia: '+fmtBRL(dayBase);
   document.getElementById('stopUsd').textContent='≈ $'+(stopA/(s.usdRate||1)).toFixed(2)+' USD';
   const sp=Math.min(100,stopA>0?lossT/stopA*100:0);
   document.getElementById('stopBar').style.width=sp+'%';document.getElementById('stopPct').textContent=sp.toFixed(0)+'%';
@@ -3045,6 +3114,7 @@ function updateAn(){
   const pYW=ops.filter(o=>o.plan==='yes'&&o.result==='WIN').length,pYL=ops.filter(o=>o.plan==='yes'&&o.result==='LOSS').length,pNW=ops.filter(o=>o.plan==='no'&&o.result==='WIN').length,pNL=ops.filter(o=>o.plan==='no'&&o.result==='LOSS').length;
   dk('anP');CH.anP=new Chart(document.getElementById('anPC').getContext('2d'),{type:'bar',data:{labels:['Com Plano','Sem Plano'],datasets:[{label:'Wins',data:[pYW,pNW],backgroundColor:PAL.win,borderRadius:6,borderSkipped:false},{label:'Losses',data:[pYL,pNL],backgroundColor:PAL.loss,borderRadius:6,borderSkipped:false}]},
     options:{...CD,plugins:{...CD.plugins,legend:{display:true,labels:{color:PAL.muted,font:{size:10,family:'Inter'},boxWidth:9,usePointStyle:true,pointStyle:'circle'}}},scales:{x:{grid:{display:false,drawBorder:false},ticks:{color:PAL.muted,font:{size:11}}},y:{grid:{color:PAL.grid,drawBorder:false},ticks:{color:PAL.tick,font:{size:10}}}}}});
+  try{advRenderPanel();}catch(e){console.warn('gráficos avançados:',e);}
 }
 
 /* ══════════════════════════════════════
@@ -3617,6 +3687,154 @@ function rpInsights(M,ctx){
   }
   return out;
 }
+
+/* ── curvas e distribuições (gráficos avançados do painel e do relatório) ── */
+
+/* capital op a op + drawdown em cada ponto (o "submarino") */
+function rpEquity(ops,capitalStart){
+  let cap=capitalStart||0,peak=cap,out=[{i:0,cap,peak,dd:0,ddPct:0,label:'Início'}];
+  (ops||[]).forEach((o,i)=>{
+    cap+=rpNet(o); peak=Math.max(peak,cap);
+    const dd=peak-cap;
+    out.push({i:i+1,cap,peak,dd,ddPct:peak>0?dd/peak*100:0,label:rpBRshort(o.date),op:o});
+  });
+  return out;
+}
+/* histograma espelhado de valores (ganhos para cima, perdas para baixo) */
+function rpHistogram(ops,nbins){
+  ops=ops||[]; nbins=nbins||8;
+  const w=(ops||[]).filter(o=>o.result==='WIN').map(o=>+o.value||0);
+  const l=(ops||[]).filter(o=>o.result==='LOSS').map(o=>+o.value||0);
+  const todos=[...w,...l];
+  if(!todos.length) return {edges:[],wins:[],losses:[],winMean:0,lossMean:0,max:0};
+  const min=Math.min(...todos),max=Math.max(...todos);
+  const passo=(max-min)/nbins||1;
+  const edges=Array.from({length:nbins+1},(_,i)=>min+passo*i);
+  const idx=v=>Math.min(nbins-1,Math.max(0,Math.floor((v-min)/passo)));
+  const wins=Array(nbins).fill(0),losses=Array(nbins).fill(0);
+  w.forEach(v=>wins[idx(v)]++); l.forEach(v=>losses[idx(v)]++);
+  const média=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:0;
+  return {edges,wins,losses,winMean:média(w),lossMean:média(l),max:Math.max(...wins,...losses)};
+}
+/* mapa de calor: dia da semana x hora (resultado e volume) */
+function rpHeat(ops){
+  ops=ops||[];
+  const horas=[...new Set(ops.filter(o=>o.time).map(o=>+String(o.time).slice(0,2)))].filter(h=>!isNaN(h)).sort((a,b)=>a-b);
+  const grade=Array.from({length:7},()=>horas.map(()=>({net:0,n:0,w:0,l:0})));
+  ops.forEach(o=>{
+    if(!o.time) return;
+    const h=+String(o.time).slice(0,2), wi=rpWd(o.date), hi=horas.indexOf(h);
+    if(hi<0) return;
+    const cell=grade[wi][hi]; cell.n++; cell.net+=rpNet(o);
+    if(o.result==='WIN')cell.w++; else if(o.result==='LOSS')cell.l++;
+  });
+  return {horas,grade};
+}
+/* média móvel de win rate e profit factor */
+function rpRolling(ops,janela){
+  ops=ops||[]; janela=Math.max(2,janela||10);
+  const out=[];
+  for(let i=janela-1;i<ops.length;i++){
+    const fatia=ops.slice(i-janela+1,i+1);
+    let w=0,l=0,gw=0,gl=0;
+    fatia.forEach(o=>{const v=+o.value||0;
+      if(o.result==='WIN'){w++;gw+=v;} else if(o.result==='LOSS'){l++;gl+=v;}});
+    out.push({i:i+1,
+      wr:(w+l)>0?w/(w+l)*100:0,
+      pf:gl>0?gw/gl:(gw>0?Infinity:0),
+      net:gw-gl});
+  }
+  return out;
+}
+/* calendário: grade de semanas (seg→dom) com o resultado de cada dia */
+function rpCalendar(ops,from,to){
+  ops=ops||[];
+  const porDia=new Map();
+  ops.forEach(o=>{const k=o.date||'';if(!k)return;porDia.set(k,(porDia.get(k)||0)+rpNet(o));});
+  let ini=from, fim=to;
+  if(!ini||!fim){
+    const ds=ops.map(o=>o.date).filter(Boolean).sort();
+    ini=ini||ds[0]; fim=fim||ds[ds.length-1];
+  }
+  if(!ini||!fim) return {semanas:[],meses:[]};
+  const add=(iso,n)=>{const p=rpParse(iso);p.setDate(p.getDate()+n);return rpISO(p);};
+  const primeiro=add(ini,-rpWd(ini));            // volta até segunda
+  const semanas=[];
+  let cur=primeiro;
+  while(cur<=fim){
+    const dias=[];
+    for(let i=0;i<7;i++){
+      const dia=add(cur,i);
+      dias.push({date:dia,net:porDia.has(dia)?porDia.get(dia):null,dentro:dia>=ini&&dia<=fim});
+    }
+    semanas.push({ini:cur,dias});
+    cur=add(cur,7);
+  }
+  const meses=[...new Set(semanas.map(s=>String(s.dias[0].date).slice(0,7)))];
+  return {semanas,meses};
+}
+/* estatística por dia, com a mesma âncora do painel:
+   meta e stop são % do capital do INÍCIO do dia (não do capital já atualizado) */
+function rpDailyStats(ops,capitalStart,stopPct,targetPct){
+  ops=rpSort(ops||[]);
+  const porDia=new Map();
+  ops.forEach(o=>{
+    if(!o.date) return;
+    if(!porDia.has(o.date)) porDia.set(o.date,[]);
+    porDia.get(o.date).push(o);
+  });
+  let cap=capitalStart||0;
+  const dias=[];
+  [...porDia.keys()].sort().forEach(data=>{
+    const lista=porDia.get(data);
+    const anchor=cap;                                  // capital no início do dia
+    const win=lista.filter(o=>o.result==='WIN').reduce((a,o)=>a+(+o.value||0),0);
+    const loss=lista.filter(o=>o.result==='LOSS').reduce((a,o)=>a+(+o.value||0),0);
+    const net=win-loss;
+    const stop=anchor*(stopPct||0)/100, meta=anchor*(targetPct||0)/100;
+    cap+=net;
+    dias.push({
+      date:data, anchor, win, loss, net, cap,
+      n:lista.length,
+      wins:lista.filter(o=>o.result==='WIN').length,
+      losses:lista.filter(o=>o.result==='LOSS').length,
+      stop, meta,
+      metaBatida:meta>0&&net>=meta,
+      stopBatido:stop>0&&loss>=stop,
+      /* sequência do dia: como o dia foi construído, entrada por entrada */
+      seq:lista.map(o=>({result:o.result,value:+o.value||0,time:o.time||''})),
+      primeiraGanhou:lista[0]?lista[0].result==='WIN':false,
+      segundaUsouLucro:lista.length>1&&lista[0].result==='WIN'&&/WIN|LOSS/.test(lista[1].result||''),
+      parouNoLoss:lista.some((o,i)=>o.result==='LOSS'&&i===lista.length-1)
+    });
+  });
+  return dias;
+}
+/* R múltiplo: cada operação medida em unidades de risco (stop do dia) */
+function rpRMultiples(ops,capitalStart,stopPct){
+  const dias=rpDailyStats(ops,capitalStart,stopPct,0);
+  const risco=new Map(dias.map(d=>[d.date,d.stop||0]));
+  return (ops||[]).map(o=>({op:o,risco:risco.get(o.date)||0,
+    r:risco.get(o.date)>0?rpNet(o)/risco.get(o.date):0}));
+}
+/* faixas de valor de entrada: nº de operações, win rate e resultado */
+function rpValueBuckets(ops,passos){
+  ops=ops||[]; passos=passos||4;
+  const vals=ops.map(o=>+o.value||0);
+  if(!vals.length) return [];
+  const min=Math.min(...vals),max=Math.max(...vals);
+  const passo=(max-min)/passos||1;
+  return Array.from({length:passos},(_,i)=>{
+    const de=min+i*passo, ate=i===passos-1?max+1e-9:min+(i+1)*passo;
+    const dentro=ops.filter(o=>{const v=+o.value||0;return v>=de&&v<ate;});
+    const w=dentro.filter(o=>o.result==='WIN').length,l=dentro.filter(o=>o.result==='LOSS').length;
+    return {de,ate:min+(i+1)*passo,dentro:ate,
+      n:dentro.length,w,l,
+      wr:(w+l)>0?w/(w+l)*100:0,
+      net:dentro.reduce((a,o)=>a+rpNet(o),0)};
+  });
+}
+
 /*RPT-CORE-END*/
 
 /* ══════════════════════════════════════════════════════════
@@ -3911,6 +4129,28 @@ function rptSectionCharts(m){
       ${hour?`<div class="rcard"><div class="rcard-h">Resultado por faixa de horário (2 em 2 horas)</div><div class="rch sm"><canvas id="rch_hour"></canvas></div></div>`:''}
       ${plan?`<div class="rcard"><div class="rcard-h">Seguiu o plano x não seguiu (wins e losses)</div><div class="rch sm"><canvas id="rch_plan"></canvas></div></div>`:''}
     </div>
+    <div class="rcard" style="margin-top:10px;"><div class="rcard-h">Drawdown — o quanto o capital ficou abaixo do pico (% do pico)</div>
+      <div class="rch sm"><canvas id="rch_dd"></canvas></div>
+      <div class="rch-note" id="rch_dd_note"></div></div>
+    <div class="rgrid2" style="margin-top:10px;">
+      <div class="rcard"><div class="rcard-h">Como o dia se constrói — resultado acumulado médio por entrada</div>
+        <div class="rch sm"><canvas id="rch_seq"></canvas></div>
+        <div class="rch-note" id="rch_seq_note"></div></div>
+      <div class="rcard"><div class="rcard-h">Entradas por dia x resultado do dia</div>
+        <div class="rch sm"><canvas id="rch_scat"></canvas></div>
+        <div class="rch-note" id="rch_scat_note"></div></div>
+    </div>
+    <div class="rgrid2" style="margin-top:10px;">
+      <div class="rcard"><div class="rcard-h">Resultado por faixa de valor de entrada</div>
+        <div class="rch sm"><canvas id="rch_buck"></canvas></div>
+        <div class="rch-note" id="rch_buck_note"></div></div>
+      <div class="rcard"><div class="rcard-h">Calendário de resultados</div>
+        <div class="rcal" id="rch_cal"></div>
+        <div class="cal-leg"><span>pior</span><i style="background:var(--red)"></i><i style="background:color-mix(in srgb,var(--red) 40%,transparent)"></i>
+          <i style="background:color-mix(in srgb,var(--red) 16%,transparent)"></i>
+          <i style="background:color-mix(in srgb,var(--green) 16%,transparent)"></i>
+          <i style="background:color-mix(in srgb,var(--green) 40%,transparent)"></i><i style="background:var(--green)"></i><span>melhor</span></div></div>
+    </div>
   </section>`;
 }
 function rptSectionDaily(m){
@@ -4067,6 +4307,8 @@ function rptApplyTheme(){
 }
 function rptPal(){const t=rptResolvedTheme();return RPT_PAL[t]||RPT_PAL.claro;}
 function rptDestroyCharts(){Object.keys(RCH).forEach(k=>{try{RCH[k].destroy();}catch(e){}delete RCH[k];});}
+function diasOperados(ops){ return new Set((ops||[]).map(o=>o.date).filter(Boolean)).size; }
+function setTxt(id,txt){ const e=document.getElementById(id); if(e) e.textContent=txt; }
 function rptCharts(m){
   if(typeof Chart==='undefined') return;
   const p=rptPal(),M=m.M;
@@ -4110,6 +4352,39 @@ function rptCharts(m){
     RCH[key]=new Chart(el(canvasId).getContext('2d'),{type:'bar',
       data:{labels,datasets:[{data:vals,backgroundColor:vals.map(v=>v>=0?p.pos:p.neg),borderRadius:5,borderSkipped:false}]},options:cfg});
   };
+  /* ── gráficos avançados (mesmos desenhos do painel) ── */
+  const advP={pos:p.pos,neg:p.neg,acc:p.acc||p.pos,acc2:p.teal||p.pos,ink:p.ink,mut:p.mut,grid:p.grid,line:p.line,tip:p.tip};
+  const ops=m.ops||[],cap0=m.capitalStart||0;
+  if(el('rch_dd')){
+    const curve=rpEquity(ops,cap0);
+    const pior=Math.max(...curve.map(x=>x.ddPct));
+    setTxt('rch_dd_note',`Maior queda: ${pior.toFixed(1)}% do pico. Quanto mais fundo e mais largo o vale, mais tempo o capital levou para voltar.`);
+    RCH.dd=advDrawdown(el('rch_dd'),ops,cap0,advP);
+  }
+  if(el('rch_seq')){
+    const dias=rpDailyStats(ops,cap0,0,0);
+    const um=dias.filter(d=>d.n===1),dois=dias.filter(d=>d.n>1);
+    const med=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:0;
+    setTxt('rch_seq_note',`${um.length} dia(s) com 1 entrada: média ${rpMoney(med(um.map(d=>d.net)))} · ${dois.length} dia(s) com 2 ou mais: média ${rpMoney(med(dois.map(d=>d.net)))}.`);
+    RCH.seq=advSequence(el('rch_seq'),ops,cap0,advP);
+  }
+  if(el('rch_scat')){
+    const sc=advScatter(el('rch_scat'),ops,cap0,advP);
+    if(sc){
+      RCH.scat=sc.chart;
+      setTxt('rch_scat_note',`${diasOperados(ops)} dia(s) operado(s). Correlação entradas × resultado do dia: r = ${sc.r.toFixed(2)} ${Math.abs(sc.r)>=.5?'(tendência clara)':'(fraca)'}.`);
+    }
+  }
+  if(el('rch_buck')){
+    const b=rpValueBuckets(ops,4);
+    if(b.length){
+      const melhor=[...b].sort((x,y)=>y.net-x.net)[0],pior=[...b].sort((x,y)=>x.net-y.net)[0];
+      setTxt('rch_buck_note',`Melhor faixa: ${rpMoney(melhor.de)}–${rpMoney(melhor.dentro)} com ${melhor.wr.toFixed(0)}% de acerto. Pior: ${rpMoney(pior.de)}–${rpMoney(pior.dentro)} (${pior.wr.toFixed(0)}%).`);
+      RCH.buck=advBuckets(el('rch_buck'),ops,advP);
+    }
+  }
+  if(el('rch_cal')) advCalendarHTML(el('rch_cal'),ops,advP,true);
+
   barNet('rch_type','type',M.byType.map(t=>t.type),M.byType.map(t=>t.net),true);
   barNet('rch_wd','wd',M.weekdays.map(w=>RPT_WDSHORT[w.i]),M.weekdays.map(w=>w.net));
   barNet('rch_hour','hour',M.hours.map(h=>rpPad(h.h)+'h'),M.hours.map(h=>h.net));
@@ -4196,6 +4471,262 @@ document.addEventListener('keydown',e=>{
 document.addEventListener('keydown',e=>{
   if(e.key==='Escape'&&document.getElementById('rview').classList.contains('show')) closeReportView();
 });
+
+/* ══════════════════════════════════════════════════════════
+   GRÁFICOS AVANÇADOS (painel e relatório usam os mesmos desenhos)
+   Recebem uma paleta P = {pos,neg,acc,acc2,ink,mut,grid,line,tip}
+══════════════════════════════════════════════════════════ */
+function advBase(P,extra){
+  return Object.assign({responsive:true,maintainAspectRatio:false,animation:false,
+    devicePixelRatio:Math.min(2.5,window.devicePixelRatio||1.5),
+    plugins:{legend:{display:false},tooltip:{backgroundColor:P.tip,borderColor:P.line,borderWidth:1,
+      titleColor:P.ink,bodyColor:P.mut,padding:9,cornerRadius:9,displayColors:false,
+      titleFont:{family:'Inter',weight:'700',size:11},bodyFont:{family:'Inter',size:11}}}},extra||{});
+}
+function advAxis(P,extra){
+  return Object.assign({grid:{color:P.grid,drawBorder:false},ticks:{color:P.mut,font:{size:9,family:'Inter'}}},extra||{});
+}
+/* 1. submarino: distância do pico (%) — quanto e por quanto tempo */
+function advDrawdown(canvas,ops,capitalStart,P){
+  if(!canvas) return null;
+  const eq=rpEquity(ops,capitalStart);
+  const dd=eq.map(p=>-p.ddPct);
+  return new Chart(canvas.getContext('2d'),{type:'line',
+    data:{labels:eq.map((p,i)=>i===0?'Início':rpBRshort(p.op?p.op.date:'')),datasets:[{data:dd,borderColor:P.neg,
+      backgroundColor:hexToRgba(P.neg,.26),borderWidth:1.6,fill:'origin',tension:.25,pointRadius:0}]},
+    options:advBase(P,{scales:{x:{display:false},
+      y:{...advAxis(P),ticks:{color:P.mut,font:{size:9,family:'Inter'},callback:v=>v.toFixed(1)+'%'}}}})});
+}
+/* 2. histograma espelhado (ganhos para cima, perdas para baixo) + linhas das médias */
+function advHistogram(canvas,ops,P){
+  if(!canvas) return null;
+  const h=rpHistogram(ops,8);
+  if(!h.edges.length) return null;
+  const rotulo=h.edges.slice(0,-1).map((e,i)=>rpMoneyS((e+h.edges[i+1])/2));
+  const marcas=h.edges.map((e,i)=>i===0?null:(i===1||i===h.edges.length-1)||i===Math.ceil(h.edges.length/2)?rpMoneyS(e):null);
+  const meiaLargura=(h.edges[1]-h.edges[0])/2;
+  const mediaLinha={id:'mediaLinha',afterDatasetsDraw(c){
+    const x1=c.scales.x.getPixelForValue(h.winMean), x2=c.scales.x.getPixelForValue(h.lossMean);
+    const {top,bottom}=c.chartArea; const ctx=c.ctx; ctx.save(); ctx.setLineDash([4,3]); ctx.lineWidth=1.5;
+    ctx.strokeStyle=P.pos; ctx.beginPath(); ctx.moveTo(x1,top); ctx.lineTo(x1,top+22); ctx.stroke();
+    ctx.strokeStyle=P.neg; ctx.beginPath(); ctx.moveTo(x2,bottom-22); ctx.lineTo(x2,bottom); ctx.stroke();
+    ctx.setLineDash([]); ctx.restore();
+  }};
+  /* usado como barras verticais: ganhos acima do zero, perdas abaixo */
+  return new Chart(canvas.getContext('2d'),{type:'bar',
+    data:{labels:rotulo,datasets:[
+      {label:'Ganhos',data:h.wins,backgroundColor:P.pos,borderRadius:4,borderSkipped:false},
+      {label:'Perdas',data:h.losses.map(v=>-v),backgroundColor:P.neg,borderRadius:4,borderSkipped:false}]},
+    options:advBase(P,{scales:{x:{grid:{display:false},ticks:{color:P.mut,font:{size:8.5,family:'Inter'}}},
+      y:{...advAxis(P),ticks:{color:P.mut,font:{size:9,family:'Inter'},callback:v=>Math.abs(v)}}}}),
+    plugins:[mediaLinha]});
+}
+/* 3. mapa de calor desenhado à mão (canvas 2D) — dia × hora */
+function advHeatmap(canvas,ops,P){
+  if(!canvas) return null;
+  const ctx=canvas.getContext('2d');
+  const desenha=()=>{
+    const dpr=Math.min(2.5,window.devicePixelRatio||1.5);
+    const L=canvas.clientWidth||360,A=canvas.clientHeight||220;
+    canvas.width=L*dpr; canvas.height=A*dpr;
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.clearRect(0,0,L,A);
+    const {horas,grade}=rpHeat(ops);
+    if(!horas.length){ctx.fillStyle=P.mut;ctx.font='12px Inter';ctx.fillText('Sem horários registrados.',10,20);return;}
+    const dias=['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
+    const eL=32,eT=18,largura=(L-eL-6)/horas.length,altura=(A-eT-6)/7;
+    const maior=Math.max(1,...grade.flat().map(c=>Math.abs(c.net)));
+    ctx.font='9px Inter'; ctx.fillStyle=P.mut;
+    horas.forEach((h,i)=>ctx.fillText(String(h).padStart(2,'0')+'h',eL+i*largura+2,eT-6));
+    for(let d=0;d<7;d++){
+      ctx.fillStyle=P.mut; ctx.fillText(dias[d],2,eT+d*altura+altura/2+3);
+      for(let i=0;i<horas.length;i++){
+        const c=grade[d][i];
+        const x=eL+i*largura,y=eT+d*altura;
+        const intensidade=c.n?0.15+0.85*Math.min(1,Math.abs(c.net)/maior):0;
+        ctx.fillStyle=c.n?(c.net>=0?hexToRgba(P.pos,intensidade):hexToRgba(P.neg,intensidade))
+          :(P.grid||'rgba(128,128,128,.12)');
+        ctx.fillRect(x+1,y+1,largura-2,altura-2);
+        if(c.n){
+          ctx.fillStyle=intensidade>.55?'#fff':P.ink;
+          ctx.font='bold 9.5px Inter'; ctx.textAlign='center';
+          ctx.fillText(rpMoneyS(c.net),x+largura/2,y+altura/2+3.5);
+          ctx.textAlign='left';
+        }
+      }
+    }
+  };
+  desenha();
+  if(!canvas.__heatHook){canvas.__heatHook=true;window.addEventListener('resize',()=>{try{desenha();}catch(e){}});}
+  return {destroy(){}};
+}
+/* 4. média móvel: win rate (%) e profit factor (linhas em eixos separados) */
+function advRolling(canvas,ops,P){
+  if(!canvas) return null;
+  const r=rpRolling(ops,10);
+  if(!r.length) return null;
+  return new Chart(canvas.getContext('2d'),{type:'line',
+    data:{labels:r.map(p=>'#'+p.i),datasets:[
+      {label:'Win rate %',data:r.map(p=>p.wr),borderColor:P.acc,borderWidth:2,tension:.3,pointRadius:0,yAxisID:'y'},
+      {label:'Profit factor',data:r.map(p=>isFinite(p.pf)?Math.min(p.pf,5):5),borderColor:P.pos,
+        borderWidth:2,borderDash:[5,3],tension:.3,pointRadius:0,yAxisID:'y1'}]},
+    options:advBase(P,{plugins:{legend:{display:true,labels:{color:P.mut,font:{size:10,family:'Inter'},boxWidth:9,usePointStyle:true,pointStyle:'line'}}},
+      scales:{x:{grid:{display:false},ticks:{color:P.mut,font:{size:8.5,family:'Inter'},maxTicksLimit:8}},
+        y:{...advAxis(P),position:'left',min:0,max:100,ticks:{color:P.acc,font:{size:9,family:'Inter'},callback:v=>v+'%'}},
+        y1:{...advAxis(P),position:'right',min:0,max:5,grid:{display:false},ticks:{color:P.pos,font:{size:9,family:'Inter'},callback:v=>v.toFixed(1)}}}})});
+}
+/* 5. calendário em HTML (imprime bem e é legível no celular) */
+function advCalendarHTML(container,ops,P,mostrarMes){
+  if(!container) return;
+  const {semanas}=rpCalendar(ops);
+  if(!semanas.length){container.innerHTML='<div class="adv-note">Sem operações no período.</div>';return;}
+  const maior=Math.max(1,...semanas.flatMap(s=>s.dias.map(d=>d.net===null?0:Math.abs(d.net))));
+  const cor=v=>{
+    if(v===null) return '';
+    const i=Math.max(.14,Math.min(1,Math.abs(v)/maior));
+    return v>=0?`background:${hexToRgba(P.pos,i)}`:`background:${hexToRgba(P.neg,i)}`;
+  };
+  const rotulo=s=>new Date(s.dias[0].date+'T12:00:00').toLocaleDateString('pt-BR',{month:'short'});
+  container.innerHTML=semanas.map((s,i)=>{
+    const mes=String(s.dias[0].date).slice(0,7)!==String(semanas[Math.max(0,i-1)].dias[0].date).slice(0,7);
+    return `<div class="cal-sem">${(i===0||mes)?`<div style="font-size:8.5px;color:var(--dim);height:10px;">${rotulo(s)}</div>`:'<div style="height:10px;"></div>'}`
+      +s.dias.map(d=>`<div class="cal-d${d.dentro?'':' fora'}${d.net===null?'':' op'}" style="${cor(d.net)}"
+        title="${rpBR(d.date)}${d.net===null?' · sem operação':' · '+rpMoney(d.net)}"></div>`).join('')+'</div>';
+  }).join('');
+}
+/* 6. como o dia se constrói: resultado acumulado médio por entrada do dia */
+function advSequence(canvas,ops,capitalStart,P){
+  if(!canvas) return null;
+  const dias=rpDailyStats(ops,capitalStart,0,0).filter(d=>d.n>0);
+  if(!dias.length) return null;
+  const maxN=Math.min(4,Math.max(...dias.map(d=>d.n)));
+  const pontos=[],contagem=[];
+  for(let k=1;k<=maxN;k++){
+    const comK=dias.filter(d=>d.n>=k);
+    contagem.push(comK.length);
+    const media=comK.reduce((a,d)=>a+d.seq.slice(0,k).reduce((x,o)=>x+(o.result==='WIN'?o.value:o.result==='LOSS'?-o.value:0),0),0)/comK.length;
+    pontos.push(media);
+  }
+  if(!pontos.length) return null;
+  return new Chart(canvas.getContext('2d'),{type:'line',
+    data:{labels:pontos.map((_,i)=>`${i+1}ª entrada`),datasets:[
+      {data:pontos,borderColor:P.acc,backgroundColor:hexToRgba(P.acc,.20),borderWidth:2.4,fill:true,
+        tension:.3,pointRadius:5,pointBackgroundColor:pontos.map(v=>v>=0?P.pos:P.neg),
+        pointBorderColor:P.ink,pointBorderWidth:1.5}]},
+    options:advBase(P,{scales:{x:{grid:{display:false},ticks:{color:P.mut,font:{size:10,family:'Inter'}}},
+      y:{...advAxis(P),ticks:{color:P.mut,font:{size:9,family:'Inter'},callback:v=>rpMoneyS(v)}}}})});
+}
+/* 7. dispersão: entradas no dia × resultado do dia (com linha de tendência) */
+function advScatter(canvas,ops,capitalStart,P){
+  if(!canvas) return null;
+  const dias=rpDailyStats(ops,capitalStart,0,0);
+  if(dias.length<2) return null;
+  const pts=dias.map(d=>({x:d.n,y:d.net}));
+  const mx=pts.reduce((a,p)=>a+p.x,0)/pts.length, my=pts.reduce((a,p)=>a+p.y,0)/pts.length;
+  let num=0,den=0;
+  pts.forEach(p=>{num+=(p.x-mx)*(p.y-my);den+=(p.x-mx)**2;});
+  const incl=den?num/den:0, inter=my-incl*mx;
+  let ss=0,st=0;
+  pts.forEach(p=>{ss+=(p.y-(incl*p.x+inter))**2;st+=(p.y-my)**2;});
+  const r=(incl>=0?1:-1)*Math.sqrt(Math.max(0,st?(1-ss/st):0));
+  const xmin=Math.min(...pts.map(p=>p.x)),xmax=Math.max(...pts.map(p=>p.x));
+  const opcoes=advBase(P);
+  opcoes.plugins.legend={display:false};
+  opcoes.plugins.tooltip=Object.assign({},opcoes.plugins.tooltip,{
+    callbacks:{label:c=>`${c.parsed.x} entrada(s) · ${rpMoney(c.parsed.y)}`}});
+  opcoes.scales={
+    x:Object.assign(advAxis(P),{ticks:{color:P.mut,font:{size:9,family:'Inter'},stepSize:1},
+      title:{display:true,text:'entradas no dia',color:P.mut,font:{size:9}}}),
+    y:Object.assign(advAxis(P),{ticks:{color:P.mut,font:{size:9,family:'Inter'},callback:v=>rpMoneyS(v)}})
+  };
+  const chart=new Chart(canvas.getContext('2d'),{type:'scatter',
+    data:{datasets:[
+      {label:'Dias',data:pts,backgroundColor:pts.map(p=>p.y>=0?hexToRgba(P.pos,.75):hexToRgba(P.neg,.75)),
+        pointRadius:5,pointHoverRadius:7},
+      {label:'Tendência',type:'line',data:[{x:xmin,y:incl*xmin+inter},{x:xmax,y:incl*xmax+inter}],
+        borderColor:P.acc,borderWidth:1.6,borderDash:[5,4],pointRadius:0,fill:false}]},
+    options:opcoes});
+  return {chart,r};
+}
+/* 8. faixas de valor de entrada: resultado (barras) + win rate (linha) */
+function advBuckets(canvas,ops,P){
+  if(!canvas) return null;
+  const b=rpValueBuckets(ops,4);
+  if(!b.length) return null;
+  return new Chart(canvas.getContext('2d'),{type:'bar',
+    data:{labels:b.map(x=>`${rpMoneyS(x.de)}–${rpMoneyS(x.dentro)}`),datasets:[
+      {label:'Resultado',data:b.map(x=>x.net),backgroundColor:b.map(x=>x.net>=0?P.pos:P.neg),borderRadius:5,borderSkipped:false,yAxisID:'y'},
+      {label:'Win rate',type:'line',data:b.map(x=>x.wr),borderColor:P.acc,borderWidth:2,pointRadius:3,
+        pointBackgroundColor:P.acc,tension:.3,yAxisID:'y1'}]},
+    options:advBase(P,{plugins:{legend:{display:true,labels:{color:P.mut,font:{size:10,family:'Inter'},boxWidth:9,usePointStyle:true}}},
+      scales:{x:{grid:{display:false},ticks:{color:P.mut,font:{size:8.5,family:'Inter'}}},
+        y:{...advAxis(P),ticks:{color:P.mut,font:{size:9,family:'Inter'},callback:v=>rpMoneyS(v)}},
+        y1:{...advAxis(P),position:'right',min:0,max:100,grid:{display:false},ticks:{color:P.acc,font:{size:9,family:'Inter'},callback:v=>v+'%'}}}})});
+}
+/* util: #rrggbb -> rgba() */
+function hexToRgba(cor,alfa){
+  const c=String(cor||'').trim();
+  if(c.startsWith('rgb')) return c.replace(/rgba?\(([^)]+)\)/,(m,p)=>{const v=p.split(',').map(x=>x.trim());return `rgba(${v[0]},${v[1]},${v[2]},${alfa})`;});
+  const h=c.replace('#','');
+  if(h.length!==6) return c;
+  const r=parseInt(h.slice(0,2),16),g=parseInt(h.slice(2,4),16),b=parseInt(h.slice(4,6),16);
+  return `rgba(${r},${g},${b},${alfa})`;
+}
+/* uma nota curta embaixo de cada gráfico, com o número que importa */
+function advNotas(ops,capitalStart){
+  const M=rpMetrics(ops,capitalStart);
+  const eq=rpEquity(ops,capitalStart);
+  const ddMax=Math.max(...eq.map(p=>p.ddPct));
+  const h=rpHistogram(ops,8);
+  const dias=rpDailyStats(ops,capitalStart,0,0);
+  const um=dias.filter(d=>d.n===1),dois=dias.filter(d=>d.n>1);
+  const med=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:0;
+  const sc=dias.length>1?advScatter(null,ops,capitalStart,null):null;
+  const nota={};
+  nota.dd=`Maior queda: ${ddMax.toFixed(1)}% do pico. Faixas largas e longas no fundo = recuperação lenta.`;
+  nota.hist=`Ganho médio ${rpMoney(h.winMean)} × perda média ${rpMoney(h.lossMean)} — ${h.lossMean>h.winMean?'a perda é maior que o ganho':'o ganho cobre a perda'}.`;
+  nota.seq=dois.length?`${um.length} dia(s) com 1 entrada: média ${rpMoney(med(um.map(d=>d.net)))}. ${dois.length} dia(s) com 2+: média ${rpMoney(med(dois.map(d=>d.net)))}.`:'';
+  nota.scat=`${dias.length} dias operados. Cada ponto é um dia.`;
+  nota.buck=``;
+  return nota;
+}
+/* renderiza o conjunto no painel Analytics */
+function advRenderPanel(){
+  const ops=S.operations||[],capStart=capitalStartReconstruido(ops);
+  const P={pos:PAL.up,neg:PAL.down,acc:PAL.accent,acc2:PAL.teal,ink:PAL.ink,mut:PAL.muted,grid:PAL.grid,line:PAL.slate,tip:PAL.tooltipBg};
+  ['anDD','anHIST','anHEAT','anROLL','anSEQ','anSCAT','anBUCK','anCAL'].forEach(id=>{ if(CH[id]){try{CH[id].destroy();}catch(e){} delete CH[id];} });
+  if(!ops.length){ ['anDD','anHIST','anHEAT','anROLL','anSEQ','anSCAT','anBUCK'].forEach(id=>{
+      const c=document.getElementById(id); if(c){const ctx=c.getContext('2d');c.width=c.clientWidth||300;c.height=c.clientHeight||160;
+      ctx.clearRect(0,0,c.width,c.height);ctx.fillStyle=PAL.muted;ctx.font='12px Inter';ctx.fillText('Sem operações registradas.',10,22);} });
+    const cal=document.getElementById('anCAL'); if(cal) cal.innerHTML='<div class="adv-note">Sem operações registradas.</div>';
+    return; }
+  const notas=advNotas(ops,capStart);
+  CH.anDD=advDrawdown(document.getElementById('anDD'),ops,capStart,P);
+  CH.anHIST=advHistogram(document.getElementById('anHIST'),ops,P);
+  CH.anHEAT=advHeatmap(document.getElementById('anHEAT'),ops,P);
+  CH.anROLL=advRolling(document.getElementById('anROLL'),ops,P);
+  CH.anSEQ=advSequence(document.getElementById('anSEQ'),ops,capStart,P);
+  const sc=advScatter(document.getElementById('anSCAT'),ops,capStart,P);
+  if(sc) CH.anSCAT=sc.chart;
+  CH.anBUCK=advBuckets(document.getElementById('anBUCK'),ops,P);
+  advCalendarHTML(document.getElementById('anCAL'),ops,P,true);
+  const set=(id,txt)=>{const e=document.getElementById(id);if(e)e.textContent=txt;};
+  set('anDDnote',notas.dd);
+  set('anHISTnote',notas.hist);
+  set('anSEQnote',notas.seq);
+  set('anSCATnote',notas.scat+(sc?` Correlação: r = ${(sc.r).toFixed(2)}.`:''));
+  const b=rpValueBuckets(ops,4);
+  const melhor=[...b].sort((x,y)=>y.net-x.net)[0], pior=[...b].sort((x,y)=>x.net-y.net)[0];
+  set('anBUCKnote',melhor&&pior?`Melhor faixa: ${rpMoneyS(melhor.de)}–${rpMoneyS(melhor.dentro)} com ${melhor.wr.toFixed(0)}% de acerto. Pior: ${rpMoneyS(pior.de)}–${rpMoneyS(pior.dentro)} (${pior.wr.toFixed(0)}%).`:'');
+}
+/* capital antes da primeira operação registrada (mesma reconstrução do relatório) */
+function capitalStartReconstruido(ops){
+  const ini=(S.settings&&S.settings.initialCapital)||0;
+  const todas=S.operations||[];
+  if(!ops||ops===todas||!ops.length) return ini;
+  const primeira=ops[0].date;
+  return todas.reduce((a,o)=>a+((o.date&&o.date<primeira)?rpNet(o):0),ini);
+}
 
 /* ══════════════════════════════════════
    INIT
