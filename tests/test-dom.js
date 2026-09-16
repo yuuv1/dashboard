@@ -216,6 +216,77 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   ok(/Sem operações/.test(d.getElementById('anCAL').textContent), 'calendário avisa quando não há operações',
      d.getElementById('anCAL').textContent.slice(0,40));
 
+  /* ── rodízio de gráficos do Dashboard (slots: girar + fixar) ── */
+  ev(`S.operations=${JSON.stringify(backup.state.operations)};S.settings=Object.assign(S.settings,${JSON.stringify(backup.state.settings)});`);
+  ev("S.cp='all';S.charts.fixed={};S.charts.auto=true;S.charts.autoSec=20;");   // 20s: o timer não dispara no teste
+  w.nav('dashboard', null);
+  w.updateDash();
+  const sids=['main','assert','plan'];
+  ok(sids.every(sid=>d.getElementById('slotBody_'+sid)&&d.getElementById('slotDots_'+sid)&&d.getElementById('slotPin_'+sid)),
+     'os 3 blocos do Dashboard têm área, bolinhas e 📌');
+  ok(ev("slotCur.main")==='cap' && ev("slotCur.assert")==='wr' && ev("slotCur.plan")==='plan',
+     'cada bloco começa no gráfico padrão', ev("JSON.stringify(slotCur)"));
+  ok(ev("!!CH.gc_cap && !!CH.gc_wr && !!CH.gc_plan"), 'os gráficos dos blocos foram desenhados', ev("Object.keys(CH).join(',')"));
+  ok(d.querySelectorAll('#slotDots_main .slot-dot').length===4, 'o bloco principal tem 4 gráficos no rodízio',
+     String(d.querySelectorAll('#slotDots_main .slot-dot').length));
+  ok(d.querySelectorAll('#slotDots_main .slot-dot.on').length===1, 'a bolinha do gráfico atual fica marcada');
+  ok(/Wins 24/.test(d.getElementById('slotLegend_assert').textContent), 'legenda do bloco traz os números (Wins 24)',
+     d.getElementById('slotLegend_assert').textContent.trim().slice(0,32));
+  ok(ev("S.charts.auto")===true && ev("S.charts.autoSec")>=3 && ev("S.charts.fadeSec")>0,
+     'estado do rodízio existe (auto, intervalo e fade)', ev("JSON.stringify(S.charts)"));
+  /* o rodízio troca os três blocos */
+  ev("slotStep()");
+  ok(ev("slotCur.main")==='weekly' && ev("slotCur.assert")==='cp' && ev("slotCur.plan")==='pn',
+     'o rodízio gira os três blocos de uma vez', ev("JSON.stringify(slotCur)"));
+  ok(ev("!!CH.gc_weekly && !CH.gc_cap"), 'o gráfico que saiu é destruído (sem vazar canvas)');
+  ok(/Win\/Loss por Semana/.test(d.getElementById('slotTitle_main').textContent), 'o título do bloco acompanha o gráfico',
+     d.getElementById('slotTitle_main').textContent);
+  /* 📌 fixa o bloco */
+  ev("slotPin('main')");
+  ok(ev("S.charts.fixed.main")==='weekly', '📌 fixa o gráfico atual do bloco', ev("JSON.stringify(S.charts.fixed)"));
+  ok(d.getElementById('slotPin_main').className.indexOf('on')>=0, 'o 📌 fica aceso quando o bloco está fixo');
+  ev("slotStep()");
+  ok(ev("slotCur.main")==='weekly' && ev("slotCur.assert")==='wr', 'bloco fixo não gira e os outros continuam girando',
+     ev("JSON.stringify(slotCur)"));
+  ev("slotPin('main')");
+  ok(!ev("S.charts.fixed.main"), 'clicar no 📌 de novo devolve o bloco ao rodízio');
+  /* bolinhas escolhem na hora */
+  ev("slotJump('main',2)");
+  ok(ev("slotCur.main")==='monthly' && ev("!!CH.gc_monthly"), 'clicar numa bolinha escolhe e desenha aquele gráfico',
+     ev("slotCur.main"));
+  ok(ev("JSON.stringify(S.charts.fixed)").indexOf('monthly')<0, 'escolher na bolinha tira o bloco do fixo');
+  /* 7d / Tudo valem para todos os blocos */
+  ev("setCP('week')");
+  ok(d.getElementById('btnW').className.indexOf('btn-o')===0 && d.getElementById('btnA').className.indexOf('btn-s')===0,
+     '7d marca o botão e filtra os blocos', ev("gFilter(S.operations).length")+' op(s) nos últimos 7 dias');
+  ev("setCP('all')");
+  ok(ev("gFilter(S.operations).length")===37, 'Tudo devolve todas as operações para os blocos');
+  /* 🔁 Auto */
+  ok(d.getElementById('gAutoBtn').className.indexOf('btn-o')===0, '🔁 Auto aparece ligado');
+  ev("gAutoToggle()");
+  ok(ev("S.charts.auto")===false && d.getElementById('gAutoBtn').className.indexOf('btn-s')===0, '🔁 Auto pausa o rodízio',
+     ev("document.getElementById('gAutoBtn').className"));
+  ev("gAutoToggle()");
+  ok(ev("S.charts.auto")===true, '🔁 Auto liga o rodízio de novo');
+  /* Configurações → 🔁 Ciclo de Gráficos */
+  ev("syncCycleUI()");
+  ok(d.getElementById('cycleToggle').checked===true, 'Configurações: toggle do ciclo marcado');
+  ok(/^\d+ s$/.test(d.getElementById('cycleSecVal').textContent) && /s$/.test(d.getElementById('cycleFadeVal').textContent),
+     'Configurações: mostra intervalo e suavidade', d.getElementById('cycleSecVal').textContent+' / '+d.getElementById('cycleFadeVal').textContent);
+  const elSec=d.getElementById('cycleSec'); elSec.value='10'; w.cycleSecChange(elSec);
+  ok(ev("S.charts.autoSec")===10 && d.getElementById('cycleSecVal').textContent==='10 s', 'mudar o intervalo salva e reflete',
+     d.getElementById('cycleSecVal').textContent);
+  const elFade=d.getElementById('cycleFade'); elFade.value='1.5'; w.cycleFadeChange(elFade);
+  ok(ev("S.charts.fadeSec")===1.5 && d.getElementById('cycleFadeVal').textContent==='1.5 s', 'mudar a suavidade salva e reflete');
+  ok(/1\.5/.test(d.documentElement.style.getPropertyValue('--slot-fade')), 'o fade do CSS segue a configuração',
+     d.documentElement.style.getPropertyValue('--slot-fade'));
+  ev("S.charts.autoSec=6;S.charts.fadeSec=0.8;syncCycleUI();slotStop();");
+  /* sem operações, o bloco avisa em vez de quebrar */
+  ev("S.operations=[];");
+  w.updateDash();
+  ok(/Sem operações/.test(d.getElementById('slotBody_main').textContent), 'sem operações o bloco mostra o aviso',
+     d.getElementById('slotBody_main').textContent.trim().slice(0,34));
+
   /* restaura o cenário do backup para os testes seguintes */
   ev(`S.operations=${JSON.stringify(backup.state.operations)};S.settings=Object.assign(S.settings,${JSON.stringify(backup.state.settings)});`);
   w.updateDash();

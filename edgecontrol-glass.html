@@ -327,6 +327,19 @@ tbody tr:last-child td{border-bottom:none;}
   border:1px solid var(--border);border-radius:18px;padding:12px 15px;display:flex;flex-direction:column;min-height:0;
   box-shadow:var(--sh),inset 0 1px 0 var(--glass-inset);}
 .an-card .ch{flex:1;min-height:0;position:relative;}
+/* slots de gráficos do Dashboard (rodízio automático + fixar) */
+.slot-tools{display:flex;align-items:center;gap:7px;flex-shrink:0;}
+.slot-dots{display:flex;align-items:center;gap:5px;}
+.slot-dot{width:7px;height:7px;border-radius:50%;background:var(--dim);opacity:.4;cursor:pointer;border:none;padding:0;transition:all .22s;}
+.slot-dot:hover{opacity:.85;}
+.slot-dot.on{background:var(--accent);opacity:1;transform:scale(1.3);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 26%,transparent);}
+.slot-body{flex:1;min-height:0;position:relative;width:100%;}
+.slot-body.fade{animation:slotFade var(--slot-fade,.8s) cubic-bezier(.33,1,.68,1);}
+@keyframes slotFade{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+.gc-btn{width:24px;height:24px;border-radius:8px;border:1px solid var(--border);background:color-mix(in srgb,var(--surf) 70%,transparent);color:var(--lgray);cursor:pointer;font-size:11px;display:inline-flex;align-items:center;justify-content:center;transition:all .15s;padding:0;}
+.gc-btn:hover{color:var(--white);border-color:var(--accent);}
+.gc-btn.on{background:color-mix(in srgb,var(--accent) 22%,transparent);border-color:var(--accent);color:var(--accent);}
+.gc-empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--lgray);font-size:11.5px;line-height:1.6;padding:14px;}
 /* gráficos avançados: altura explícita (canvas precisa de altura própria) */
 .an-body{flex:none;}
 .an-top{flex:none;min-height:330px;}
@@ -1389,6 +1402,8 @@ body.rpt-open{overflow:hidden;}
   .ms-val{font-size:19px;}
   .an-card .ch{height:190px;flex:none;min-height:0;}
   .an-top,.an-bot{min-height:0;}
+  .slot-body{height:190px;flex:none;}
+  .donut-card .slot-body{height:148px;}
   .ops-hd{flex-direction:column;gap:7px;}
   .ops-tbl{flex:none;}
   .ops-tbl .card{overflow:visible;}
@@ -1501,7 +1516,10 @@ body.rpt-open{overflow:hidden;}
       <div class="alert-strip"><div id="alertBar" style="display:none;" class="abar"></div></div>
       <div class="dash-head">
         <div><div class="pg-title">Overview</div><div class="pg-sub">Aqui está o resumo geral do seu capital e desempenho</div></div>
-        <button class="btn-s xs" onclick="updateDash()">🔄 Reset Dia</button>
+        <div style="display:flex;gap:6px;">
+          <button class="btn-o xs" id="gAutoBtn" onclick="gAutoToggle()" title="Rodízio ligado — clique para pausar">🔁 Auto</button>
+          <button class="btn-s xs" onclick="updateDash()">🔄 Reset Dia</button>
+        </div>
       </div>
       <div class="dash-body">
         <!-- R1 -->
@@ -1559,35 +1577,45 @@ body.rpt-open{overflow:hidden;}
           </div>
           <div class="card">
             <div class="chd" style="margin-bottom:4px;">
-              <span class="ctit">Evolução do Capital</span>
-              <div style="display:flex;gap:5px;">
-                <button class="btn-s xs" id="btnW" onclick="setCP('week')">7d</button>
-                <button class="btn-o xs" id="btnA" onclick="setCP('all')">Tudo</button>
+              <span class="ctit" id="slotTitle_main">📈 Evolução do Capital</span>
+              <div class="slot-tools">
+                <div class="slot-dots" id="slotDots_main"></div>
+                <div style="display:flex;gap:5px;">
+                  <button class="btn-s xs" id="btnW" onclick="setCP('week')">7d</button>
+                  <button class="btn-o xs" id="btnA" onclick="setCP('all')">Tudo</button>
+                </div>
+                <button class="gc-btn" id="slotPin_main" onclick="slotPin('main')" title="Fixar este gráfico (para o rodízio)">📌</button>
               </div>
             </div>
-            <div class="cbd" style="padding-top:0;">
-              <div class="chart-big" id="chartBig">R$ 0,00</div>
-              <div class="chbox" style="flex:1;min-height:0;position:relative;"><canvas id="capChart"></canvas></div>
+            <div class="cbd" style="padding-top:2px;">
+              <div class="slot-body" id="slotBody_main"><canvas></canvas></div>
+              <div class="donut-legend" id="slotLegend_main" style="display:none;"></div>
             </div>
           </div>
         </div>
         <!-- R3 -->
         <div class="r3">
-          <div class="donut-card">
-            <div class="ctit" style="align-self:flex-start;margin-bottom:3px;">Assertividade</div>
-            <div class="donut-wrap"><div class="donut-canvas-box"><canvas id="wrChart"></canvas></div></div>
-            <div class="donut-legend">
-              <div class="leg-item"><div class="leg-dot" style="background:var(--green);"></div> Wins <strong id="lgW" style="color:var(--white);">0</strong></div>
-              <div class="leg-item"><div class="leg-dot" style="background:var(--red);"></div> Losses <strong id="lgL" style="color:var(--white);">0</strong></div>
+          <div class="donut-card" style="padding:10px 13px;">
+            <div class="chd" style="width:100%;padding:0;">
+              <span class="ctit" id="slotTitle_assert">🎯 Assertividade</span>
+              <div class="slot-tools">
+                <div class="slot-dots" id="slotDots_assert"></div>
+                <button class="gc-btn" id="slotPin_assert" onclick="slotPin('assert')" title="Fixar este gráfico (para o rodízio)">📌</button>
+              </div>
             </div>
+            <div class="slot-body" id="slotBody_assert"><canvas></canvas></div>
+            <div class="donut-legend" id="slotLegend_assert"></div>
           </div>
-          <div class="donut-card">
-            <div class="ctit" style="align-self:flex-start;margin-bottom:3px;">Fidelidade ao Plano</div>
-            <div class="donut-wrap"><div class="donut-canvas-box"><canvas id="planChart"></canvas></div></div>
-            <div class="donut-legend">
-              <div class="leg-item"><div class="leg-dot" style="background:var(--accent);"></div> Seguiu <strong id="lgPY" style="color:var(--white);">0</strong></div>
-              <div class="leg-item"><div class="leg-dot" style="background:var(--dim);"></div> Não Seguiu <strong id="lgPN" style="color:var(--white);">0</strong></div>
+          <div class="donut-card" style="padding:10px 13px;">
+            <div class="chd" style="width:100%;padding:0;">
+              <span class="ctit" id="slotTitle_plan">📐 Fidelidade ao Plano</span>
+              <div class="slot-tools">
+                <div class="slot-dots" id="slotDots_plan"></div>
+                <button class="gc-btn" id="slotPin_plan" onclick="slotPin('plan')" title="Fixar este gráfico (para o rodízio)">📌</button>
+              </div>
             </div>
+            <div class="slot-body" id="slotBody_plan"><canvas></canvas></div>
+            <div class="donut-legend" id="slotLegend_plan"></div>
           </div>
           <div class="rec-card">
             <div class="rec-hd"><span class="ctit">Últimas Ops</span></div>
@@ -1834,6 +1862,33 @@ body.rpt-open{overflow:hidden;}
               <span class="mt-preview-val" id="rbPrevVal">R$ 1.000,00</span>
               <div class="mt-preview-sub">Preview ao vivo</div>
             </div>
+          </div>
+
+          <div class="set-card">
+            <div class="set-tit">🔁 Ciclo de Gráficos</div>
+            <div class="toggle-row">
+              <label class="tgl">
+                <input type="checkbox" id="cycleToggle" onchange="cycleToggleChange()">
+                <div class="tgl-track"></div>
+                <div class="tgl-thumb"></div>
+              </label>
+              <span style="font-size:12px;font-weight:600;color:var(--white);">Alternar os gráficos do Dashboard sozinho</span>
+            </div>
+            <div style="font-size:10px;font-weight:700;color:var(--lgray);text-transform:uppercase;letter-spacing:.7px;margin:11px 0 7px;">Intervalo entre trocas</div>
+            <div class="speed-row">
+              <span class="speed-lbl">⏱ 3s</span>
+              <input type="range" class="rb-slider" id="cycleSec" min="3" max="20" step="1" value="6" oninput="cycleSecChange(this)">
+              <span class="speed-lbl">20s</span>
+              <span class="speed-val" id="cycleSecVal">6 s</span>
+            </div>
+            <div style="font-size:10px;font-weight:700;color:var(--lgray);text-transform:uppercase;letter-spacing:.7px;margin:11px 0 7px;">Suavidade da transição</div>
+            <div class="speed-row">
+              <span class="speed-lbl">⚡ Rápida</span>
+              <input type="range" class="rb-slider" id="cycleFade" min="0.3" max="2" step="0.1" value="0.8" oninput="cycleFadeChange(this)">
+              <span class="speed-lbl">🪶 Suave</span>
+              <span class="speed-val" id="cycleFadeVal">0.8 s</span>
+            </div>
+            <div style="font-size:10px;color:var(--dim);line-height:1.55;margin-top:9px;">No Dashboard, cada bloco de gráfico alterna sozinho entre os seus gráficos, com fade-in. As bolinhas escolhem um na hora e o 📌 fixa o gráfico do bloco. O 7d/Tudo do topo vale para todos eles.</div>
           </div>
 
           <div class="set-card">
@@ -2483,6 +2538,14 @@ function load(){
       if(!S.bg||typeof S.bg!=='object') S.bg={on:true,opacity:50};
     }
   }catch(e){}
+  /* rodízio de gráficos do Dashboard */
+  if(!S.charts||typeof S.charts!=='object') S.charts={};
+  if(!Array.isArray(S.charts.pinned)) S.charts.pinned=[];
+  if(!Array.isArray(S.charts.hidden)) S.charts.hidden=[];
+  if(typeof S.charts.auto!=='boolean') S.charts.auto=true;
+  if(!(S.charts.autoSec>0)) S.charts.autoSec=6;
+  if(!(S.charts.fadeSec>0)) S.charts.fadeSec=0.8;
+  if(!S.charts.fixed||typeof S.charts.fixed!=='object') S.charts.fixed={};
 }
 function save(){
   try{
@@ -2504,7 +2567,7 @@ function nav(page,el){
   document.getElementById('hdrTit').textContent=t[page]||page;
   document.getElementById('fab').style.display=page==='operations'?'flex':'none';
   if(page==='dashboard') updateDash();
-  if(page==='settings'){ loadSetForm(); syncMetalUI(); syncThemeUI(); updGalStats(); paintPWA(); }
+  if(page==='settings'){ loadSetForm(); syncMetalUI(); syncThemeUI(); syncCycleUI(); updGalStats(); paintPWA(); }
   mtApplyAll();
   if(page==='operations'){ renderOps(); syncOpsUsd(); }
   if(page==='analytics') updateAn();
@@ -3014,7 +3077,6 @@ function updateDash(){
   const capEl=document.getElementById('dashCap');
   capEl.textContent=fmtBRL(s.currentCapital);
   applyMetal(capEl);
-  document.getElementById('chartBig').textContent=fmtBRL(s.currentCapital);
   const cc=document.getElementById('dashCapChg');cc.textContent=(capChg>=0?'+':'')+capChg.toFixed(2)+'%';cc.className='cbadge '+(capChg>=0?'pos':'neg');
   document.getElementById('hdrUsd').textContent='R$ '+s.usdRate.toFixed(2);
   const stopA=dayBase*s.stopLoss/100,tgtA=dayBase*s.target/100;
@@ -3058,7 +3120,7 @@ function updateDash(){
   document.getElementById('stWL2').textContent=fmtBRL(wl);
   if(ops.length>0){const d=ops.map(o=>o.date).sort();document.getElementById('statsRng').textContent=`${d[0]} → ${d[d.length-1]}`;}
   else document.getElementById('statsRng').textContent='—';
-  renderRec(ops);buildCharts(ops,wins,loss);badge();
+  renderRec(ops);chartsRefresh();badge();
 }
 function renderRec(ops){
   const c=document.getElementById('recOps'),r=[...ops].reverse().slice(0,5);
@@ -3076,21 +3138,7 @@ const CD={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:fal
   tooltip:{backgroundColor:()=>PAL.tooltipBg||'rgba(255,255,255,.96)',borderColor:()=>PAL.grid,borderWidth:1,titleColor:()=>PAL.ink,bodyColor:()=>PAL.muted,padding:10,cornerRadius:10,displayColors:false,
     titleFont:{family:'Inter',weight:'700',size:11},bodyFont:{family:'Inter',size:11}}}};
 function dk(k){if(CH[k]){try{CH[k].destroy();}catch(e){}delete CH[k];}}
-function setCP(p){S.cp=p;const w=S.operations.filter(o=>o.result==='WIN').length,l=S.operations.filter(o=>o.result==='LOSS').length;buildCharts(S.operations,w,l);document.getElementById('btnW').className=p==='week'?'btn-o xs':'btn-s xs';document.getElementById('btnA').className=p==='all'?'btn-o xs':'btn-s xs';}
-function buildCharts(ops,wins,losses){
-  let cOps=[...ops];if(S.cp==='week'){const w=new Date();w.setDate(w.getDate()-7);cOps=ops.filter(o=>new Date(o.date)>=w);}
-  let cv=S.settings.initialCapital,ca=[cv];cOps.forEach(op=>{cv=op.result==='WIN'?cv+op.value:cv-op.value;ca.push(Math.max(0,cv));});
-  const isUp=ca[ca.length-1]>=ca[0],lc=isUp?PAL.up:PAL.down;
-  dk('cap');const ctxC=document.getElementById('capChart').getContext('2d');const gC=ctxC.createLinearGradient(0,0,0,170);
-  gC.addColorStop(0,isUp?PAL.upFill:PAL.downFill);gC.addColorStop(1,isUp?PAL.upFill0:PAL.downFill0);
-  CH.cap=new Chart(ctxC,{type:'line',data:{labels:['Início',...cOps.map((_,i)=>`#${i+1}`)],datasets:[{data:ca,borderColor:lc,backgroundColor:gC,borderWidth:2.5,fill:true,tension:.42,pointRadius:ca.length<=10?4:2,pointBackgroundColor:'#fff',pointBorderColor:lc,pointBorderWidth:2,pointHoverRadius:6}]},
-    options:{...CD,scales:{x:{display:false},y:{display:true,grid:{color:PAL.grid,drawBorder:false},ticks:{color:PAL.tick,font:{size:9},callback:v=>fmtS(v)}}}}});
-  dk('wr');CH.wr=new Chart(document.getElementById('wrChart').getContext('2d'),{type:'doughnut',data:{labels:['Wins','Losses'],datasets:[{data:[wins||.001,losses||.001],backgroundColor:[PAL.win,PAL.loss],borderWidth:0,hoverOffset:5}]},options:{...CD,cutout:'70%'}});
-  document.getElementById('lgW').textContent=wins;document.getElementById('lgL').textContent=losses;
-  const pY=ops.filter(o=>o.plan==='yes').length,pN=ops.filter(o=>o.plan==='no').length;
-  dk('plan');CH.plan=new Chart(document.getElementById('planChart').getContext('2d'),{type:'doughnut',data:{labels:['Seguiu','Não Seguiu'],datasets:[{data:[pY||.001,pN||.001],backgroundColor:[PAL.accent,PAL.slate],borderWidth:0,hoverOffset:5}]},options:{...CD,cutout:'70%'}});
-  document.getElementById('lgPY').textContent=pY;document.getElementById('lgPN').textContent=pN;
-}
+function setCP(p){S.cp=p;renderCharts();document.getElementById('btnW').className=p==='week'?'btn-o xs':'btn-s xs';document.getElementById('btnA').className=p==='all'?'btn-o xs':'btn-s xs';}
 
 /* ══════════════════════════════════════
    ANALYTICS
@@ -4731,6 +4779,317 @@ function capitalStartReconstruido(ops){
 }
 
 /* ══════════════════════════════════════
+   SLOTS DE GRÁFICOS NO DASHBOARD
+   Cada bloco (Evolução do Capital, Assertividade e Fidelidade ao Plano)
+   alterna sozinho entre os seus gráficos, com fade-in. As bolinhas escolhem
+   um gráfico na hora e o 📌 fixa o gráfico atual (para o rodízio no bloco).
+   O 7d/Tudo do topo vale para todos os gráficos do Dashboard.
+══════════════════════════════════════ */
+const GCHARTS=[
+  {id:'cap',    name:'Evolução do Capital', icon:'📈', desc:'Saldo acumulado ao longo das operações'},
+  {id:'weekly', name:'Win/Loss por Semana', icon:'🗼', desc:'Vitórias e derrotas agrupadas por semana'},
+  {id:'monthly',name:'Resultado por Mês',   icon:'📊', desc:'Resultado líquido agrupado por mês'},
+  {id:'wd',     name:'Resultado por Dia',   icon:'🗓️', desc:'Como cada dia da semana se comporta'},
+  {id:'wr',     name:'Assertividade',       icon:'🎯', desc:'Distribuição de wins e losses'},
+  {id:'plan',   name:'Fidelidade ao Plano', icon:'📐', desc:'Seguiu vs não seguiu o plano'},
+  {id:'cp',     name:'CALL vs PUT',         icon:'📉', desc:'Wins e losses por direção'},
+  {id:'pn',     name:'Com vs Sem Plano',    icon:'⚖️', desc:'Wins e losses por disciplina'}
+];
+const SLOT_DEF={
+  main:  {charts:['cap','weekly','monthly','wd']},
+  assert:{charts:['wr','cp']},
+  plan:  {charts:['plan','pn']}
+};
+const slotIdx={main:0,assert:0,plan:0};
+const slotCur={main:null,assert:null,plan:null};
+let slotTimer=null;
+function gDef(id){ return GCHARTS.find(c=>c.id===id); }
+function gNet(o){ return o.result==='WIN'?(+o.value||0):(o.result==='LOSS'?-(+o.value||0):0); }
+function gISO(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+function gDM(d){ return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`; }
+function gSorted(ops){ return [...(ops||[])].sort((a,b)=>(a.date||'').localeCompare(b.date||'')||(a.time||'').localeCompare(b.time||'')); }
+/* o 7d/Tudo do topo do Dashboard vale para todos os gráficos dos slots */
+function gFilter(ops){
+  const s=gSorted(ops);
+  if(S.cp!=='week') return s;
+  const lim=new Date(); lim.setDate(lim.getDate()-7);
+  return s.filter(o=>o.date&&new Date(o.date)>=lim);
+}
+function slotFixed(sid){ return (S.charts&&S.charts.fixed&&S.charts.fixed[sid])||null; }
+function isChartsActive(){ const p=document.getElementById('page-dashboard'); return !!(p&&p.classList.contains('active')); }
+function fadeBody(body){ if(!body) return; body.classList.remove('fade'); void body.offsetWidth; body.classList.add('fade'); }
+const GCB={};
+function gCanvas(body){ let c=body.querySelector('canvas'); if(!c){ body.innerHTML=''; c=document.createElement('canvas'); body.appendChild(c); } return c; }
+function gNoData(body,id,msg){ dk('gc_'+id); body.innerHTML='<div class="gc-empty">'+msg+'</div>'; return []; }
+function gRows(ops){
+  const map=new Map();
+  gSorted(ops).forEach(o=>{
+    if(!o.date) return;
+    const d=new Date(o.date+'T12:00:00'); if(isNaN(d.getTime())) return;
+    const key=gISO(d); if(!map.has(key)) map.set(key,{label:gDM(d),net:0,n:0});
+    const b=map.get(key); b.net+=gNet(o); b.n++;
+  });
+  return [...map.values()];
+}
+function gWeeklyBins(ops){
+  const map=new Map();
+  gSorted(ops).forEach(o=>{
+    if(!o.date) return;
+    const d=new Date(o.date+'T12:00:00'); if(isNaN(d.getTime())) return;
+    const mon=new Date(d); mon.setDate(d.getDate()-((d.getDay()+6)%7));
+    const key=gISO(mon); if(!map.has(key)) map.set(key,{label:gDM(mon),w:0,l:0});
+    const b=map.get(key);
+    if(o.result==='WIN') b.w++; else if(o.result==='LOSS') b.l++;
+  });
+  return [...map.values()];
+}
+function gMonthlyBins(ops){
+  const map=new Map();
+  gSorted(ops).forEach(o=>{
+    if(!o.date) return;
+    const key=String(o.date).slice(0,7);
+    if(!map.has(key)){
+      const d=new Date(o.date+'T12:00:00');
+      map.set(key,{label:isNaN(d.getTime())?key:d.toLocaleDateString('pt-BR',{month:'short',year:'2-digit'}),net:0,n:0});
+    }
+    const b=map.get(key); b.net+=gNet(o); b.n++;
+  });
+  return [...map.values()];
+}
+function gDowBins(ops){
+  const nomes=['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
+  const g=nomes.map(l=>({label:l,net:0,n:0}));
+  ops.forEach(o=>{
+    if(!o.date) return;
+    const d=new Date(o.date+'T12:00:00'); if(isNaN(d.getTime())) return;
+    const i=(d.getDay()+6)%7; g[i].net+=gNet(o); g[i].n++;
+  });
+  return g.filter(x=>x.n>0);
+}
+const eixoX={grid:{display:false},ticks:{color:()=>PAL.muted,font:{size:10,family:'Inter'}}};
+const eixoY={grid:{color:()=>PAL.grid,drawBorder:false},ticks:{color:()=>PAL.tick,font:{size:9,family:'Inter'}}};
+const legTop={display:true,labels:{color:()=>PAL.muted,font:{size:10,family:'Inter'},boxWidth:9,usePointStyle:true,pointStyle:'circle'}};
+/* 1. evolução do capital */
+GCB.cap=(ops,body)=>{
+  if(!ops.length) return gNoData(body,'cap','Sem operações neste período.');
+  const s=gSorted(ops), c=gCanvas(body);
+  const primeira=s[0].date;
+  let base=S.settings.initialCapital||0;
+  gSorted(S.operations).forEach(o=>{ if(primeira&&o.date&&o.date<primeira) base+=gNet(o); });
+  let cv=Math.max(0,base), ca=[cv];
+  s.forEach(o=>{ cv+=gNet(o); ca.push(Math.max(0,cv)); });
+  const up=ca[ca.length-1]>=ca[0], lc=up?PAL.up:PAL.down;
+  dk('gc_cap');
+  const ctx=c.getContext('2d'), gr=ctx.createLinearGradient(0,0,0,180);
+  gr.addColorStop(0,up?PAL.upFill:PAL.downFill); gr.addColorStop(1,up?PAL.upFill0:PAL.downFill0);
+  CH.gc_cap=new Chart(ctx,{type:'line',data:{labels:['Início',...s.map((_,i)=>'#'+(i+1))],datasets:[
+    {data:ca,borderColor:lc,backgroundColor:gr,borderWidth:2.5,fill:true,tension:.42,pointRadius:ca.length<=12?3:1.5,pointBackgroundColor:'#fff',pointBorderColor:lc,pointBorderWidth:2,pointHoverRadius:5}]},
+    options:{...CD,scales:{x:{display:false},y:{...eixoY,ticks:{...eixoY.ticks,callback:v=>fmtS(v)}}}}});
+  return [{c:lc,t:'no início',v:fmtBRL(base)},{c:up?PAL.up:PAL.down,t:'agora',v:fmtBRL(ca[ca.length-1])}];
+};
+/* 2. torres de win/loss por semana */
+GCB.weekly=(ops,body)=>{
+  const b=gWeeklyBins(ops);
+  if(!b.length) return gNoData(body,'weekly','Sem operações neste período.');
+  const c=gCanvas(body); dk('gc_weekly');
+  CH.gc_weekly=new Chart(c.getContext('2d'),{type:'bar',data:{labels:b.map(x=>x.label),datasets:[
+    {label:'Wins',data:b.map(x=>x.w),backgroundColor:PAL.win,borderRadius:6,borderSkipped:false,barPercentage:.72,categoryPercentage:.72},
+    {label:'Losses',data:b.map(x=>x.l),backgroundColor:PAL.loss,borderRadius:6,borderSkipped:false,barPercentage:.72,categoryPercentage:.72}]},
+    options:{...CD,plugins:{...CD.plugins,legend:legTop},
+      scales:{x:eixoX,y:{...eixoY,ticks:{...eixoY.ticks,stepSize:1}}}}});
+  return [];
+};
+/* 3. resultado por mês */
+GCB.monthly=(ops,body)=>{
+  const b=gMonthlyBins(ops);
+  if(!b.length) return gNoData(body,'monthly','Sem operações neste período.');
+  const c=gCanvas(body); dk('gc_monthly');
+  CH.gc_monthly=new Chart(c.getContext('2d'),{type:'bar',data:{labels:b.map(x=>x.label),datasets:[
+    {label:'Resultado',data:b.map(x=>Math.round(x.net*100)/100),backgroundColor:b.map(x=>x.net>=0?PAL.win:PAL.loss),borderRadius:7,borderSkipped:false}]},
+    options:{...CD,plugins:{...CD.plugins,tooltip:{...CD.plugins.tooltip,callbacks:{label:ct=>fmtBRL(ct.parsed.y)}}},
+      scales:{x:eixoX,y:{...eixoY,ticks:{...eixoY.ticks,callback:v=>fmtS(v)}}}}});
+  const melhor=[...b].sort((x,y)=>y.net-x.net)[0];
+  return melhor?[{c:melhor.net>=0?PAL.win:PAL.loss,t:'melhor mês',v:melhor.label+' · '+fmtBRL(melhor.net)}]:[];
+};
+/* 4. resultado por dia da semana */
+GCB.wd=(ops,body)=>{
+  const b=gDowBins(ops);
+  if(!b.length) return gNoData(body,'wd','Sem operações neste período.');
+  const c=gCanvas(body); dk('gc_wd');
+  CH.gc_wd=new Chart(c.getContext('2d'),{type:'bar',data:{labels:b.map(x=>x.label),datasets:[
+    {label:'Resultado',data:b.map(x=>Math.round(x.net*100)/100),backgroundColor:b.map(x=>x.net>=0?PAL.win:PAL.loss),borderRadius:7,borderSkipped:false}]},
+    options:{...CD,plugins:{...CD.plugins,tooltip:{...CD.plugins.tooltip,callbacks:{label:ct=>{const x=b[ct.dataIndex];return `${fmtBRL(x.net)} em ${x.n} op(s)`;}}}},
+      scales:{x:eixoX,y:{...eixoY,ticks:{...eixoY.ticks,callback:v=>fmtS(v)}}}}});
+  return [];
+};
+/* 5. assertividade (wins x losses) */
+GCB.wr=(ops,body)=>{
+  const w=ops.filter(o=>o.result==='WIN').length, l=ops.filter(o=>o.result==='LOSS').length;
+  if(!w&&!l) return gNoData(body,'wr','Sem operações neste período.');
+  const c=gCanvas(body); dk('gc_wr');
+  CH.gc_wr=new Chart(c.getContext('2d'),{type:'doughnut',data:{labels:['Wins','Losses'],datasets:[
+    {data:[w||.001,l||.001],backgroundColor:[PAL.win,PAL.loss],borderWidth:0,hoverOffset:5}]},options:{...CD,cutout:'68%'}});
+  return [{c:PAL.win,t:'Wins',v:w},{c:PAL.loss,t:'Losses',v:l}];
+};
+/* 6. fidelidade ao plano */
+GCB.plan=(ops,body)=>{
+  const y=ops.filter(o=>o.plan==='yes').length, n=ops.filter(o=>o.plan==='no').length;
+  if(!y&&!n) return gNoData(body,'plan','Sem operações neste período.');
+  const c=gCanvas(body); dk('gc_plan');
+  CH.gc_plan=new Chart(c.getContext('2d'),{type:'doughnut',data:{labels:['Seguiu','Não seguiu'],datasets:[
+    {data:[y||.001,n||.001],backgroundColor:[PAL.accent,PAL.slate],borderWidth:0,hoverOffset:5}]},options:{...CD,cutout:'68%'}});
+  return [{c:PAL.accent,t:'Seguiu',v:y},{c:PAL.slate,t:'Não seguiu',v:n}];
+};
+/* 7. CALL x PUT */
+GCB.cp=(ops,body)=>{
+  const cW=ops.filter(o=>o.type==='CALL'&&o.result==='WIN').length, cL=ops.filter(o=>o.type==='CALL'&&o.result==='LOSS').length,
+        pW=ops.filter(o=>o.type==='PUT'&&o.result==='WIN').length,  pL=ops.filter(o=>o.type==='PUT'&&o.result==='LOSS').length;
+  if(!cW&&!cL&&!pW&&!pL) return gNoData(body,'cp','Sem operações neste período.');
+  const c=gCanvas(body); dk('gc_cp');
+  CH.gc_cp=new Chart(c.getContext('2d'),{type:'bar',data:{labels:['CALL Win','CALL Loss','PUT Win','PUT Loss'],datasets:[
+    {data:[cW,cL,pW,pL],backgroundColor:[PAL.win,PAL.loss,PAL.win,PAL.loss],borderRadius:7,borderSkipped:false}]},
+    options:{...CD,scales:{x:eixoX,y:{...eixoY,ticks:{...eixoY.ticks,stepSize:1}}}}});
+  return [];
+};
+/* 8. com x sem plano (wins e losses) */
+GCB.pn=(ops,body)=>{
+  const pYW=ops.filter(o=>o.plan==='yes'&&o.result==='WIN').length, pYL=ops.filter(o=>o.plan==='yes'&&o.result==='LOSS').length,
+        pNW=ops.filter(o=>o.plan==='no'&&o.result==='WIN').length,  pNL=ops.filter(o=>o.plan==='no'&&o.result==='LOSS').length;
+  if(!pYW&&!pYL&&!pNW&&!pNL) return gNoData(body,'pn','Sem operações neste período.');
+  const c=gCanvas(body); dk('gc_pn');
+  CH.gc_pn=new Chart(c.getContext('2d'),{type:'bar',data:{labels:['Com Plano','Sem Plano'],datasets:[
+    {label:'Wins',data:[pYW,pNW],backgroundColor:PAL.win,borderRadius:6,borderSkipped:false},
+    {label:'Losses',data:[pYL,pNL],backgroundColor:PAL.loss,borderRadius:6,borderSkipped:false}]},
+    options:{...CD,plugins:{...CD.plugins,legend:legTop},scales:{x:eixoX,y:{...eixoY,ticks:{...eixoY.ticks,stepSize:1}}}}});
+  return [];
+};
+/* legenda dinâmica embaixo dos donuts (ganhos/perdas com os números) */
+function slotLegend(sid,arr){
+  const el=document.getElementById('slotLegend_'+sid);
+  if(!el) return;
+  if(!arr||!arr.length){ el.innerHTML=''; el.style.display='none'; return; }
+  el.style.display='flex';
+  el.innerHTML=arr.map(x=>`<div class="leg-item"><div class="leg-dot" style="background:${x.c}"></div> ${x.t} <strong style="color:var(--white);">${x.v}</strong></div>`).join('');
+}
+function slotRender(sid){
+  const def=SLOT_DEF[sid]; if(!def) return;
+  const body=document.getElementById('slotBody_'+sid); if(!body) return;
+  if(typeof Chart==='undefined') return;
+  const fixed=slotFixed(sid), list=def.charts;
+  slotIdx[sid]=((slotIdx[sid]%list.length)+list.length)%list.length;
+  const showId=(fixed&&list.indexOf(fixed)>=0)?fixed:list[slotIdx[sid]];
+  const g=gDef(showId); if(!g) return;
+  const prev=slotCur[sid];
+  if(prev&&prev!==showId) dk('gc_'+prev);
+  const changed=prev!==showId;
+  slotCur[sid]=showId;
+  const t=document.getElementById('slotTitle_'+sid); if(t) t.textContent=g.icon+' '+g.name;
+  const p=document.getElementById('slotPin_'+sid);
+  if(p){ p.classList.toggle('on',!!fixed); p.title=fixed?('Fixo em '+g.name+' — clique para voltar a alternar'):'Fixar este gráfico (para o rodízio)'; }
+  const d=document.getElementById('slotDots_'+sid);
+  if(d) d.innerHTML=list.map((cid,idx)=>{
+    const act=fixed?(cid===fixed):(idx===slotIdx[sid]);
+    const gg=gDef(cid);
+    return `<button class="slot-dot${act?' on':''}" onclick="slotJump('${sid}',${idx})" title="${gg?gg.name:cid}"></button>`;
+  }).join('');
+  let leg=null;
+  try{ leg=GCB[showId]?GCB[showId](gFilter(S.operations),body):null; }
+  catch(e){ console.warn('slot '+sid+':',e); }
+  slotLegend(sid,leg);
+  if(changed) fadeBody(body);
+}
+function slotRenderAll(){ for(const sid in SLOT_DEF) slotRender(sid); }
+function slotJump(sid,idx){
+  if(!SLOT_DEF[sid]) return;
+  slotIdx[sid]=((idx%SLOT_DEF[sid].charts.length)+SLOT_DEF[sid].charts.length)%SLOT_DEF[sid].charts.length;
+  if(S.charts.fixed) S.charts.fixed[sid]=null;
+  save(); slotRender(sid);
+}
+function slotPin(sid){
+  if(!SLOT_DEF[sid]) return;
+  const cur=slotCur[sid]||SLOT_DEF[sid].charts[slotIdx[sid]];
+  if(slotFixed(sid)){ S.charts.fixed[sid]=null; toast('Bloco voltou a alternar.','s'); }
+  else{ S.charts.fixed[sid]=cur; toast('Gráfico fixado. Clique no 📌 de novo para voltar a alternar.','s'); }
+  save(); slotRender(sid);
+}
+function slotStep(){
+  if(!isChartsActive()||document.hidden) return;
+  let any=false;
+  for(const sid in SLOT_DEF){
+    if(slotFixed(sid)) continue;
+    slotIdx[sid]=(slotIdx[sid]+1)%SLOT_DEF[sid].charts.length;
+    slotRender(sid); any=true;
+  }
+  if(!any) slotStop();                      // todos fixados: para o cronômetro
+}
+function slotStart(){
+  slotStop();
+  if(!S.charts||!S.charts.auto){ syncAutoBtn(); return; }
+  slotTimer=setInterval(slotStep,Math.max(3,(S.charts.autoSec||6))*1000);
+  syncAutoBtn();
+}
+function slotStop(){ if(slotTimer){ clearInterval(slotTimer); slotTimer=null; } syncAutoBtn(); }
+function renderCharts(){ slotRenderAll(); slotStart(); }
+function syncAutoBtn(){
+  const b=document.getElementById('gAutoBtn'); if(!b) return;
+  const on=!!(S.charts&&S.charts.auto);
+  b.className=(on?'btn-o':'btn-s')+' xs';
+  b.title=on?'Rodízio ligado — clique para pausar':'Rodízio pausado — clique para ligar';
+}
+function gAutoToggle(){
+  if(!S.charts) S.charts={};
+  S.charts.auto=!S.charts.auto;
+  save();
+  if(S.charts.auto) slotStart(); else slotStop();
+  syncCycleUI();
+  toast(S.charts.auto?'Gráficos voltaram a alternar.':'Rodízio pausado — os gráficos ficam parados.','s');
+}
+/* ── configuração do ciclo (Configurações → 🔁 Ciclo de Gráficos) ── */
+function sliderPct(el){
+  if(!el) return;
+  const min=parseFloat(el.min)||0, max=parseFloat(el.max)||100, v=parseFloat(el.value)||min;
+  el.style.setProperty('--pct',(max>min?((v-min)/(max-min)*100):0).toFixed(0)+'%');
+}
+function syncCycleUI(){
+  const t=document.getElementById('cycleToggle'); if(t) t.checked=S.charts.auto!==false;
+  const s=document.getElementById('cycleSec');
+  if(s){ s.value=S.charts.autoSec||6; sliderPct(s); }
+  const o=document.getElementById('cycleSecVal'); if(o) o.textContent=(S.charts.autoSec||6)+' s';
+  const f=document.getElementById('cycleFade');
+  if(f){ f.value=S.charts.fadeSec||0.8; sliderPct(f); }
+  const fv=document.getElementById('cycleFadeVal'); if(fv) fv.textContent=(S.charts.fadeSec||0.8).toFixed(1)+' s';
+  applySlotFade(); syncAutoBtn();
+}
+function applySlotFade(){
+  const v=S.charts.fadeSec>0?S.charts.fadeSec:0.8;
+  document.documentElement.style.setProperty('--slot-fade',v.toFixed(2)+'s');
+}
+function cycleToggleChange(){
+  const t=document.getElementById('cycleToggle');
+  S.charts.auto=!!(t&&t.checked);
+  save();
+  if(S.charts.auto) slotStart(); else slotStop();
+  syncAutoBtn();
+  toast(S.charts.auto?'Rodízio de gráficos ligado.':'Rodízio pausado.','s');
+}
+function cycleSecChange(el){
+  const v=parseInt(el&&el.value,10)||6;
+  S.charts.autoSec=Math.max(3,Math.min(20,v));
+  sliderPct(el);
+  const o=document.getElementById('cycleSecVal'); if(o) o.textContent=S.charts.autoSec+' s';
+  save();
+  if(S.charts.auto) slotStart();
+}
+function cycleFadeChange(el){
+  const v=parseFloat(el&&el.value);
+  S.charts.fadeSec=Math.max(0.3,Math.min(2,isFinite(v)?v:0.8));
+  sliderPct(el);
+  const fv=document.getElementById('cycleFadeVal'); if(fv) fv.textContent=S.charts.fadeSec.toFixed(1)+' s';
+  applySlotFade(); save();
+}
+function chartsRefresh(){ if(isChartsActive()) renderCharts(); }
+
+/* ══════════════════════════════════════
    INIT
 ══════════════════════════════════════ */
 function init(){
@@ -4739,6 +5098,7 @@ function init(){
   applyTheme(S.theme||'default',{silent:true});
   applyProfUI();
   updateDash();
+  syncCycleUI();
   badge();
   mtApplyAll();
   initPWA();
