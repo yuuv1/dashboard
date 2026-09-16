@@ -4684,7 +4684,9 @@ function advNotas(ops,capitalStart){
   const sc=dias.length>1?advScatter(null,ops,capitalStart,null):null;
   const nota={};
   nota.dd=`Maior queda: ${ddMax.toFixed(1)}% do pico. Faixas largas e longas no fundo = recuperação lenta.`;
-  nota.hist=`Ganho médio ${rpMoney(h.winMean)} × perda média ${rpMoney(h.lossMean)} — ${h.lossMean>h.winMean?'a perda é maior que o ganho':'o ganho cobre a perda'}.`;
+  const rs=rpRMultiples(ops,capitalStart,(S.settings&&S.settings.stopLoss)||0);
+  const rMed=rs.length?rs.reduce((a,x)=>a+x.r,0)/rs.length:0;
+  nota.hist=`Ganho médio ${rpMoney(h.winMean)} × perda média ${rpMoney(h.lossMean)} — ${h.lossMean>h.winMean?'a perda é maior que o ganho':'o ganho cobre a perda'}. R médio por entrada: ${rMed>=0?'+':''}${rMed.toFixed(2)}R (1R = stop do dia).`;
   nota.seq=dois.length?`${um.length} dia(s) com 1 entrada: média ${rpMoney(med(um.map(d=>d.net)))}. ${dois.length} dia(s) com 2+: média ${rpMoney(med(dois.map(d=>d.net)))}.`:'';
   nota.scat=`${dias.length} dias operados. Cada ponto é um dia.`;
   nota.buck=``;
