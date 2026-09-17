@@ -34,14 +34,14 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 const GIF_B64 = 'R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==';
 const GIF_URL = 'data:image/gif;base64,' + GIF_B64;
 
-function boot(savedLS, idbToShare) {
+function boot(savedLS, idbToShare, url) {
   /* idbToShare: passar o IndexedDB de outra janela simula "recarregar o app
      no mesmo navegador" (mesma origem => mesmo banco) */
   const idb = idbToShare || new IDBFactory();
   const win = new JSDOM(html, {
     runScripts: 'dangerously',
     pretendToBeVisual: true,
-    url: 'https://edgecontrol.local/',
+    url: url || 'https://edgecontrol.local/',
     beforeParse(w) {
       w.confirm = () => true;
       w.matchMedia = () => ({ matches: false, addEventListener() {}, removeEventListener() {}, addListener() {}, removeListener() {} });
@@ -63,6 +63,28 @@ function boot(savedLS, idbToShare) {
       // SEM File.text() real: o app precisa cair no FileReader
       if (w.File) w.File.prototype.text = undefined;
       w.TextEncoder = TextEncoder;        // todo navegador real tem; jsdom não
+      /* Blob do Node: o Blob do jsdom NÃO sobrevive ao structured clone do
+         fake-indexeddb (volta um objeto vazio) — com o do Node os bytes
+         realmente fazem o roundtrip, como num navegador de verdade. */
+      w.Blob = Blob;
+      /* o FileReader do jsdom não aceita Blob do Node: shim só para
+         readAsDataURL (o caminho que o app usa para exibir em file://) */
+      {
+        const orig = w.FileReader.prototype.readAsDataURL;
+        w.FileReader.prototype.readAsDataURL = function (blob) {
+          try { return orig.call(this, blob); }
+          catch (e) {
+            blob.arrayBuffer().then(buf => {
+              Object.defineProperty(this, 'result', {
+                value: 'data:' + (blob.type || 'application/octet-stream') + ';base64,' + Buffer.from(buf).toString('base64'),
+                configurable: true
+              });
+              if (typeof this.onload === 'function') this.onload({ target: this });
+              try { this.dispatchEvent(new w.Event('load')); } catch (_) {}
+            }, () => { if (typeof this.onerror === 'function') this.onerror({ target: this }); });
+          }
+        };
+      }
       if (savedLS) w.localStorage.setItem('ec7', savedLS);
     }
   }).window;
@@ -210,6 +232,33 @@ async function runImport(w, backupObj) {
     await sleep(200);
     const emTxt = (win.document.getElementById('galEmpty') || {}).innerHTML || '';
     ok(emTxt.includes('ausentes do armazenamento'), 'galeria diferencia "sem prints" de "prints ausentes"', emTxt.slice(0, 80));
+  }
+
+  /* ── 7. app aberto com DOIS CLIQUES (file://): exibe via data: URL ──
+         blob: URL com origem "null" não carrega em <img> nesse contexto */
+  {
+    const pack = {
+      __ec: 3, exportedAt: '2026-09-17T00:00:00.000Z',
+      state: {
+        profile: {}, settings: { initialCapital: 1, currentCapital: 1, usdRate: 5, stopLoss: 8, target: 12 },
+        operations: [{ id: '444', date: '2026-01-13', time: '07:00', value: 10, usd: 2, result: 'WIN', type: 'PUT', reason: 'x', plan: 'yes', img: '', yt: '', notes: '', shots: ['sF'], createdAt: '' }]
+      },
+      shots: { sF: { d: GIF_URL, note: '', name: 'f.gif', at: '' } }
+    };
+    const { win } = boot(null, null, 'file:///C:/EdgeControl/edgecontrol-glass.html');
+    await sleep(300);
+    await runImport(win, pack);
+    await sleep(150);
+    const u = await win.eval("imgURL('sF')");
+    ok(typeof u === 'string' && u.startsWith('data:'), 'file://: imgURL devolve data: URL (não blob:)', String(u).slice(0, 40));
+    win.eval("openDet('444')");
+    await sleep(250);
+    const img = win.document.querySelector('#detShots img');
+    ok(img && String(img.getAttribute('src')).startsWith('data:'), 'file://: miniatura do detalhe renderiza com data: URL', img ? String(img.getAttribute('src')).slice(0, 40) : 'sem <img>');
+    win.eval('openGallery()');
+    await sleep(250);
+    const gal = ((win.document.getElementById('galGrid') || {}).innerHTML || '');
+    ok(gal.includes('src="data:'), 'file://: galeria também com data: URLs', gal.slice(0, 60));
   }
 
   console.log(fails ? `\n${fails} teste(s) FALHARAM` : '\nTodos os testes de importação passaram ✅');

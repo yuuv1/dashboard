@@ -2462,13 +2462,21 @@ const IMGDB={
   keys(){ return this._tx('readonly', s=>s.getAllKeys()); }
 };
 
-/* URLs de objeto com cache, para não vazar memória */
+/* URLs de objeto com cache, para não vazar memória.
+   ATENÇÃO: com o app aberto direto do disco (file://, dois cliques no HTML),
+   URLs blob: ficam com origem "null" e não carregam em <img> em vários
+   navegadores — o print "existe" mas não aparece. Nesse caso usa data: URL,
+   que funciona em qualquer contexto. */
 const _imgURLs=new Map();
 async function imgURL(id){
   if(_imgURLs.has(id)) return _imgURLs.get(id);
   const rec=await IMGDB.get(id);
   if(!rec||!rec.blob) return null;
-  const u=URL.createObjectURL(rec.blob);
+  let u=null;
+  if(location.protocol==='file:'){
+    try{ u=await blobToDataURL(rec.blob); }catch(e){ u=null; }
+  }
+  if(!u){ u=URL.createObjectURL(rec.blob); }
   _imgURLs.set(id,u);
   return u;
 }
@@ -5169,6 +5177,9 @@ var EC_BUILD='2026-09-17.2-import-imagens';   /* digite EC_BUILD no console p/ v
 function init(){
   console.info('EdgeControl build: '+EC_BUILD);
   load();
+  if(location.protocol==='file:'){
+    setTimeout(()=>toast('Você abriu o app direto do disco (file://). Tudo funciona, mas para instalar o aplicativo e o modo offline, abra pelo EdgeControl.bat.','w'),900);
+  }
   rptInitFromState();
   applyTheme(S.theme||'default',{silent:true});
   applyProfUI();
