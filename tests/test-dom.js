@@ -133,6 +133,40 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   ok(ev('S.operations.length') === 2, 'salva LOSS só com valor + resultado');
   ok(ev('S.settings.currentCapital') === 115, 'LOSS mínimo subtrai o valor do capital');
 
+  /* editar uma operação aplica só a diferença financeira ao capital */
+  const editedOpId = ev('S.operations[0].id');
+  w.editOp(editedOpId);
+  d.getElementById('opVal').value = '40';
+  d.getElementById('opRes').value = 'WIN';
+  w.saveOp();
+  ok(ev('S.settings.currentCapital') === 130, 'editar WIN de R$ 25 para R$ 40 acrescenta somente R$ 15 ao capital');
+  ok(/130,00/.test(d.getElementById('dashCap').textContent), 'Dashboard reflete o capital corrigido após a edição');
+  ok(JSON.parse(w.localStorage.getItem('ec7')).settings.currentCapital === 130, 'capital da edição persiste no armazenamento');
+
+  w.editOp(editedOpId);
+  d.getElementById('opVal').value = '15';
+  d.getElementById('opRes').value = 'LOSS';
+  w.saveOp();
+  ok(ev('S.settings.currentCapital') === 75, 'trocar WIN de R$ 40 por LOSS de R$ 15 desconta R$ 55 do capital');
+
+  /* restaura o lançamento original para os demais cenários da suíte */
+  w.editOp(editedOpId);
+  d.getElementById('opVal').value = '25';
+  d.getElementById('opRes').value = 'WIN';
+  w.saveOp();
+  ok(ev('S.settings.currentCapital') === 115, 'segunda edição também recompõe o capital corretamente');
+
+  /* exclusão deve desfazer o mesmo impacto financeiro */
+  w.openNewOpModal();
+  d.getElementById('opVal').value = '20';
+  d.getElementById('opRes').value = 'WIN';
+  w.saveOp();
+  const deletedOpId = ev('S.operations[S.operations.length-1].id');
+  w.confirm = () => true;
+  ev(`curId=${JSON.stringify(deletedOpId)}`); w.delOp();
+  ok(ev('S.settings.currentCapital') === 115 && !ev(`S.operations.some(o=>o.id===${JSON.stringify(deletedOpId)})`),
+     'excluir operação reverte seu impacto no capital');
+
   /* ativo novo: salva, persiste e reaparece em todas as listas */
   w.openNewOpModal();
   d.getElementById('opVal').value = '12';

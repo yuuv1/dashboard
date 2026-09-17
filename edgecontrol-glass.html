@@ -2922,6 +2922,16 @@ function syncValLabel(){
     h.textContent='quanto voce ganhou ou perdeu nesta operacao'; i.placeholder='80.00'; }
 }
 function calcOpUsd(){const v=parseFloat(document.getElementById('opVal').value)||0;document.getElementById('opValU').value='~$ '+(v/(S.settings.usdRate||1)).toFixed(2);}
+function opCapitalEffect(op){
+  const value=Number(op&&op.value),result=cleanName(op&&op.result).toUpperCase();
+  if(!Number.isFinite(value)) return 0;
+  return result==='WIN'?value:(result==='LOSS'?-value:0);
+}
+function applyCapitalDelta(delta){
+  const current=Number(S.settings.currentCapital),change=Number(delta);
+  const next=(Number.isFinite(current)?current:0)+(Number.isFinite(change)?change:0);
+  S.settings.currentCapital=Math.round((Math.max(0,next)+Number.EPSILON)*100)/100;
+}
 function saveOp(){
   const date=cleanName(document.getElementById('opDate').value),time=cleanName(document.getElementById('opTime').value);
   const value=parseFloat(document.getElementById('opVal').value),result=cleanName(document.getElementById('opRes').value).toUpperCase();
@@ -2944,8 +2954,17 @@ function saveOp(){
     asset,direction:isTradeDirection(direction)?direction:'',type:isTradeDirection(direction)?direction:'',operationals,
     reason,plan:plan==='yes'||plan==='no'?plan:'',img,yt,notes,shots,
     createdAt:(previous&&previous.createdAt)||new Date().toISOString()};
-  if(curId){const i=S.operations.findIndex(o=>o.id===curId);if(i!==-1)S.operations[i]=op;toast('Operação atualizada!','s');}
-  else{S.operations.push(op);if(result==='WIN')S.settings.currentCapital=Math.max(0,S.settings.currentCapital+value);else S.settings.currentCapital=Math.max(0,S.settings.currentCapital-value);toast('Operação registrada!','s');}
+  if(curId){
+    const i=S.operations.findIndex(o=>o.id===curId);
+    if(i!==-1){
+      const previousEffect=opCapitalEffect(S.operations[i]);
+      S.operations[i]=op;
+      applyCapitalDelta(opCapitalEffect(op)-previousEffect);
+    }
+    toast('Operação atualizada!','s');
+  }else{
+    S.operations.push(op);applyCapitalDelta(opCapitalEffect(op));toast('Operação registrada!','s');
+  }
   draftShots=[];
   save();refreshAssetUI();closeMod('newOpModal');updateDash();renderOps();badge();
   if(document.getElementById('page-report')?.classList.contains('active')) rptLoadPage();
@@ -2955,6 +2974,7 @@ function delOp(){
   const _op=S.operations.find(o=>o.id===curId);
   if(_op&&_op.shots) _op.shots.forEach(sid=>{IMGDB.del(sid).catch(()=>{});revokeImgURL(sid);});
   S.operations=S.operations.filter(o=>o.id!==curId);
+  if(_op) applyCapitalDelta(-opCapitalEffect(_op));
   save();refreshAssetUI();closeMod('opDetMod');updateDash();renderOps();badge();toast('Operação excluída.','s');
 }
 function resultBadgeHTML(result){
