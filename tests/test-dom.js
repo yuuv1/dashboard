@@ -233,7 +233,13 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   await w.importData({ target: { files: [{ text: async () => correctedAiBackupText }], value: 'backup.json' } });
   ok(ev("S.operations.length===50 && S.assets.includes('EUR/GBP') && S.operationals.includes('Fibonacci')"),
      'backup corrigido da IA importa as 50 operações, ativos e operacionais');
-  ok(ev('S.settings.currentCapital') === 658.08, 'backup corrigido atualiza o capital com as operações até 16/09');
+  ok(ev('S.settings.currentCapital') === 640.31, 'backup corrigido fecha no capital real de R$ 640,31');
+  ok(ev("(()=>{const a=S.operations.find(x=>x.id==='1789186453598'),b=S.operations.find(x=>x.id==='1789186468004');return a.date==='2026-09-11'&&a.time==='09:11'&&a.asset==='GBP/JPY'&&b.date==='2026-09-11'&&b.time==='09:20'&&b.asset==='GBP/USD';})()"),
+     'operações cadastradas em 12/09 ficam na data real de execução, 11/09');
+  ok(ev("(()=>{const values=['1789441440000','1789527120000','1789531680000'].map(id=>S.operations.find(x=>x.id===id).value);return JSON.stringify(values)===JSON.stringify([39.01,39,33.93]);})()"),
+     'WINs do extrato usam o lucro líquido, não o valor da entrada');
+  ok(ev("(()=>{const net=S.operations.reduce((n,o)=>n+(o.result==='WIN'?o.value:o.result==='LOSS'?-o.value:0),0);return Math.round((S.settings.initialCapital+net)*100)/100===S.settings.currentCapital;})()"),
+     'capital do backup confere com a soma financeira das 50 operações');
   ok(ev("(()=>{const o=S.operations.find(x=>x.id==='1789358340000');return o.asset==='EUR/GBP'&&o.direction==='PUT'&&o.reason==='';})()"),
      'backup corrigido separa ativo e direção nas novas operações');
 
