@@ -11,6 +11,7 @@
     "test:themes": "node tests/test-themes.js"
   },
   "devDependencies": {
+    "fake-indexeddb": "^6.2.5",
     "jsdom": "^26.0.0"
   }
 }

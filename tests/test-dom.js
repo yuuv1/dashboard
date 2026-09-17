@@ -3,11 +3,12 @@
    tabelas (com os invólucros .rtbl-wrap), temas, impressão e estado.
 
    Rodar:  npm run test:dom       (ou: node tests/test-dom.js)
-   Requer: npm install  (jsdom)
+   Requer: npm install  (jsdom + fake-indexeddb)
 ------------------------------------------------------------------ */
 const fs = require('fs');
 const path = require('path');
 const { JSDOM } = require('jsdom');
+const { IDBFactory } = require('fake-indexeddb');
 
 const HTML = path.join(__dirname, '..', 'edgecontrol-glass.html');
 const FIXTURE = path.join(__dirname, '..', 'edgecontrol_2026-09-03.json');
@@ -32,6 +33,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     url: 'https://edgecontrol.local/',
     beforeParse(w) {
       w.__printed = 0;
+      w.indexedDB = new IDBFactory();
       w.print = () => { w.__printed++; };
       w.matchMedia = () => ({ matches: false, addEventListener() {}, removeEventListener() {}, addListener() {}, removeListener() {} });
       // canvas: o app desenha gráficos; em jsdom basta um contexto falso
@@ -255,19 +257,29 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   ok(linkedPhotoOps.length === 5 && linkedPhotoOps.every(o => o.shots.length === 2),
      'cinco operações recebem análise e execução/resultado');
 
-  /* simula IndexedDB/fetch e confirma a restauração dos blobs pelo importador real */
-  w.__restoredShots = [];
-  w.fetch = async dataUrl => {
-    const [head, encoded] = String(dataUrl).split(',', 2);
-    const bytes = Buffer.from(encoded, 'base64');
-    return { blob: async () => new w.Blob([bytes], { type: head.slice(5, head.indexOf(';')) }) };
-  };
-  ev("IMGDB.put=async rec=>{window.__restoredShots.push({id:rec.id,size:rec.blob.size,name:rec.name,note:rec.note});return rec;}");
+  /* usa IndexedDB realista e o importador completo, sem substituir seus métodos */
   await w.importData({ target: { files: [{ text: async () => backupWithImagesText }], value: 'backup-com-imagens.json' } });
-  ok(w.__restoredShots.length === 10 && w.__restoredShots.reduce((n, r) => n + r.size, 0) === 484517,
-     'importador restaura os 10 arquivos originais no banco de imagens');
+  const restoredShots = await ev('IMGDB.all()');
+  ok(restoredShots.length === 10 && restoredShots.reduce((n, r) => n + r.size, 0) === 484517,
+     'importador persiste os 10 arquivos originais no IndexedDB');
+  ok(restoredShots.every(r => r.dataUrl.startsWith('data:image/jpeg;base64,')),
+     'prints importados mantêm uma fonte de visualização compatível');
   ok(ev("S.operations.filter(o=>(o.shots||[]).length===2).length") === 5,
      'vínculos entre prints e operações sobrevivem à importação');
+
+  /* mesmo sem suporte a blob:, miniaturas e visor usam o data URL restaurado */
+  let blobUrlCalls = 0;
+  w.URL.createObjectURL = () => { blobUrlCalls++; throw new Error('blob indisponível'); };
+  w.openDet('1789531680000');
+  await sleep(100);
+  const detailShotImages = [...d.querySelectorAll('#detShots img')];
+  ok(detailShotImages.length === 2 && detailShotImages.every(img => img.src.startsWith('data:image/jpeg;base64,')),
+     'detalhe da operação exibe as duas miniaturas importadas');
+  await w.openShotViewer('det', 0);
+  ok(d.getElementById('svImg').src.startsWith('data:image/jpeg;base64,') && blobUrlCalls === 0,
+     'visualizador abre o print sem depender de URL blob');
+  w.closeShotViewer(); w.closeMod('opDetMod');
+  w.URL.createObjectURL = () => 'blob:mock';
 
   /* restaura o backup de exemplo para a suíte histórica */
   w.localStorage.clear();

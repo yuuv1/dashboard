@@ -2575,14 +2575,20 @@ const _imgURLs=new Map();
 async function imgURL(id){
   if(_imgURLs.has(id)) return _imgURLs.get(id);
   const rec=await IMGDB.get(id);
-  if(!rec||!rec.blob) return null;
+  if(!rec) return null;
+  /* Prints restaurados do backup mantêm também o data URL: funciona até em
+     navegadores/WebViews que bloqueiam URLs blob para arquivos locais. */
+  if(typeof rec.dataUrl==='string'&&rec.dataUrl.startsWith('data:image/')){
+    _imgURLs.set(id,rec.dataUrl);return rec.dataUrl;
+  }
+  if(!rec.blob) return null;
   const u=URL.createObjectURL(rec.blob);
   _imgURLs.set(id,u);
   return u;
 }
 function revokeImgURL(id){
   const u=_imgURLs.get(id);
-  if(u){URL.revokeObjectURL(u);_imgURLs.delete(id);}
+  if(u){if(String(u).startsWith('blob:'))URL.revokeObjectURL(u);_imgURLs.delete(id);}
 }
 
 /* Reduz o print antes de guardar: 1600px de largura é
@@ -3172,9 +3178,10 @@ function svPrev(){ if(svList.length<2)return; svIdx=(svIdx-1+svList.length)%svLi
 function svNext(){ if(svList.length<2)return; svIdx=(svIdx+1)%svList.length; svShow(); }
 function closeShotViewer(){ document.getElementById('shotViewer').classList.remove('show'); }
 async function svDownload(){
-  const id=svList[svIdx]; const rec=await IMGDB.get(id); if(!rec) return;
-  const u=URL.createObjectURL(rec.blob),a=document.createElement('a');
-  a.href=u;a.download=(rec.name||'print')+(rec.name?.endsWith('.jpg')?'':'.jpg');a.click();
+  const id=svList[svIdx],rec=await IMGDB.get(id),blob=await shotBlob(rec);
+  if(!rec||!blob){toast('Não foi possível abrir este print.','e');return;}
+  const u=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=u;a.download=(rec.name||'print')+(/\.jpe?g$/i.test(rec.name||'')?'':'.jpg');a.click();
   setTimeout(()=>URL.revokeObjectURL(u),800);
 }
 async function svDelete(){
@@ -3294,7 +3301,9 @@ async function exportShotsZip(){
       const op=(S.operations||[]).find(o=>(o.shots||[]).includes(r.id));
       const pre=op?`${op.date||'sem-data'}_${op.result}_${opAsset(op)||'sem-ativo'}`:'sem-operacao';
       const nm=`${String(i+1).padStart(3,'0')}_${pre}${r.note?'_'+r.note.slice(0,26).replace(/[^\w\s-]/g,'').trim().replace(/\s+/g,'-'):''}.jpg`;
-      files.push({name:nm,data:new Uint8Array(await r.blob.arrayBuffer())});
+      const blob=await shotBlob(r);
+      if(!blob) throw new Error('Print sem dados: '+r.id);
+      files.push({name:nm,data:new Uint8Array(await blob.arrayBuffer())});
     }
     // índice em texto, para saber a que operação cada print pertence
     const idx=all.map((r,i)=>{
@@ -3466,8 +3475,9 @@ async function exportData(){
     const shots=await IMGDB.all();
     const imgs={};
     for(const r of shots){
-      if(r.size>3*1024*1024) continue;              // pula imagens muito grandes
-      imgs[r.id]={d:await blobToDataURL(r.blob),note:r.note||'',name:r.name||'',at:r.at||''};
+      const blob=await shotBlob(r);
+      if(!blob||blob.size>3*1024*1024) continue;    // pula imagens ausentes ou muito grandes
+      imgs[r.id]={d:await shotDataURL(r),note:r.note||'',name:r.name||'',at:r.at||''};
     }
     const pack={__ec:3,exportedAt:new Date().toISOString(),state:S,shots:imgs};
     const b=new Blob([JSON.stringify(pack)],{type:'application/json'});
@@ -3477,8 +3487,37 @@ async function exportData(){
     toast(`Backup: ${(S.operations||[]).length} ops e ${Object.keys(imgs).length} prints.`,'s');
   }catch(e){ toast('Falha ao exportar.','e'); }
 }
-function blobToDataURL(b){return new Promise(r=>{const f=new FileReader();f.onload=()=>r(f.result);f.readAsDataURL(b);});}
-function dataURLtoBlob(d){return fetch(d).then(r=>r.blob());}
+function blobToDataURL(b){return new Promise((res,rej)=>{const f=new FileReader();f.onload=()=>res(f.result);f.onerror=()=>rej(f.error||new Error('Falha ao ler imagem.'));f.readAsDataURL(b);});}
+/* Conversão local: fetch(data:) falha em alguns navegadores/WebViews quando o
+   painel é aberto como arquivo ou PWA, embora o JSON e o base64 estejam válidos. */
+function dataURLtoBlob(d){
+  return new Promise((res,rej)=>{
+    try{
+      const src=String(d??''),comma=src.indexOf(',');
+      if(comma<6||!src.startsWith('data:')) throw new Error('Imagem embutida inválida.');
+      const meta=src.slice(5,comma),mime=(meta.split(';')[0]||'application/octet-stream').toLowerCase();
+      const payload=src.slice(comma+1);
+      let bytes;
+      if(/(?:^|;)base64(?:;|$)/i.test(meta)){
+        const bin=atob(payload.replace(/\s+/g,''));
+        bytes=new Uint8Array(bin.length);
+        for(let i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i);
+      }else bytes=new TextEncoder().encode(decodeURIComponent(payload));
+      res(new Blob([bytes],{type:mime}));
+    }catch(err){rej(err);}
+  });
+}
+async function shotBlob(rec){
+  if(!rec) return null;
+  if(rec.blob&&typeof rec.blob.arrayBuffer==='function') return rec.blob;
+  if(typeof rec.dataUrl==='string') return dataURLtoBlob(rec.dataUrl);
+  return null;
+}
+async function shotDataURL(rec){
+  if(rec&&typeof rec.dataUrl==='string'&&rec.dataUrl.startsWith('data:')) return rec.dataUrl;
+  const blob=await shotBlob(rec);
+  return blob?blobToDataURL(blob):null;
+}
 /* Backups produzidos por IA às vezes chegam com BOM, explicação ou cercas ```json. */
 function parseBackupJSON(text){
   let src=String(text??'').replace(/^\uFEFF/,'').trim();
@@ -3528,15 +3567,25 @@ async function importData(ev){
     ensureChartState();
     if(!THEMES.some(t=>t.id===S.theme)) S.theme='default';
 
-    /* ── prints (v2) ── */
-    let ok=0;
-    for(const [id,o] of Object.entries(pics)){
+    /* ── prints (v2/v3) ── */
+    const shotOwners=new Map();
+    S.operations.forEach(op=>(op.shots||[]).forEach(id=>shotOwners.set(String(id),op.id)));
+    let ok=0,failed=0;
+    for(const [id,value] of Object.entries(pics)){
       try{
-        const blob=await dataURLtoBlob(o.d);
-        await IMGDB.put({id,blob,note:o.note||'',name:o.name||'',
+        const o=value&&typeof value==='object'?value:{d:value};
+        const dataUrl=String(o.d||'');
+        const blob=await dataURLtoBlob(dataUrl);
+        if(!blob.size||!blob.type.startsWith('image/')) throw new Error('Conteúdo não é uma imagem.');
+        revokeImgURL(id);
+        /* Mantém o data URL no IndexedDB. Assim a visualização não depende de
+           blob: — restrito por alguns navegadores quando o app roda localmente. */
+        await IMGDB.put({id,dataUrl,note:o.note||'',name:o.name||'',opId:shotOwners.get(id)||null,
                          at:o.at||new Date().toISOString(),size:blob.size,w:0,h:0});
+        const restored=await IMGDB.get(id);
+        if(!restored||restored.dataUrl!==dataUrl) throw new Error('Imagem não persistiu no navegador.');
         ok++;
-      }catch(err){ /* segue com os demais */ }
+      }catch(err){failed++;console.warn('Falha ao importar print',id,err);}
     }
 
     /* ── aplica ── */
@@ -3548,7 +3597,8 @@ async function importData(ev){
     if(sp&&sp.classList.contains('active')){ loadSetForm(); syncMetalUI(); syncThemeUI(); updGalStats(); }
     const rp=document.getElementById('page-report');
     if(rp&&rp.classList.contains('active')) rptLoadPage();
-    toast(`Importado: ${nOps} operações${ok?` e ${ok} prints`:''}.`,'s');
+    const msg=`Importado: ${nOps} operações${ok?` e ${ok} prints`:''}`+(failed?`. Falha em ${failed} print(s).`:'.');
+    toast(msg,failed?'w':'s');
   }catch(err){
     toast('Erro ao importar: '+(err&&err.message?err.message:'desconhecido'),'e');
   }finally{
