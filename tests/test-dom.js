@@ -252,14 +252,46 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   const embeddedShots = Object.values(backupWithImages.shots);
   const embeddedBytes = embeddedShots.reduce((n, shot) => n + Buffer.from(shot.d.split(',', 2)[1], 'base64').length, 0);
   const linkedPhotoOps = backupWithImages.state.operations.filter(o => (o.shots || []).length);
+  const unlinkedBackup = JSON.parse(backupWithImagesText);
+  unlinkedBackup.state.operations = unlinkedBackup.state.operations.map(o => ({ ...o, shots: [] }));
+  const unlinkedBackupText = JSON.stringify(unlinkedBackup);
   ok(embeddedShots.length === 10 && embeddedShots.every(s => s.d.startsWith('data:image/jpeg;base64,')),
      'backup com imagens contém os 10 JPEGs embutidos');
   ok(embeddedBytes === 484517, 'imagens embutidas preservam todos os bytes dos arquivos originais');
   ok(linkedPhotoOps.length === 5 && linkedPhotoOps.every(o => o.shots.length === 2),
      'cinco operações recebem análise e execução/resultado');
 
-  /* usa IndexedDB realista e o importador completo, sem substituir seus métodos */
-  await w.importData({ target: { files: [{ text: async () => backupWithImagesText }], value: 'backup-com-imagens.json' } });
+  /* primeiro importa a variante problemática para que a exportação também
+     valide que os vínculos reconstruídos são carregados para o próximo backup */
+  await w.importData({ target: { files: [{ text: async () => unlinkedBackupText }], value: 'backup-com-imagens-sem-vinculo.json' } });
+  ok(ev("S.operations.filter(o=>(o.shots||[]).length===2).length") === 5,
+     'importação reconstrói os vínculos perdidos do backup __ec:3');
+
+  /* a exportação lê todos os registros do IndexedDB e grava o dono de cada print */
+  let exportedBlob=null;
+  const oldCreateObjectURL=w.URL.createObjectURL;
+  const oldAnchorClick=w.HTMLAnchorElement.prototype.click;
+  w.URL.createObjectURL=blob=>{exportedBlob=blob;return 'blob:backup-export';};
+  w.HTMLAnchorElement.prototype.click=()=>{};
+  await w.exportData();
+  const exportedText=await new Promise((resolve,reject)=>{
+    const fr=new w.FileReader();
+    fr.onload=()=>resolve(String(fr.result)); fr.onerror=()=>reject(fr.error);
+    fr.readAsText(exportedBlob);
+  });
+  const exportedPack=JSON.parse(exportedText);
+  ok(Object.keys(exportedPack.shots).length===10 && Object.values(exportedPack.shots).every(s=>s.d.startsWith('data:image/jpeg;base64,')),
+     'exportData inclui os 10 prints do IndexedDB no JSON');
+  ok(Object.entries(exportedPack.shots).every(([id,s])=>{
+    const op=exportedPack.state.operations.find(o=>(o.shots||[]).includes(id));
+    return op && s.opId===op.id;
+  }), 'exportData preserva o vínculo de cada print com sua operação');
+  w.URL.createObjectURL=oldCreateObjectURL;
+  w.HTMLAnchorElement.prototype.click=oldAnchorClick;
+
+  /* usa IndexedDB realista e testa um __ec:3 que perdeu shots[], mas manteve
+     a associação recuperável na nota do print */
+  await w.importData({ target: { files: [{ text: async () => unlinkedBackupText }], value: 'backup-com-imagens-sem-vinculo.json' } });
   const restoredShots = await ev('IMGDB.all()');
   ok(restoredShots.length === 10 && restoredShots.reduce((n, r) => n + r.size, 0) === 484517,
      'importador persiste os 10 arquivos originais no IndexedDB');
@@ -295,6 +327,34 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   ev(`RPT.shotSize='full';`);
   await fresh(() => w.rptRender());
   ok(d.querySelectorAll('#rdoc .rshots.one').length === 5, 'modo grande mantém uma coluna de prints');
+
+  /* formato v1: uma imagem em operation.img também vira print persistido e
+     reaparece na ficha do relatório */
+  const legacyBackupWithImage={__ec:3,state:{
+    settings:{initialCapital:100,currentCapital:100,usdRate:5,stopLoss:5,target:2.5},
+    operations:[{id:'legacy-img',date:'2026-09-14',time:'09:59',value:48.88,usd:9.78,
+      result:'LOSS',asset:'EUR/GBP',direction:'PUT',shots:[],img:embeddedShots[0].d}]
+  },shots:{}};
+  await w.importData({target:{files:[{text:async()=>JSON.stringify(legacyBackupWithImage)}],value:'backup-v1-com-imagem.json'}});
+  const legacyOp=ev('S.operations[0]'),legacyId='legacy_img_legacy-img';
+  const legacyRec=await ev(`IMGDB.get(${JSON.stringify(legacyId)})`);
+  ok(legacyOp.shots.length===1 && legacyOp.shots[0]===legacyId && !legacyOp.img && legacyRec && legacyRec.dataUrl===embeddedShots[0].d,
+     'backup antigo com operation.img migra para IndexedDB e shots');
+  ev(`RPT.preset='tudo';RPT.cardMode='withShots';RPT.shotSize='mini';RPT.inc={kpi:false,compare:false,charts:false,daily:false,insights:false,ops:false,cards:true,gloss:false};`);
+  await fresh(() => w.rptRender());
+  ok(d.querySelectorAll('#rdoc .rop').length===1 && d.querySelectorAll('#rdoc .rshot').length===1,
+     'relatório reaparece com o print migrado do formato antigo');
+
+  /* registro inválido não é descartado em silêncio nem gera falso sucesso */
+  await ev("IMGDB.put({id:'broken-print',blob:new Blob(['not an image'],{type:'text/plain'}),size:12,at:new Date().toISOString()})");
+  const beforeFailedExportURL=w.URL.createObjectURL, beforeFailedClick=w.HTMLAnchorElement.prototype.click;
+  w.URL.createObjectURL=()=> 'blob:failed-export'; w.HTMLAnchorElement.prototype.click=()=>{};
+  await w.exportData();
+  const failedExportToast=d.getElementById('ecT')?.textContent||'';
+  ok(/não puderam ser lidos ou migrados/.test(failedExportToast),
+     'exportação informa claramente prints que não puderam ser lidos');
+  w.URL.createObjectURL=beforeFailedExportURL; w.HTMLAnchorElement.prototype.click=beforeFailedClick;
+  await ev("IMGDB.del('broken-print')");
 
   /* restaura o backup de exemplo para a suíte histórica */
   w.localStorage.clear();

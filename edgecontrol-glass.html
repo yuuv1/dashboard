@@ -2441,7 +2441,7 @@ function migrateState(raw){
       result,direction,type:direction,asset,operationals:opOperationals(o),
       reason:typeof o.reason==='string'?o.reason.trim():'',plan:o.plan==='yes'||o.plan==='no'?o.plan:'',
       img:typeof o.img==='string'?o.img:'',yt:typeof o.yt==='string'?o.yt.trim():'',notes:typeof o.notes==='string'?o.notes.trim():'',
-      shots:Array.isArray(o.shots)?[...o.shots]:[],createdAt:o.createdAt||''};
+      shots:Array.isArray(o.shots)?o.shots.filter(Boolean).map(String):[],createdAt:o.createdAt||''};
   });
   out.assets=uniqueNames([...DEFAULT_ASSETS,...(Array.isArray(raw.assets)?raw.assets:[]),...out.operations.map(opAsset)]);
   const savedOperationals=Array.isArray(raw.operationals)?raw.operationals:(Array.isArray(raw.checks)?raw.checks:[]);
@@ -2635,7 +2635,7 @@ async function storeShot(file,opts={}){
 /* Apaga prints órfãos (de operações que não existem mais) */
 async function gcShots(){
   const ids=new Set();
-  (S.operations||[]).forEach(o=>(o.shots||[]).forEach(x=>ids.add(x)));
+  (S.operations||[]).forEach(o=>opShotIds(o).forEach(x=>ids.add(x)));
   const keys=await IMGDB.keys();
   let n=0;
   for(const k of keys){ if(!ids.has(k)){ await IMGDB.del(k); revokeImgURL(k); n++; } }
@@ -2989,7 +2989,7 @@ function saveOp(){
 function delOp(){
   if(!curId)return;if(!confirm('Excluir esta operação? Os prints anexados também serão apagados.'))return;
   const _op=S.operations.find(o=>o.id===curId);
-  if(_op&&_op.shots) _op.shots.forEach(sid=>{IMGDB.del(sid).catch(()=>{});revokeImgURL(sid);});
+  if(_op) opShotIds(_op).forEach(sid=>{IMGDB.del(sid).catch(()=>{});revokeImgURL(sid);});
   S.operations=S.operations.filter(o=>o.id!==curId);
   if(_op) applyCapitalDelta(-opCapitalEffect(_op));
   save();refreshAssetUI();closeMod('opDetMod');updateDash();renderOps();badge();toast('Operação excluída.','s');
@@ -3018,7 +3018,7 @@ function openDet(id){
   let ytHtml='';
   if(op.yt){const yid=ytId(op.yt);ytHtml=yid?`<div style="margin-top:11px;"><div style="font-size:10px;font-weight:700;color:var(--lgray);text-transform:uppercase;margin-bottom:5px;">🎬 Vídeo</div><iframe style="width:100%;aspect-ratio:16/9;border-radius:12px;border:none;" src="https://www.youtube.com/embed/${escHtml(yid)}" allowfullscreen></iframe></div>`:`<div class="drow"><span class="dkey">Vídeo</span><span class="dval">${escHtml(op.yt)}</span></div>`;}
   else ytHtml='<div class="drow"><span class="dkey">Vídeo</span><span class="dval">—</span></div>';
-  const nShots=(op.shots||[]).length;
+  const nShots=opShotIds(op).length;
   let imgHtml=`<div style="margin-top:11px;"><div style="font-size:10px;font-weight:700;color:var(--lgray);text-transform:uppercase;margin-bottom:5px;">📸 Prints ${nShots?`(${nShots})`:''}</div><div class="det-shots" id="detShots"></div></div>`;
   if(op.img)imgHtml+=`<div style="margin-top:11px;"><img style="max-width:100%;border-radius:12px;border:1px solid var(--border);" src="${escHtml(op.img)}" onerror="this.style.display='none'"></div>`;
   document.getElementById('detTit').innerHTML=`Operação #${escHtml(String(op.id).slice(-4))} <span style="margin-left:6px;">${resultBadgeHTML(op.result)}</span>`;
@@ -3050,7 +3050,7 @@ function editOp(id){
   document.getElementById('opYT').value=op.yt||'';
   document.getElementById('opNotes').value=op.notes||'';
   document.getElementById('opOperationalNew').value='';renderOperationalChecks(opOperationals(op));
-  draftShots=[...(op.shots||[])]; renderShotGrid(); syncValLabel();
+  draftShots=opShotIds(op); renderShotGrid(); syncValLabel();
   showMod('newOpModal'); initShotZone();
 }
 function renderOps(filt){
@@ -3060,7 +3060,7 @@ function renderOps(filt){
   tb.innerHTML=ops.map((op,i)=>{
     const rb=resultBadgeHTML(op.result),asset=opAsset(op),direction=opDirection(op);
     const pb=op.plan==='yes'?'<span class="badge byes">✅</span>':op.plan==='no'?'<span class="badge bno">❌</span>':'—';
-    const ns=(op.shots||[]).length;
+    const ns=opShotIds(op).length;
     const med=[ns?`📸${ns}`:'',op.img?'🖼':'',op.yt?'🎬':''].filter(Boolean).join(' ')||'—';
     const rs=op.reason?(op.reason.length>24?op.reason.slice(0,24)+'…':op.reason):'—';
     const ctx=`${assetBadgeHTML(asset)}${direction?` <span style="white-space:nowrap;">${directionBadgeHTML(direction)}</span>`:''}<div style="margin-top:4px;">${operationalBadgesHTML(opOperationals(op),true)}</div>`;
@@ -3168,7 +3168,7 @@ async function openShotViewer(ctx,idx){
   svCtx=ctx; svIdx=idx;
   svList = ctx==='modal' ? [...draftShots]
         : ctx==='gal' ? [...galCache]
-        : (S.operations.find(o=>o.id===curId)?.shots||[]);
+        : opShotIds(S.operations.find(o=>o.id===curId));
   if(!svList.length) return;
   await svShow();
   document.getElementById('shotViewer').classList.add('show');
@@ -3201,11 +3201,18 @@ async function svDelete(){
   await IMGDB.del(id); revokeImgURL(id);
   if(svCtx==='modal'){ draftShots=draftShots.filter(x=>x!==id); await renderShotGrid(); }
   else if(svCtx==='gal'){ galCache=galCache.filter(x=>x!==id);
-    S.operations.forEach(o=>{if(o.shots)o.shots=o.shots.filter(x=>x!==id);});
+    S.operations.forEach(o=>{
+      const before=opShotIds(o),ids=before.filter(x=>x!==id);
+      if(ids.length!==before.length||id===legacyShotId(o)){o.shots=ids;if(id===legacyShotId(o))o.img='';}
+    });
     save(); await renderGallery(); renderOps(); }
   else{
     const op=S.operations.find(o=>o.id===curId);
-    if(op){ op.shots=(op.shots||[]).filter(x=>x!==id); save(); await refreshDetShots(); renderOps(); }
+    if(op){
+      op.shots=opShotIds(op).filter(x=>x!==id);
+      if(id===legacyShotId(op))op.img='';
+      save(); await refreshDetShots(); renderOps();
+    }
   }
   svList=svList.filter(x=>x!==id);
   if(!svList.length){ closeShotViewer(); return; }
@@ -3242,7 +3249,7 @@ async function refreshDetShots(){
   const box=document.getElementById('detShots');
   if(!box) return;
   const op=S.operations.find(o=>o.id===curId);
-  const ids=(op&&op.shots)||[];
+  const ids=opShotIds(op);
   if(!ids.length){ box.innerHTML='<div style="font-size:11px;color:var(--dim);">—</div>'; return; }
   const parts=[];
   for(let i=0;i<ids.length;i++){
@@ -3268,7 +3275,7 @@ async function renderGallery(){
   let all=await IMGDB.all();
   all.sort((a,b)=>String(b.at||'').localeCompare(String(a.at||'')));
   const linked=new Set();
-  (S.operations||[]).forEach(o=>(o.shots||[]).forEach(x=>linked.add(x)));
+  (S.operations||[]).forEach(o=>opShotIds(o).forEach(x=>linked.add(x)));
   if(f==='linked') all=all.filter(r=>linked.has(r.id));
   if(f==='orphan') all=all.filter(r=>!linked.has(r.id));
   if(f==='noted')  all=all.filter(r=>r.note);
@@ -3279,7 +3286,7 @@ async function renderGallery(){
   const parts=[];
   for(let i=0;i<all.length;i++){
     const r=all[i], u=await imgURL(r.id);
-    const op=(S.operations||[]).find(o=>(o.shots||[]).includes(r.id));
+    const op=(S.operations||[]).find(o=>opShotIds(o).includes(r.id));
     const tag=op?`${op.date||'—'} · ${op.result||'—'} · ${opAsset(op)||'—'}`:'sem operação';
     parts.push(`<div class="shot-item ${r.note?'has-note':''}" style="aspect-ratio:16/11;" onclick="openShotViewer('gal',${i})">
       <img src="${u}" alt="">
@@ -3309,7 +3316,7 @@ async function exportShotsZip(){
     const files=[];
     for(let i=0;i<all.length;i++){
       const r=all[i];
-      const op=(S.operations||[]).find(o=>(o.shots||[]).includes(r.id));
+      const op=(S.operations||[]).find(o=>opShotIds(o).includes(r.id));
       const pre=op?`${op.date||'sem-data'}_${op.result}_${opAsset(op)||'sem-ativo'}`:'sem-operacao';
       const nm=`${String(i+1).padStart(3,'0')}_${pre}${r.note?'_'+r.note.slice(0,26).replace(/[^\w\s-]/g,'').trim().replace(/\s+/g,'-'):''}.jpg`;
       const blob=await shotBlob(r);
@@ -3318,7 +3325,7 @@ async function exportShotsZip(){
     }
     // índice em texto, para saber a que operação cada print pertence
     const idx=all.map((r,i)=>{
-      const op=(S.operations||[]).find(o=>(o.shots||[]).includes(r.id));
+      const op=(S.operations||[]).find(o=>opShotIds(o).includes(r.id));
       return `${String(i+1).padStart(3,'0')} | ${op?`${op.date||'—'} ${op.time||'—'} · ${op.result} ${opAsset(op)||'—'} · ${fmtBRL(op.value)}`:'sem operação'}`
            + (r.note?`\n     nota: ${r.note}`:'')
            + (op&&op.reason?`\n     motivo: ${op.reason}`:'');
@@ -3483,19 +3490,40 @@ function updateAn(){
 async function exportData(){
   try{
     toast('Preparando backup…','w');
+    /* Garante que imagens de backups antigos também entram no pacote. */
+    const legacyMigration=await migrateLegacyShots();
     const shots=await IMGDB.all();
-    const imgs={};
+    const shotOwners=new Map();
+    (S.operations||[]).forEach(op=>opShotIds(op).forEach(id=>shotOwners.set(String(id),op.id)));
+    const imgs={},failed=[];
     for(const r of shots){
-      const blob=await shotBlob(r);
-      if(!blob||blob.size>3*1024*1024) continue;    // pula imagens ausentes ou muito grandes
-      imgs[r.id]={d:await shotDataURL(r),note:r.note||'',name:r.name||'',at:r.at||''};
+      try{
+        const blob=await shotBlob(r);
+        if(!blob||!blob.size||!String(blob.type||'').startsWith('image/')) throw new Error('imagem sem dados');
+        const data=await shotDataURL(r);
+        if(!data||!data.startsWith('data:image/')) throw new Error('imagem sem dados');
+        /* Não descarta prints grandes silenciosamente: o backup precisa ser completo. */
+        imgs[r.id]={d:data,note:r.note||'',name:r.name||'',at:r.at||'',
+          opId:shotOwners.get(String(r.id))||r.opId||null};
+      }catch(err){
+        failed.push(r.id);
+        console.warn('Print não incluído no backup',r.id,err);
+      }
+    }
+    /* Também detecta IDs que uma operação referencia, mas cujo registro sumiu
+       do IndexedDB; sem esta conferência o backup poderia declarar sucesso
+       com um print faltando. */
+    for(const id of shotOwners.keys()){
+      if(!Object.prototype.hasOwnProperty.call(imgs,id)&&!failed.includes(id)) failed.push(id);
     }
     const pack={__ec:3,exportedAt:new Date().toISOString(),state:S,shots:imgs};
     const b=new Blob([JSON.stringify(pack)],{type:'application/json'});
     const u=URL.createObjectURL(b),a=document.createElement('a');
     a.href=u;a.download=`edgecontrol_${new Date().toISOString().slice(0,10)}.json`;a.click();
     setTimeout(()=>URL.revokeObjectURL(u),1200);
-    toast(`Backup: ${(S.operations||[]).length} ops e ${Object.keys(imgs).length} prints.`,'s');
+    const failedTotal=new Set([...failed,...(legacyMigration.failed||[])].map(String)).size;
+    const aviso=failedTotal?` (${failedTotal} print(s) não puderam ser lidos ou migrados)`:'';
+    toast(`Backup: ${(S.operations||[]).length} ops e ${Object.keys(imgs).length} prints${aviso}.`,failedTotal?'w':'s');
   }catch(e){ toast('Falha ao exportar.','e'); }
 }
 function blobToDataURL(b){return new Promise((res,rej)=>{const f=new FileReader();f.onload=()=>res(f.result);f.onerror=()=>rej(f.error||new Error('Falha ao ler imagem.'));f.readAsDataURL(b);});}
@@ -3528,6 +3556,119 @@ async function shotDataURL(rec){
   if(rec&&typeof rec.dataUrl==='string'&&rec.dataUrl.startsWith('data:')) return rec.dataUrl;
   const blob=await shotBlob(rec);
   return blob?blobToDataURL(blob):null;
+}
+/*
+   Backups antigos guardavam uma única imagem diretamente em operation.img.
+   A galeria/relatório atuais usam IndexedDB + operation.shots. Esta migração
+   transforma o formato antigo uma vez, sem deixar a imagem presa no estado
+   do localStorage ou esquecida na exportação.
+*/
+function legacyShotId(op){
+  const raw=String(op&&op.id||'legacy').replace(/[^a-zA-Z0-9_-]/g,'_');
+  return 'legacy_img_'+raw;
+}
+function opShotIds(op){
+  const ids=Array.isArray(op&&op.shots)?op.shots.filter(Boolean).map(String):[];
+  const img=typeof (op&&op.img)==='string'?op.img.trim():'';
+  if(img&&!ids.includes(legacyShotId(op))) ids.push(legacyShotId(op));
+  return ids;
+}
+function shotText(value,id){
+  const o=value&&typeof value==='object'?value:{};
+  /* A data de "name" pode ser a data do WhatsApp, não a da operação;
+     prefira a nota e o timestamp do registro para reconstruir o vínculo. */
+  return [id,o.note,o.at,o.name].filter(v=>v!==undefined&&v!==null).join(' ');
+}
+function shotMeta(value,id,ops){
+  const text=shotText(value,id),up=text.toLocaleUpperCase('pt-BR');
+  let date='',time='',asset='',direction='',result='';
+  const brDate=up.match(/\b(\d{1,2})[\/.-](\d{1,2})[\/.-](20\d{2})\b/);
+  const isoDate=up.match(/\b(20\d{2})[-/.](\d{1,2})[-/.](\d{1,2})\b/);
+  if(brDate) date=`${brDate[3]}-${String(brDate[2]).padStart(2,'0')}-${String(brDate[1]).padStart(2,'0')}`;
+  else if(isoDate) date=`${isoDate[1]}-${String(isoDate[2]).padStart(2,'0')}-${String(isoDate[3]).padStart(2,'0')}`;
+  const timeMatch=up.match(/\b([01]?\d|2[0-3]):([0-5]\d)\b/);
+  if(timeMatch) time=`${String(timeMatch[1]).padStart(2,'0')}:${timeMatch[2]}`;
+  const assets=[...new Set((ops||[]).map(opAsset).filter(Boolean))].sort((a,b)=>b.length-a.length);
+  const key=v=>cleanName(v).toLocaleUpperCase('pt-BR').replace(/\s+/g,'');
+  asset=assets.find(a=>up.replace(/\s+/g,'').includes(key(a)))||'';
+  const dm=up.match(/\b(CALL|PUT)\b/); if(dm) direction=dm[1];
+  const rm=up.match(/\b(WIN|LOSS|DRAW)\b/); if(rm) result=rm[1];
+  /* O campo at costuma ser ISO, mas pode estar um minuto antes da execução;
+     ele só é usado como fallback quando a nota não trouxe data/hora. */
+  const at=value&&typeof value==='object'?String(value.at||''):'';
+  if(!date){const am=at.match(/(20\d{2}-\d{2}-\d{2})/);if(am)date=am[1];}
+  if(!time){const am=at.match(/T(\d{2}:\d{2})/);if(am)time=am[1];}
+  return {date,time,asset,direction,result};
+}
+function importedShotOwner(value,id,ops){
+  const explicit=value&&typeof value==='object'&&(value.opId||value.operationId||value.ownerId||value.operation);
+  if(explicit){
+    const hit=(ops||[]).find(o=>String(o.id)===String(explicit));
+    if(hit) return hit;
+  }
+  const meta=shotMeta(value,id,ops);
+  /* Sem uma chave temporal/operacional não é seguro adivinhar o vínculo. */
+  if(!meta.date&&!meta.time&&!meta.asset) return null;
+  let candidates=[...(ops||[])];
+  if(meta.date) candidates=candidates.filter(o=>String(o.date||'')===meta.date);
+  if(meta.time) candidates=candidates.filter(o=>String(o.time||'').slice(0,5)===meta.time);
+  if(meta.asset) candidates=candidates.filter(o=>nameKey(opAsset(o))===nameKey(meta.asset));
+  /* Direção/resultado são dicas: backups muito antigos podem não ter esses
+     campos na operação, então só estreitam o conjunto quando há correspondência. */
+  if(meta.direction){const hits=candidates.filter(o=>opDirection(o)===meta.direction);if(hits.length)candidates=hits;}
+  if(meta.result){const hits=candidates.filter(o=>cleanName(o.result).toUpperCase()===meta.result);if(hits.length)candidates=hits;}
+  return candidates.length===1?candidates[0]:null;
+}
+function associateImportedShots(pics){
+  const ops=Array.isArray(S&&S.operations)?S.operations:[], owners=new Map();
+  ops.forEach(op=>opShotIds(op).forEach(id=>owners.set(String(id),op)));
+  let associated=0,ambiguous=0;
+  for(const [id,value] of Object.entries(pics||{})){
+    if(owners.has(String(id))) continue;
+    const owner=importedShotOwner(value,id,ops);
+    if(!owner){
+      const meta=shotMeta(value,id,ops);
+      if(meta.date||meta.time||meta.asset) ambiguous++;
+      continue;
+    }
+    owner.shots=opShotIds(owner);
+    if(!owner.shots.includes(String(id))){owner.shots.push(String(id));associated++;}
+    owners.set(String(id),owner);
+  }
+  return {associated,ambiguous,owners};
+}
+async function migrateLegacyShots(persist=true){
+  const ops=Array.isArray(S&&S.operations)?S.operations:[];
+  let changed=false,migrated=0; const failed=[];
+  for(const op of ops){
+    const img=typeof op.img==='string'?op.img.trim():'';
+    if(!img.startsWith('data:image/')) continue;
+    const id=legacyShotId(op);
+    try{
+      let rec=await IMGDB.get(id);
+      const same=rec&&typeof rec.dataUrl==='string'&&rec.dataUrl===img;
+      if(!same){
+        const blob=await dataURLtoBlob(img);
+        if(!blob.size||!blob.type.startsWith('image/')) throw new Error('Conteúdo não é uma imagem.');
+        await IMGDB.put({id,dataUrl:img,note:'',name:'print-legado.jpg',opId:op.id,
+          at:op.createdAt||new Date().toISOString(),size:blob.size,w:0,h:0});
+        rec=await IMGDB.get(id);
+      }
+      const shots=Array.isArray(op.shots)?op.shots:[];
+      if(!shots.includes(id)){
+        op.shots=[...shots,id];
+        changed=true;
+      }
+      /* O print já está preservado no IndexedDB; não duplique o base64 no estado. */
+      if(op.img){op.img='';changed=true;}
+      if(rec) migrated++;
+    }catch(err){
+      failed.push(id);
+      console.warn('Falha ao migrar print legado',op.id,err);
+    }
+  }
+  if(changed&&persist) save();
+  return {changed,migrated,failed};
 }
 /* Backups produzidos por IA às vezes chegam com BOM, explicação ou cercas ```json. */
 function parseBackupJSON(text){
@@ -3577,11 +3718,17 @@ async function importData(ev){
     S=migrateState(st);
     ensureChartState();
     if(!THEMES.some(t=>t.id===S.theme)) S.theme='default';
+    /* também converte o campo img dos backups v1 para IndexedDB + shots */
+    const legacyMigration=await migrateLegacyShots(false);
 
     /* ── prints (v2/v3) ── */
+    /* Alguns __ec:3 já trazem as imagens, mas perderam shots[]. Quando a
+       nota/metadados identificam data, hora, ativo e resultado, reconstituímos
+       o vínculo antes de gravar o IndexedDB. */
+    const association=associateImportedShots(pics);
     const shotOwners=new Map();
-    S.operations.forEach(op=>(op.shots||[]).forEach(id=>shotOwners.set(String(id),op.id)));
-    let ok=0,failed=0;
+    S.operations.forEach(op=>opShotIds(op).forEach(id=>shotOwners.set(String(id),op.id)));
+    let ok=0,failed=0; const okIds=[];
     for(const [id,value] of Object.entries(pics)){
       try{
         const o=value&&typeof value==='object'?value:{d:value};
@@ -3595,8 +3742,13 @@ async function importData(ev){
                          at:o.at||new Date().toISOString(),size:blob.size,w:0,h:0});
         const restored=await IMGDB.get(id);
         if(!restored||restored.dataUrl!==dataUrl) throw new Error('Imagem não persistiu no navegador.');
-        ok++;
-      }catch(err){failed++;console.warn('Falha ao importar print',id,err);}
+        ok++; okIds.push(String(id));
+      }catch(err){
+        failed++;
+        S.operations.forEach(op=>{if(Array.isArray(op.shots)) op.shots=op.shots.filter(x=>String(x)!==String(id));});
+        await IMGDB.del(id).catch(()=>{});
+        console.warn('Falha ao importar print',id,err);
+      }
     }
 
     /* ── aplica ── */
@@ -3608,8 +3760,16 @@ async function importData(ev){
     if(sp&&sp.classList.contains('active')){ loadSetForm(); syncMetalUI(); syncThemeUI(); updGalStats(); }
     const rp=document.getElementById('page-report');
     if(rp&&rp.classList.contains('active')) rptLoadPage();
-    const msg=`Importado: ${nOps} operações${ok?` e ${ok} prints`:''}`+(failed?`. Falha em ${failed} print(s).`:'.');
-    toast(msg,failed?'w':'s');
+    const unlinked=okIds.filter(id=>!shotOwners.has(id)).length;
+    const details=[];
+    if(ok) details.push(`${ok} print(s)`);
+    if(association.associated) details.push(`${association.associated} associação(ões) reconstruída(s)`);
+    if(unlinked) details.push(`${unlinked} print(s) sem operação`);
+    const legacyFailed=(legacyMigration.failed||[]).length;
+    if(legacyFailed) details.push(`falha ao migrar ${legacyFailed} print(s) legado(s)`);
+    if(failed) details.push(`falha em ${failed} print(s)`);
+    const msg=`Importado: ${nOps} operações${details.length?'. '+details.join('; '):'.'}`;
+    toast(msg,(failed||legacyFailed||unlinked)?'w':'s');
   }catch(err){
     toast('Erro ao importar: '+(err&&err.message?err.message:'desconhecido'),'e');
   }finally{
@@ -4324,7 +4484,7 @@ function rptModel(){
   let prevCap=S.settings.initialCapital||0;
   all.forEach(o=>{if(o.date&&o.date<pFrom)prevCap+=rpNet(o);});
   const PM=rpMetrics(rpSort(rpApplyFilters(all.filter(o=>rpIn(o,pFrom,pTo)),RPT.filt)),prevCap);
-  const shotsCount=ops.reduce((a,o)=>a+((o.shots||[]).length),0);
+  const shotsCount=ops.reduce((a,o)=>a+opShotIds(o).length,0);
   const oneDay=rng.from===rng.to;
   const label=oneDay?rpBRlong(rng.from):(rpBRlong(rng.from)+' a '+rpBRlong(rng.to));
   const labelShort=oneDay?rpBR(rng.from):(rpBR(rng.from)+' → '+rpBR(rng.to));
@@ -4435,7 +4595,7 @@ function rptSyncInfo(){
 async function rptShotURLs(m){
   const ids=[];
   if(RPT.inc.cards&&RPT.cardMode!=='none')
-    m.ops.forEach(o=>(o.shots||[]).forEach(id=>ids.push(id)));
+    m.ops.forEach(o=>opShotIds(o).forEach(id=>ids.push(id)));
   const map=new Map();
   await Promise.all(ids.map(async id=>{ try{ const u=await imgURL(id); if(u) map.set(id,u); }catch(e){} }));
   return map;
@@ -4637,7 +4797,7 @@ function rptSectionOps(m){
   const M=m.M;
   if(!m.ops.length) return '';
   const rows=m.ops.map((o,i)=>{
-    const ns=(o.shots||[]).length;
+    const ns=opShotIds(o).length;
     const det=[o.reason,o.notes].filter(Boolean).join(' · ');
     const context=[rpAsset(o),rpDirection(o),rpOperationals(o).join(', ')].filter(Boolean);
     const plan=o.plan==='yes'?'<span class="rbdg w">sim</span>':o.plan==='no'?'<span class="rbdg l">não</span>':'—';
@@ -4670,11 +4830,11 @@ function rptOpField(label,value,wide=false){
 }
 function rptSectionCards(m,urls){
   if(RPT.cardMode==='none'||!RPT.inc.cards) return '';
-  const list=RPT.cardMode==='all'?m.ops:m.ops.filter(o=>(o.shots||[]).length);
+  const list=RPT.cardMode==='all'?m.ops:m.ops.filter(o=>opShotIds(o).length);
   if(!list.length) return `<section class="rsec">${rptSecHead(7,'Fichas por operação','Nenhuma operação do período tem print anexado. Para anexar, abra a operação, edite e cole a imagem (Ctrl+V) no campo de prints.')}</section>`;
   let shown=0;
   const cards=list.map(o=>{
-    const ids=(o.shots||[]).filter(id=>urls.get(id));
+    const ids=opShotIds(o).filter(id=>urls.get(id));
     const imgs=ids.map(id=>{
       if(shown>=80) return '';
       shown++;
@@ -5509,8 +5669,10 @@ function chartsRefresh(){ if(isChartsActive()) renderCharts(); }
 /* ══════════════════════════════════════
    INIT
 ══════════════════════════════════════ */
-function init(){
+async function init(){
   load();
+  /* Migra prints antigos antes da limpeza de órfãos e antes do primeiro relatório. */
+  try{ await migrateLegacyShots(); }catch(e){ console.warn('migração de prints:',e); }
   rptInitFromState();
   applyTheme(S.theme||'default',{silent:true});
   applyProfUI();
