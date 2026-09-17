@@ -2632,13 +2632,27 @@ async function storeShot(file,opts={}){
   return rec;
 }
 
-/* Apaga prints órfãos (de operações que não existem mais) */
+/* Repara vínculos que ainda estão no registro do IndexedDB sem apagar nada.
+   É usado na inicialização para que um estado antigo volte a enxergar seus
+   prints antes de qualquer tela ser aberta. */
+async function reconcileShots(){
+  const all=await IMGDB.all(),records={};
+  all.forEach(r=>{records[r.id]=r;});
+  const association=associateImportedShots(records);
+  if(association.associated) save();
+  return association;
+}
+/* Apaga prints órfãos (de operações que não existem mais). A limpeza é
+   explícita pelo botão da galeria; nunca acontece automaticamente na abertura. */
 async function gcShots(){
+  const all=await IMGDB.all();
+  await reconcileShots();
   const ids=new Set();
-  (S.operations||[]).forEach(o=>opShotIds(o).forEach(x=>ids.add(x)));
-  const keys=await IMGDB.keys();
+  (S.operations||[]).forEach(o=>opShotIds(o).forEach(x=>ids.add(String(x))));
   let n=0;
-  for(const k of keys){ if(!ids.has(k)){ await IMGDB.del(k); revokeImgURL(k); n++; } }
+  for(const r of all){
+    if(!ids.has(String(r.id))){ await IMGDB.del(r.id); revokeImgURL(r.id); n++; }
+  }
   return n;
 }
 async function mediaUsage(){
@@ -3124,7 +3138,7 @@ async function addShots(files){
   let ok=0;
   for(const f of files){
     try{
-      const rec=await storeShot(f);
+      const rec=await storeShot(f,{opId:curId||null});
       if(rec){ draftShots.push(rec.id); ok++; }
     }catch(err){ toast('Falha ao guardar o print.','e'); }
   }
@@ -3493,6 +3507,12 @@ async function exportData(){
     /* Garante que imagens de backups antigos também entram no pacote. */
     const legacyMigration=await migrateLegacyShots();
     const shots=await IMGDB.all();
+    /* Recupera vínculos que ficaram só no registro do IndexedDB (por exemplo,
+       após uma versão antiga salvar opId sem atualizar operation.shots). */
+    const existingShots={};
+    shots.forEach(r=>{existingShots[r.id]=r;});
+    const association=associateImportedShots(existingShots);
+    if(association.associated) save();
     const shotOwners=new Map();
     (S.operations||[]).forEach(op=>opShotIds(op).forEach(id=>shotOwners.set(String(id),op.id)));
     const imgs={},failed=[];
@@ -3523,7 +3543,8 @@ async function exportData(){
     setTimeout(()=>URL.revokeObjectURL(u),1200);
     const failedTotal=new Set([...failed,...(legacyMigration.failed||[])].map(String)).size;
     const aviso=failedTotal?` (${failedTotal} print(s) não puderam ser lidos ou migrados)`:'';
-    toast(`Backup: ${(S.operations||[]).length} ops e ${Object.keys(imgs).length} prints${aviso}.`,failedTotal?'w':'s');
+    const vinculo=association.associated?` ${association.associated} vínculo(s) recuperado(s).`:'';
+    toast(`Backup: ${(S.operations||[]).length} ops e ${Object.keys(imgs).length} prints.${vinculo}${aviso}`,failedTotal?'w':'s');
   }catch(e){ toast('Falha ao exportar.','e'); }
 }
 function blobToDataURL(b){return new Promise((res,rej)=>{const f=new FileReader();f.onload=()=>res(f.result);f.onerror=()=>rej(f.error||new Error('Falha ao ler imagem.'));f.readAsDataURL(b);});}
@@ -3588,17 +3609,32 @@ function shotMeta(value,id,ops){
   else if(isoDate) date=`${isoDate[1]}-${String(isoDate[2]).padStart(2,'0')}-${String(isoDate[3]).padStart(2,'0')}`;
   const timeMatch=up.match(/\b([01]?\d|2[0-3]):([0-5]\d)\b/);
   if(timeMatch) time=`${String(timeMatch[1]).padStart(2,'0')}:${timeMatch[2]}`;
+  /* Alguns exportadores antigos codificavam data/hora/ativo no próprio ID,
+     por exemplo shot_20260914_0959_eurgbp_resultado. */
+  const compactDate=String(id).match(/(?:^|_)(20\d{6})(?:_|$)/);
+  if(!date&&compactDate){
+    const d=compactDate[1];date=`${d.slice(0,4)}-${d.slice(4,6)}-${d.slice(6,8)}`;
+  }
+  const compactTime=String(id).match(/_(?:20\d{6})_(\d{4})(?:_|$)/);
+  if(!time&&compactTime) time=`${compactTime[1].slice(0,2)}:${compactTime[1].slice(2,4)}`;
   const assets=[...new Set((ops||[]).map(opAsset).filter(Boolean))].sort((a,b)=>b.length-a.length);
-  const key=v=>cleanName(v).toLocaleUpperCase('pt-BR').replace(/\s+/g,'');
-  asset=assets.find(a=>up.replace(/\s+/g,'').includes(key(a)))||'';
+  const key=v=>cleanName(v).toLocaleUpperCase('pt-BR').replace(/[\s/]/g,'');
+  asset=assets.find(a=>up.replace(/[\s/]/g,'').includes(key(a)))||'';
   const dm=up.match(/\b(CALL|PUT)\b/); if(dm) direction=dm[1];
   const rm=up.match(/\b(WIN|LOSS|DRAW)\b/); if(rm) result=rm[1];
-  /* O campo at costuma ser ISO, mas pode estar um minuto antes da execução;
-     ele só é usado como fallback quando a nota não trouxe data/hora. */
+  /* O campo at costuma ser um minuto antes da execução; guardamos seus
+     valores separadamente para aceitar essa pequena diferença no vínculo. */
   const at=value&&typeof value==='object'?String(value.at||''):'';
-  if(!date){const am=at.match(/(20\d{2}-\d{2}-\d{2})/);if(am)date=am[1];}
-  if(!time){const am=at.match(/T(\d{2}:\d{2})/);if(am)time=am[1];}
-  return {date,time,asset,direction,result};
+  const atDateMatch=at.match(/(20\d{2}-\d{2}-\d{2})/),atTimeMatch=at.match(/T(\d{2}:\d{2})/);
+  const atDate=atDateMatch?atDateMatch[1]:'';
+  const atTime=atTimeMatch?atTimeMatch[1]:'';
+  if(!date&&atDate) date=atDate;
+  if(!time&&atTime) time=atTime;
+  return {date,time,asset,direction,result,atDate,atTime};
+}
+function clockMinutes(value){
+  const m=String(value||'').match(/^(\d{1,2}):(\d{2})$/);
+  return m?Number(m[1])*60+Number(m[2]):null;
 }
 function importedShotOwner(value,id,ops){
   const explicit=value&&typeof value==='object'&&(value.opId||value.operationId||value.ownerId||value.operation);
@@ -3611,8 +3647,18 @@ function importedShotOwner(value,id,ops){
   if(!meta.date&&!meta.time&&!meta.asset) return null;
   let candidates=[...(ops||[])];
   if(meta.date) candidates=candidates.filter(o=>String(o.date||'')===meta.date);
-  if(meta.time) candidates=candidates.filter(o=>String(o.time||'').slice(0,5)===meta.time);
   if(meta.asset) candidates=candidates.filter(o=>nameKey(opAsset(o))===nameKey(meta.asset));
+  if(meta.time){
+    const exact=candidates.filter(o=>String(o.time||'').slice(0,5)===meta.time);
+    if(exact.length) candidates=exact;
+    else if(candidates.length===1&&!String(candidates[0].time||'')){
+      /* operação antiga sem hora: data + ativo já são unívocos */
+    }else if(meta.atTime){
+      const target=clockMinutes(meta.atTime),near=candidates.map(o=>({o,d:Math.abs((clockMinutes(String(o.time||'').slice(0,5))??-999)-target)})).filter(x=>x.d<=5);
+      if(near.length){const best=Math.min(...near.map(x=>x.d));candidates=near.filter(x=>x.d===best).map(x=>x.o);}
+      else candidates=[];
+    }else candidates=[];
+  }
   /* Direção/resultado são dicas: backups muito antigos podem não ter esses
      campos na operação, então só estreitam o conjunto quando há correspondência. */
   if(meta.direction){const hits=candidates.filter(o=>opDirection(o)===meta.direction);if(hits.length)candidates=hits;}
@@ -5671,8 +5717,10 @@ function chartsRefresh(){ if(isChartsActive()) renderCharts(); }
 ══════════════════════════════════════ */
 async function init(){
   load();
-  /* Migra prints antigos antes da limpeza de órfãos e antes do primeiro relatório. */
-  try{ await migrateLegacyShots(); }catch(e){ console.warn('migração de prints:',e); }
+  /* Migra e reconcilia prints legados antes de montar o primeiro relatório.
+     A limpeza de órfãos é manual: não podemos apagar um print na abertura. */
+  try{ await migrateLegacyShots(); await reconcileShots(); }
+  catch(e){ console.warn('migração/reconciliação de prints:',e); }
   rptInitFromState();
   applyTheme(S.theme||'default',{silent:true});
   applyProfUI();
@@ -5682,7 +5730,6 @@ async function init(){
   badge();
   mtApplyAll();
   initPWA();
-  gcShots().catch(()=>{});
 }
 document.addEventListener('DOMContentLoaded',init);
 </script>

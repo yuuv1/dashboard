@@ -267,6 +267,13 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   ok(ev("S.operations.filter(o=>(o.shots||[]).length===2).length") === 5,
      'importação reconstrói os vínculos perdidos do backup __ec:3');
 
+  /* simula o caso antigo: o IndexedDB ainda sabe o opId, mas o estado perdeu
+     os arrays shots. A própria exportação precisa reparar esse vínculo. */
+  ev("S.operations.forEach(o=>o.shots=[]);save();");
+  await w.gcShots();
+  ok(ev("S.operations.filter(o=>(o.shots||[]).length===2).length")===5 && (await ev('IMGDB.all()')).length===10,
+     'limpeza de inicialização não apaga prints com vínculo no IndexedDB');
+
   /* a exportação lê todos os registros do IndexedDB e grava o dono de cada print */
   let exportedBlob=null;
   const oldCreateObjectURL=w.URL.createObjectURL;
@@ -282,6 +289,9 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   const exportedPack=JSON.parse(exportedText);
   ok(Object.keys(exportedPack.shots).length===10 && Object.values(exportedPack.shots).every(s=>s.d.startsWith('data:image/jpeg;base64,')),
      'exportData inclui os 10 prints do IndexedDB no JSON');
+  ok(ev("S.operations.filter(o=>(o.shots||[]).length===2).length")===5 &&
+     exportedPack.state.operations.filter(o=>(o.shots||[]).length===2).length===5,
+     'exportData recupera os vínculos que estavam apenas no IndexedDB');
   ok(Object.entries(exportedPack.shots).every(([id,s])=>{
     const op=exportedPack.state.operations.find(o=>(o.shots||[]).includes(id));
     return op && s.opId===op.id;
