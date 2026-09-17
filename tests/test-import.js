@@ -184,6 +184,34 @@ async function runImport(w, backupObj) {
     ok(keys.length === 1 && keys[0] === 'sA', 'aceita shots em lista dentro do state', `chaves: ${JSON.stringify(keys)}`);
   }
 
+  /* ── 6. referências sem imagens: app AVISA em vez de mostrar nada ──
+         (era o sintoma "diz que tem prints anexados mas não mostra nada") */
+  {
+    const pack = {
+      __ec: 3, exportedAt: '2026-09-17T00:00:00.000Z',
+      state: {
+        profile: {}, settings: { initialCapital: 1, currentCapital: 1, usdRate: 5, stopLoss: 8, target: 12 },
+        operations: [{ id: '333', date: '2026-01-12', time: '08:00', value: 10, usd: 2, result: 'WIN', type: 'PUT', reason: 'x', plan: 'yes', img: '', yt: '', notes: '', shots: ['shot_lixo_1', 'shot_lixo_2'], createdAt: '' }]
+        /* SEM mapa de shots: imagens não vêm no backup */
+      }
+    };
+    const { win } = boot();
+    await sleep(250);
+    const ausente = await win.eval("IMGDB.get('shot_lixo_1')");
+    ok(ausente === undefined || ausente === null, 'IMGDB.get de chave inexistente resolve undefined (não o request)', `veio: ${typeof ausente}`);
+    await runImport(win, pack);
+    await sleep(150);
+    win.eval("openDet('333')");
+    await sleep(200);
+    const detHtml = (win.document.getElementById('detShots') || {}).innerHTML || '';
+    ok(detHtml.includes('não estão no armazenamento'), 'detalhe da operação avisa prints ausentes', detHtml.slice(0, 90));
+    ok(!detHtml.includes('src="null"'), 'sem miniaturas quebradas (src="null")');
+    win.eval('openGallery()');
+    await sleep(200);
+    const emTxt = (win.document.getElementById('galEmpty') || {}).innerHTML || '';
+    ok(emTxt.includes('ausentes do armazenamento'), 'galeria diferencia "sem prints" de "prints ausentes"', emTxt.slice(0, 80));
+  }
+
   console.log(fails ? `\n${fails} teste(s) FALHARAM` : '\nTodos os testes de importação passaram ✅');
   process.exit(fails ? 1 : 0);
 })().catch(e => { console.error('ERRO no teste:', e); process.exit(1); });

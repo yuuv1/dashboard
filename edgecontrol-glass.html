@@ -2449,7 +2449,9 @@ const IMGDB={
     return this.open().then(db=>new Promise((res,rej)=>{
       const t=db.transaction('shots',mode),st=t.objectStore('shots');
       let out; try{out=fn(st);}catch(e){rej(e);return;}
-      t.oncomplete=()=>res(out&&out.result!==undefined?out.result:out);
+      /* out.result undefined (ex.: get de chave inexistente) deve resolver
+         undefined — devolver o request faz parecer que o registro existe */
+      t.oncomplete=()=>res(out?out.result:out);
       t.onerror=()=>rej(t.error); t.onabort=()=>rej(t.error);
     }));
   },
@@ -2942,15 +2944,16 @@ async function refreshDetShots(){
   const op=S.operations.find(o=>o.id===curId);
   const ids=(op&&op.shots)||[];
   if(!ids.length){ box.innerHTML='<div style="font-size:11px;color:var(--dim);">Nenhum print anexado.</div>'; return; }
-  const parts=[];
+  const parts=[]; let faltam=0;
   for(let i=0;i<ids.length;i++){
-    const rec=await IMGDB.get(ids[i]); if(!rec) continue;
+    const rec=await IMGDB.get(ids[i]); if(!rec){faltam++;continue;}
     const u=await imgURL(ids[i]);
     parts.push(`<div class="shot-item ${rec.note?'has-note':''}" onclick="openShotViewer('det',${i})">
       <img src="${u}" alt="">
       ${rec.note?`<span class="snote">📝 ${escHtml(rec.note)}</span>`:''}
     </div>`);
   }
+  if(faltam) parts.push(`<div style="grid-column:1/-1;font-size:10.5px;line-height:1.6;color:var(--lgray);background:color-mix(in srgb,var(--accent) 6%,transparent);border:1px dashed color-mix(in srgb,var(--accent) 30%,transparent);border-radius:10px;padding:8px 10px;">⚠️ ${faltam} de ${ids.length} print(s) anexado(s) não estão no armazenamento do navegador — a operação referencia as imagens, mas elas não foram encontradas.<br>Reimporte o backup (⬇ Importar JSON) para restaurá-las.</div>`);
   box.innerHTML=parts.join('');
 }
 function escHtml(t){return String(t??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
@@ -2972,7 +2975,14 @@ async function renderGallery(){
   if(f==='noted')  all=all.filter(r=>r.note);
   galCache=all.map(r=>r.id);
   const g=document.getElementById('galGrid'),em=document.getElementById('galEmpty');
-  if(!all.length){ g.innerHTML=''; em.style.display='block'; return; }
+  if(!all.length){
+    g.innerHTML='';
+    const ref=new Set(); (S.operations||[]).forEach(o=>(o.shots||[]).forEach(x=>ref.add(x)));
+    em.innerHTML=ref.size
+      ? `<div style="font-size:28px;margin-bottom:6px;">🖼️</div><b>${ref.size} print(s) referenciado(s) nas suas operações, mas ausentes do armazenamento.</b><br>Reimporte o backup (⬇ Importar JSON) para restaurar as imagens.`
+      : `<div style="font-size:28px;margin-bottom:6px;">📭</div>Nenhum print aqui ainda.`;
+    em.style.display='block'; return;
+  }
   em.style.display='none';
   const parts=[];
   for(let i=0;i<all.length;i++){
@@ -4356,9 +4366,12 @@ function rptSectionCards(m,urls){
       ${imgs?`<div class="rop-k" style="margin-top:6px;">Prints (${ids.length})</div><div class="rshots ${RPT.shotSize==='full'?'one':''}">${imgs}</div>`:''}
     </div>`;
   }).join('');
+  const refIds=new Set(); m.ops.forEach(o=>(o.shots||[]).forEach(x=>refIds.add(x)));
+  let miss=0; refIds.forEach(id=>{ if(!urls.get(id)) miss++; });
   return `<section class="rsec">${rptSecHead(7,'Fichas por operação',`${list.length} ficha(s)${RPT.cardMode==='withShots'?' — somente as operações com print anexado':''}, com motivo, observações e imagens.`)}
     <div class="rops">${cards}</div>
     ${shown>=80?`<div class="rnote" style="margin-top:9px;">Mostrando os 80 primeiros prints para o PDF não ficar pesado.</div>`:''}
+    ${miss>0?`<div class="rnote" style="margin-top:9px;">⚠️ ${miss} print(s) referenciado(s) nas operações não foram encontrados no armazenamento do navegador — reimporte o backup para restaurá-los.</div>`:''}
   </section>`;
 }
 function rptSectionGloss(m){
@@ -5152,7 +5165,9 @@ function chartsRefresh(){ if(isChartsActive()) renderCharts(); }
 /* ══════════════════════════════════════
    INIT
 ══════════════════════════════════════ */
+var EC_BUILD='2026-09-17.2-import-imagens';   /* digite EC_BUILD no console p/ ver a versão */
 function init(){
+  console.info('EdgeControl build: '+EC_BUILD);
   load();
   rptInitFromState();
   applyTheme(S.theme||'default',{silent:true});
