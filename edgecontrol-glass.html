@@ -2593,9 +2593,18 @@ async function imgURL(id){
     _imgURLs.set(id,rec.dataUrl);return rec.dataUrl;
   }
   if(!rec.blob) return null;
-  const u=URL.createObjectURL(rec.blob);
-  _imgURLs.set(id,u);
-  return u;
+  try{
+    const u=URL.createObjectURL(rec.blob);
+    _imgURLs.set(id,u);
+    return u;
+  }catch(e){
+    /* Alguns WebViews bloqueiam blob: mesmo com IndexedDB funcionando. */
+    try{
+      const u=await blobToDataURL(rec.blob);
+      _imgURLs.set(id,u);
+      return u;
+    }catch(err){ return null; }
+  }
 }
 function revokeImgURL(id){
   const u=_imgURLs.get(id);
@@ -2629,7 +2638,9 @@ async function storeShot(file,opts={}){
   const rec={id,blob,w,h,size:blob.size,name:opts.name||file.name||'print.jpg',
              note:opts.note||'',opId:opts.opId||null,at:new Date().toISOString()};
   await IMGDB.put(rec);
-  return rec;
+  const stored=await IMGDB.get(id);
+  if(!stored) throw new Error('Print não persistiu no IndexedDB.');
+  return stored;
 }
 
 /* Repara vínculos que ainda estão no registro do IndexedDB sem apagar nada.
@@ -2985,6 +2996,7 @@ function saveOp(){
     asset,direction:isTradeDirection(direction)?direction:'',type:isTradeDirection(direction)?direction:'',operationals,
     reason,plan:plan==='yes'||plan==='no'?plan:'',img,yt,notes,shots,
     createdAt:(previous&&previous.createdAt)||new Date().toISOString()};
+  const mediaNote=shots.length?` com ${shots.length} print(s)`:'';
   if(curId){
     const i=S.operations.findIndex(o=>o.id===curId);
     if(i!==-1){
@@ -2992,9 +3004,9 @@ function saveOp(){
       S.operations[i]=op;
       applyCapitalDelta(opCapitalEffect(op)-previousEffect);
     }
-    toast('Operação atualizada!','s');
+    toast(`Operação atualizada${mediaNote}!`,'s');
   }else{
-    S.operations.push(op);applyCapitalDelta(opCapitalEffect(op));toast('Operação registrada!','s');
+    S.operations.push(op);applyCapitalDelta(opCapitalEffect(op));toast(`Operação registrada${mediaNote}!`,'s');
   }
   draftShots=[];
   save();refreshAssetUI();closeMod('newOpModal');updateDash();renderOps();badge();
@@ -3143,7 +3155,10 @@ async function addShots(files){
     }catch(err){ toast('Falha ao guardar o print.','e'); }
   }
   await renderShotGrid();
-  if(ok) toast(ok===1?'Print anexado!':`${ok} prints anexados!`,'s');
+  if(ok){
+    const action=curId?' à operação atual':' — salve a operação para confirmar';
+    toast(ok===1?`Print anexado${action}!`:`${ok} prints anexados${action}!`,'s');
+  }
   setTimeout(()=>zone&&zone.classList.remove('armed'),700);
 }
 
