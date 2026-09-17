@@ -3186,30 +3186,69 @@ async function exportData(){
   }catch(e){ toast('Falha ao exportar.','e'); }
 }
 function blobToDataURL(b){return new Promise(r=>{const f=new FileReader();f.onload=()=>r(f.result);f.readAsDataURL(b);});}
-function dataURLtoBlob(d){return fetch(d).then(r=>r.blob());}
+/* Converte data: URL em Blob SEM fetch(): vários navegadores (Safari antigo,
+   iOS, alguns modos do Edge) não buscam URLs "data:" via fetch() e o erro
+   era engolido em silêncio — o backup importava sem as imagens. */
+function dataURLtoBlob(d){
+  return new Promise((res,rej)=>{
+    try{
+      const m=String(d).match(/^data:([^;,]*)(;base64)?,([\s\S]*)$/);
+      if(!m) return rej(new TypeError('não é uma data: URL válida'));
+      const mime=m[1]||'application/octet-stream';
+      let buf;
+      if(m[2]){
+        const b=atob(m[3].replace(/\s/g,''));
+        buf=new Uint8Array(b.length);
+        for(let i=0;i<b.length;i++) buf[i]=b.charCodeAt(i);
+      }else{
+        const s=decodeURIComponent(m[3]);
+        if(typeof TextEncoder!=='undefined'){ buf=new TextEncoder().encode(s); }
+        else{ buf=new Uint8Array(s.length); for(let i=0;i<s.length;i++) buf[i]=s.charCodeAt(i)&0xFF; }
+      }
+      res(new Blob([buf],{type:mime}));
+    }catch(e){ rej(e); }
+  });
+}
 async function importData(ev){
   const f=ev.target.files[0];
   if(!f){return;}
   const inputEl=ev.target;
   try{
-    const txt=await f.text();
+    /* File.text() não existe em navegadores antigos — cai no FileReader */
+    const txt=await (f.text ? f.text() : new Promise((res,rej)=>{
+      const fr=new FileReader(); fr.onload=()=>res(fr.result); fr.onerror=()=>rej(fr.error); fr.readAsText(f);
+    }));
     let raw;
     try{ raw=JSON.parse(txt); }
     catch(err){ toast('Arquivo não é um JSON válido.','e'); inputEl.value=''; return; }
 
-    /* Aceita os dois formatos:
-       v2 -> {__ec:2, state:{...}, shots:{...}}
-       v1 -> {profile,settings,operations,...}  (estado na raiz) */
+    /* Aceita os formatos:
+       v2/v3 -> {__ec, state:{...}, shots:{...}}  (prints no pacote)
+       v1    -> {profile,settings,operations,...}  (estado na raiz;
+                imagens embutidas em op.img como data: URL) */
     const isPack = raw && typeof raw==='object' && raw.state && typeof raw.state==='object';
     const st  = isPack ? raw.state : raw;
-    const pics= isPack ? (raw.shots||{}) : {};
+    const rawShots=[];
+    const collect=src=>{
+      if(!src) return;
+      if(Array.isArray(src)){ src.forEach((o,i)=>{ if(o&&o.d) rawShots.push({id:o.id||('imp_'+Date.now()+'_'+i),...o}); }); }
+      else if(typeof src==='object'){
+        for(const [id,o] of Object.entries(src)){
+          if(typeof o==='string'){ if(o.startsWith('data:')) rawShots.push({id,d:o}); }
+          else if(o&&o.d){ rawShots.push({id,...o}); }
+        }
+      }
+    };
+    collect(raw.shots); collect(raw.blobs);
+    if(isPack){ collect(st.shots); collect(st.blobs); }
+    const pics=new Map(); rawShots.forEach(p=>{ if(!pics.has(p.id)) pics.set(p.id,p); });
 
     if(!st || typeof st!=='object' || !st.settings || !Array.isArray(st.operations)){
       toast('Arquivo inválido: não parece um backup do EdgeControl.','e');
       inputEl.value=''; return;
     }
 
-    const nOps=st.operations.length, nPics=Object.keys(pics).length;
+    const nOps=st.operations.length, nPics=pics.size;
     if(!confirm(`Importar ${nOps} operações e ${nPics} prints?\n\nOs dados atuais serão substituídos.`)){
       inputEl.value=''; return;
     }
@@ -3231,15 +3270,32 @@ async function importData(ev){
     if(!S.theme||!THEMES.some(t=>t.id===S.theme)) S.theme='default';
     if(!S.bg||typeof S.bg!=='object') S.bg={on:true,opacity:26};
 
-    /* ── prints (v2) ── */
-    let ok=0;
-    for(const [id,o] of Object.entries(pics)){
+    /* ── prints (v2/v3) ── */
+    let ok=0, fail=0;
+    for(const [id,o] of pics){
       try{
         const blob=await dataURLtoBlob(o.d);
         await IMGDB.put({id,blob,note:o.note||'',name:o.name||'',
                          at:o.at||new Date().toISOString(),size:blob.size,w:0,h:0});
         ok++;
-      }catch(err){ /* segue com os demais */ }
+      }catch(err){ fail++; console.warn('Print não importado ('+id+'):',err); }
+    }
+
+    /* ── imagens embutidas antigas (v1: op.img como data: URL) ──
+       converte para print no IndexedDB e vincula à operação,
+       senão o backup antigo perde as imagens ao ser importado */
+    for(const op of S.operations){
+      if(op&&typeof op.img==='string'&&op.img.startsWith('data:')&&!(op.shots&&op.shots.length)){
+        try{
+          const blob=await dataURLtoBlob(op.img);
+          const id='shot_imp_'+op.id;
+          await IMGDB.put({id,blob,note:'',name:'print.jpg',
+                           at:op.createdAt||new Date().toISOString(),size:blob.size,w:0,h:0,opId:op.id});
+          op.shots=[...(op.shots||[]),id];
+          op.img='';
+          ok++;
+        }catch(err){ console.warn('Imagem da operação '+op.id+' não importada:',err); }
+      }
     }
 
     /* ── aplica ── */
@@ -3249,7 +3305,11 @@ async function importData(ev){
     updateDash(); renderOps(); badge(); mtApplyAll();
     const sp=document.getElementById('page-settings');
     if(sp&&sp.classList.contains('active')){ loadSetForm(); syncMetalUI(); syncThemeUI(); updGalStats(); }
-    toast(`Importado: ${nOps} operações${ok?` e ${ok} prints`:''}.`,'s');
+    if(fail){
+      toast(`Importado: ${nOps} operações e ${ok} de ${nPics} prints — ${fail} print(s) falharam (veja o console).`,'w');
+    }else{
+      toast(`Importado: ${nOps} operações${ok?` e ${ok} prints`:''}.`,'s');
+    }
   }catch(err){
     toast('Erro ao importar: '+(err&&err.message?err.message:'desconhecido'),'e');
   }finally{
