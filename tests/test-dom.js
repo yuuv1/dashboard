@@ -11,8 +11,10 @@ const { JSDOM } = require('jsdom');
 
 const HTML = path.join(__dirname, '..', 'edgecontrol-glass.html');
 const FIXTURE = path.join(__dirname, '..', 'edgecontrol_2026-09-03.json');
+const CORRECTED_AI_BACKUP = path.join(__dirname, '..', 'edgecontrol_2026-09-16_corrigido.json');
 const html = fs.readFileSync(HTML, 'utf8');
 const backup = JSON.parse(fs.readFileSync(FIXTURE, 'utf8'));
+const correctedAiBackupText = fs.readFileSync(CORRECTED_AI_BACKUP, 'utf8');
 
 let fails = 0;
 const ok = (cond, msg, extra = '') => {
@@ -98,6 +100,11 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   ok(ev("S.operations.find(o=>o.id==='legacy-dir').direction") === 'PUT', 'load(): CALL/PUT antigo migra para direção');
   ok(ev('S.assets.length') >= 6 && ev("S.assets.includes('GBP/USD')"), 'load(): seis ativos do histórico vêm semeados');
   ok(ev('Array.isArray(S.operationals) && S.operationals.length===0'), 'migração cria lista de operacionais vazia');
+  const aiWrapped = '\uFEFFAqui está o backup:\n```json\n{"ok":true}\n```';
+  ok(ev(`parseBackupJSON(${JSON.stringify(aiWrapped)}).ok`) === true, 'importador aceita BOM, texto e cerca ```json da IA');
+  const checksAlias = ev(`migrateState({checks:[{id:'fib',label:'Fibonacci'}],operations:[{id:'c1',value:1,result:'WIN',checks:[{label:'POC'}]}]})`);
+  ok(checksAlias.operationals.includes('Fibonacci') && checksAlias.operationals.includes('POC'),
+     'migração aceita "checks" legado como lista/seleção de operacionais');
 
   w.localStorage.clear();
   ev(`S=migrateState({settings:{initialCapital:100,currentCapital:100,usdRate:5,stopLoss:5,target:2.5},operations:[],operationals:[]});ensureChartState();refreshAssetUI();`);
@@ -189,10 +196,12 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   ok(/Ativo \/ Par/.test(txt()) && /Breakout/.test(txt()) && /—/.test(txt()), 'relatório mostra contexto e travessão nos campos vazios');
   ok(!/NaN|undefined/.test(txt()), 'relatório com ativos/operacionais preenchidos e vazios não quebra');
 
-  const v3Backup = ev("JSON.stringify({__ec:3,state:S,shots:{}})");
-  await w.importData({ target: { files: [{ text: async () => v3Backup }], value: 'backup.json' } });
-  ok(ev("S.assets.includes('XAU/USD') && S.operationals.includes('Breakout')"),
-     'importação v3 restaura junto as listas de ativos e operacionais');
+  await w.importData({ target: { files: [{ text: async () => correctedAiBackupText }], value: 'backup.json' } });
+  ok(ev("S.operations.length===50 && S.assets.includes('EUR/GBP') && S.operationals.includes('Fibonacci')"),
+     'backup corrigido da IA importa as 50 operações, ativos e operacionais');
+  ok(ev('S.settings.currentCapital') === 658.08, 'backup corrigido atualiza o capital com as operações até 16/09');
+  ok(ev("(()=>{const o=S.operations.find(x=>x.id==='1789358340000');return o.asset==='EUR/GBP'&&o.direction==='PUT'&&o.reason==='';})()"),
+     'backup corrigido separa ativo e direção nas novas operações');
 
   /* restaura o backup de exemplo para a suíte histórica */
   w.localStorage.clear();

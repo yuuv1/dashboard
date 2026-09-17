@@ -2390,7 +2390,8 @@ function opAsset(o){
   return t&&!isTradeDirection(t.toUpperCase())?t:'';
 }
 function opOperationals(o){
-  const raw=o&&(Array.isArray(o.operationals)?o.operationals:(o.operational?[o.operational]:[]));
+  const raw=o&&(Array.isArray(o.operationals)?o.operationals:
+    (Array.isArray(o.checks)?o.checks:(o.operational?[o.operational]:[])));
   return uniqueNames(raw||[]);
 }
 function makeInitialState(){
@@ -2432,7 +2433,9 @@ function migrateState(raw){
       shots:Array.isArray(o.shots)?[...o.shots]:[],createdAt:o.createdAt||''};
   });
   out.assets=uniqueNames([...DEFAULT_ASSETS,...(Array.isArray(raw.assets)?raw.assets:[]),...out.operations.map(opAsset)]);
-  out.operationals=uniqueNames([...(Array.isArray(raw.operationals)?raw.operationals:[]),...out.operations.flatMap(opOperationals)]);
+  const savedOperationals=Array.isArray(raw.operationals)?raw.operationals:(Array.isArray(raw.checks)?raw.checks:[]);
+  out.operationals=uniqueNames([...savedOperationals,...out.operations.flatMap(opOperationals)]);
+  delete out.checks;
   return out;
 }
 let S=makeInitialState();
@@ -3456,6 +3459,20 @@ async function exportData(){
 }
 function blobToDataURL(b){return new Promise(r=>{const f=new FileReader();f.onload=()=>r(f.result);f.readAsDataURL(b);});}
 function dataURLtoBlob(d){return fetch(d).then(r=>r.blob());}
+/* Backups produzidos por IA às vezes chegam com BOM, explicação ou cercas ```json. */
+function parseBackupJSON(text){
+  let src=String(text??'').replace(/^\uFEFF/,'').trim();
+  const fenced=src.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  if(fenced) src=fenced[1].trim();
+  try{return JSON.parse(src);}
+  catch(firstError){
+    const a=src.indexOf('{'),b=src.lastIndexOf('}');
+    if(a>=0&&b>a){
+      try{return JSON.parse(src.slice(a,b+1));}catch(e){}
+    }
+    throw firstError;
+  }
+}
 async function importData(ev){
   const f=ev.target.files[0];
   if(!f){return;}
@@ -3463,8 +3480,11 @@ async function importData(ev){
   try{
     const txt=await f.text();
     let raw;
-    try{ raw=JSON.parse(txt); }
-    catch(err){ toast('Arquivo não é um JSON válido.','e'); inputEl.value=''; return; }
+    try{ raw=parseBackupJSON(txt); }
+    catch(err){
+      const detail=err&&err.message?String(err.message).replace(/^JSON\.parse:\s*/i,'').slice(0,110):'';
+      toast('Arquivo não é um JSON válido.'+(detail?' '+escHtml(detail):''),'e'); inputEl.value=''; return;
+    }
 
     /* Aceita todos os formatos:
        v3/v2 -> {__ec:3|2, state:{...}, shots:{...}}
@@ -3801,7 +3821,8 @@ function rpAsset(o){
   const t=rpClean(o&&o.type);return t&&t.toUpperCase()!=='CALL'&&t.toUpperCase()!=='PUT'?t:'';
 }
 function rpOperationals(o){
-  const raw=o&&(Array.isArray(o.operationals)?o.operationals:(o.operational?[o.operational]:[]));
+  const raw=o&&(Array.isArray(o.operationals)?o.operationals:
+    (Array.isArray(o.checks)?o.checks:(o.operational?[o.operational]:[])));
   const out=[],seen=new Set();
   (raw||[]).forEach(x=>{const n=rpClean(x&&typeof x==='object'?(x.name??x.label??''):x),k=n.toUpperCase();if(n&&!seen.has(k)){seen.add(k);out.push(n);}});
   return out;
