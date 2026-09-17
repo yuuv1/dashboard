@@ -282,6 +282,20 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   w.closeShotViewer(); w.closeMod('opDetMod');
   w.URL.createObjectURL = () => 'blob:mock';
 
+  /* o PDF com imagens usa fichas compactas e duas imagens por linha */
+  ev(`RPT.preset='tudo';RPT.cardMode='withShots';RPT.shotSize='mini';
+      RPT.inc={kpi:false,compare:false,charts:false,daily:false,insights:false,ops:false,cards:true,gloss:false};`);
+  await fresh(() => w.rptRender());
+  ok(d.querySelectorAll('#rdoc .rop').length === 5, 'PDF com imagens cria uma ficha por operação');
+  ok(d.querySelectorAll('#rdoc .rshot').length === 10, 'PDF com imagens mantém os 10 prints');
+  ok(d.querySelectorAll('#rdoc .rop-meta').length === 5 && !d.querySelector('#rdoc .rop-x'),
+     'dados das fichas ficam compactos, sem caixas repetidas');
+  ok(d.querySelectorAll('#rdoc .rshots:not(.one)').length === 5,
+     'modo visível usa duas colunas de prints');
+  ev(`RPT.shotSize='full';`);
+  await fresh(() => w.rptRender());
+  ok(d.querySelectorAll('#rdoc .rshots.one').length === 5, 'modo grande mantém uma coluna de prints');
+
   /* restaura o backup de exemplo para a suíte histórica */
   w.localStorage.clear();
   ev(`S=migrateState(${JSON.stringify(backup.state)});ensureChartState();RPT=JSON.parse(${JSON.stringify(initialRpt)});refreshAssetUI();`);

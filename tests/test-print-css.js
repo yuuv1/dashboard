@@ -72,7 +72,8 @@ ok(/\.rtbl \.num,\.rtbl \.rmut,\.rbdg\{white-space:nowrap!important;?\}/.test(pr
   ok(new RegExp(sel.replace('.', '\\.') + '\\{display:flex!important').test(print), sel + ' vira flex no papel');
 });
 ok(/\.rgrid2>\*\{width:calc\(50% - 4px\)!important/.test(print), 'gráficos em 2 colunas com largura calculada');
-ok(/\.rshots>\*\{width:calc\(33\.333% - 3\.4px\)!important/.test(print), 'prints em 3 colunas com largura calculada');
+ok(/\.rshots>\*\{width:calc\(50% - 2\.5px\)!important/.test(print), 'prints em 2 colunas com largura calculada');
+ok(/\.rop\{width:100%!important/.test(print), 'fichas ocupam uma linha para dar área aos prints');
 ok(/\.rkpi\{width:calc\(25% - 4\.6px\)!important/.test(print), 'KPIs em 4 colunas com largura calculada');
 
 /* ── 5. nada se sobrepõe / nada é cortado entre páginas ───────────── */
@@ -82,7 +83,7 @@ ok(/\.rsec-h\{break-inside:avoid;page-break-inside:avoid;break-after:avoid/.test
 ok(/\.rtbl thead\{display:table-header-group;\}/.test(print), 'cabeçalho da tabela repete por página');
 ok(/\.rtbl tfoot\{display:table-row-group;\}/.test(print), 'linha de total aparece uma vez só');
 ok(/\.rch,\.rch\.sm,\.rdonut\{height:auto!important/.test(print), 'gráficos com altura automática no papel');
-ok(/\.rshot img\{max-height:92mm!important/.test(print), 'print limitado à altura da folha');
+ok(/\.rshot img\{max-height:105mm!important;width:100%!important/.test(print), 'print ampliado, mas limitado à altura da folha');
 
 /* ── 6. cores e app fora de cena ─────────────────────────────────── */
 ok(/#rview,#rview \*\{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;\}/.test(print),

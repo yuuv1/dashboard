@@ -1254,21 +1254,31 @@ body.rpt-open{overflow:hidden;}
 .rins-t{font-size:11.5px;font-weight:800;margin-bottom:2px;}
 .rins-d{font-size:10.5px;color:var(--rmut);line-height:1.55;}
 
-/* ── fichas das operações (com prints) ── */
-.rops{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
-.rop{background:var(--rsoft);border:1px solid var(--rline);border-radius:12px;padding:10px 11px;
+/* ── fichas das operações (dados compactos + prints legíveis) ── */
+/* Uma ficha por linha deixa espaço horizontal suficiente para os prints.
+   A compactação acontece no bloco de dados, não diminuindo as imagens. */
+.rops{display:grid;grid-template-columns:1fr;gap:10px;}
+.rop{background:var(--rsoft);border:1px solid var(--rline);border-radius:12px;padding:9px 10px;
   break-inside:avoid;page-break-inside:avoid;min-width:0;}
-.rop-h{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:7px;}
+.rop-h{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:6px;}
 .rop-d{font-family:'Space Grotesk',sans-serif;font-size:11.5px;font-weight:800;}
 .rop-v{margin-left:auto;font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:800;white-space:nowrap;}
-.rop-k{font-size:8.5px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--rdim);margin-bottom:3px;}
-.rop-x{font-size:10.5px;color:var(--rink);line-height:1.55;background:var(--rpaper);border:1px solid var(--rline);
-  border-radius:9px;padding:7px 9px;margin-bottom:6px;}
-.rshots{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:6px;}
+.rop-meta{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 14px;padding:5px 0 2px;border-top:1px solid var(--rline);}
+.rop-field{display:inline-flex;align-items:baseline;gap:4px;min-width:0;font-size:10px;line-height:1.4;color:var(--rmut);}
+.rop-field.wide{flex-basis:100%;}
+.rop-field b,.rop-notes b{font-size:8px;text-transform:uppercase;letter-spacing:.45px;color:var(--rdim);white-space:nowrap;}
+.rop-field span:last-child{color:var(--rink);overflow-wrap:anywhere;}
+.rop-notes{display:flex;flex-wrap:wrap;gap:2px 7px;margin-top:4px;padding-top:4px;border-top:1px dashed var(--rline);
+  color:var(--rmut);font-size:10px;line-height:1.45;overflow-wrap:anywhere;}
+.rop-sep{color:var(--rdim);}
+.rop a{color:var(--racc);font-weight:700;text-decoration:none;}
+.rop-prints-label{font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--rdim);margin-top:6px;}
+.rop-empty{font-size:9.5px;color:var(--rdim);padding-top:5px;}
+.rshots{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:6px;}
 .rshots.one{grid-template-columns:1fr;}
 .rshot{border:1px solid var(--rline);border-radius:9px;overflow:hidden;background:#05070c;break-inside:avoid;}
 .rshot img{width:100%;display:block;height:auto;}
-.rshot-cap{font-size:9px;color:var(--rmut);padding:4px 6px;background:var(--rpaper);line-height:1.4;}
+.rshot-cap{font-size:8.5px;color:var(--rmut);padding:3px 6px;background:var(--rpaper);line-height:1.35;}
 .rfoot{margin-top:18px;padding-top:10px;border-top:1px solid var(--rline);display:flex;justify-content:space-between;
   gap:10px;font-size:9.5px;color:var(--rdim);flex-wrap:wrap;}
 .rgloss{margin:0;}
@@ -1329,10 +1339,11 @@ body.rpt-open{overflow:hidden;}
   /* grade -> flex: o Chrome pagina flex de forma previsível (itens de grade se sobrepõem entre páginas) */
   .rkpis{display:flex!important;flex-wrap:wrap!important;gap:6px!important;}
   .rkpi{width:calc(25% - 4.6px)!important;}
-  .rops{display:flex!important;flex-wrap:wrap!important;gap:8px!important;}
-  .rop{width:calc(50% - 4px)!important;}
+  .rops{display:flex!important;flex-wrap:wrap!important;gap:10px!important;}
+  /* Uma ficha por linha: o texto fica compacto e cada print ganha área útil. */
+  .rop{width:100%!important;}
   .rshots{display:flex!important;flex-wrap:wrap!important;gap:5px!important;}
-  .rshots>*{width:calc(33.333% - 3.4px)!important;}
+  .rshots>*{width:calc(50% - 2.5px)!important;}
   .rshots.one>*{width:100%!important;}
   .rgrid2{display:flex!important;flex-wrap:wrap!important;gap:8px!important;}
   .rgrid2>*{width:calc(50% - 4px)!important;min-width:0!important;}
@@ -1370,8 +1381,8 @@ body.rpt-open{overflow:hidden;}
   /* gráficos: o canvas tem altura fixa em px — no papel ele se ajusta à largura, sem sobrar */
   .rch,.rch.sm,.rdonut{height:auto!important;break-inside:avoid;page-break-inside:avoid;}
   .rch canvas,.rdonut canvas,.rcard canvas{max-width:100%!important;height:auto!important;}
-  /* prints: nunca maiores que a folha */
-  .rshot img{max-height:92mm!important;width:auto!important;max-width:100%!important;margin:0 auto;}
+  /* prints: dois por linha ocupam bem a folha sem tomar a página inteira */
+  .rshot img{max-height:105mm!important;width:100%!important;max-width:100%!important;height:auto!important;margin:0 auto;object-fit:contain;}
   .rshots.one img{max-height:145mm!important;}
   #rview[data-rtheme="escuro"]{background:#080b12!important;}
   /* a faixa de 6mm da @page fica só para cabeçalho/rodapé do navegador (se ligados) */
@@ -1981,7 +1992,7 @@ body.rpt-open{overflow:hidden;}
                 </select></div>
               <div class="fg"><label class="fl">Tamanho dos prints</label>
                 <select class="fi" id="rpShotSize" onchange="rptCfgChange()">
-                  <option value="mini">Miniaturas (3 por linha)</option>
+                  <option value="mini">Visíveis (2 por linha)</option>
                   <option value="full">Grandes (1 por linha)</option>
                 </select></div>
             </div>
@@ -4653,6 +4664,10 @@ function rptSectionOps(m){
     </div>
   </section>`;
 }
+function rptOpField(label,value,wide=false){
+  if(value===null||value===undefined||String(value).trim()===''||String(value).trim()==='—') return '';
+  return `<span class="rop-field${wide?' wide':''}"><b>${label}</b><span>${value}</span></span>`;
+}
 function rptSectionCards(m,urls){
   if(RPT.cardMode==='none'||!RPT.inc.cards) return '';
   const list=RPT.cardMode==='all'?m.ops:m.ops.filter(o=>(o.shots||[]).length);
@@ -4663,11 +4678,24 @@ function rptSectionCards(m,urls){
     const imgs=ids.map(id=>{
       if(shown>=80) return '';
       shown++;
-      return `<div class="rshot"><img src="${urls.get(id)}" alt="print da operação">
-        <div class="rshot-cap">${rpBR(o.date)} ${escHtml(o.time||'—')} · ${escHtml(rpAsset(o)||'—')} · print ${shown}</div></div>`;
+      return `<div class="rshot"><img src="${urls.get(id)}" alt="Print de ${escHtml(rpAsset(o)||'operação')}">
+        <div class="rshot-cap">${rpBR(o.date)} ${escHtml(o.time||'—')} · ${escHtml(rpAsset(o)||'—')} · 📸 ${shown}</div></div>`;
     }).join('');
-    const plan=o.plan==='yes'?'Sim':o.plan==='no'?'Não':'—';
+    const asset=rpAsset(o);
     const opers=rpOperationals(o);
+    const plan=o.plan==='yes'?'Sim':o.plan==='no'?'Não':'';
+    const video=o.yt?`<a href="${escHtml(o.yt)}" target="_blank" rel="noopener">Abrir vídeo ↗</a>`:'';
+    const fields=[
+      rptOpField('Ativo / Par',`${escHtml(asset||'')}${o.usd?` <span class="rmut">· ${rpUSD(o.usd)}</span>`:''}`),
+      rptOpField('Direção',escHtml(rpDirection(o)||'')),
+      rptOpField('Operacionais',escHtml(opers.join(', '))),
+      rptOpField('Plano',plan?`<span class="${o.plan==='yes'?'rpos':'rneg'}">${plan}</span>`:''),
+      rptOpField('Vídeo',video)
+    ].filter(Boolean).join('');
+    const notes=[
+      o.reason?`<span><b>Motivo:</b> ${escHtml(o.reason)}</span>`:'',
+      o.notes?`<span><b>Obs.:</b> ${escHtml(o.notes)}</span>`:''
+    ].filter(Boolean).join('<span class="rop-sep">·</span>');
     return `<div class="rop">
       <div class="rop-h">
         <span class="rop-d">${rpBR(o.date)}</span>
@@ -4675,21 +4703,17 @@ function rptSectionCards(m,urls){
         ${rptResBadge(o.result)}
         <span class="rop-v ${o.result==='WIN'?'rpos':o.result==='LOSS'?'rneg':'rmut'}">${o.result==='LOSS'?'-':'+'}${rpMoney(o.value)}</span>
       </div>
-      <div class="rop-k">Ativo / Par</div><div style="font-size:11px;font-weight:700;margin-bottom:6px;">${escHtml(rpAsset(o)||'—')}${o.usd?` <span class="rmut" style="font-weight:400">· ${rpUSD(o.usd)}</span>`:''}</div>
-      <div class="rop-k">Operacionais</div><div class="rop-x">${opers.length?escHtml(opers.join(', ')):'—'}</div>
-      <div class="rop-k">Direção</div><div class="rop-x">${escHtml(rpDirection(o)||'—')}</div>
-      <div class="rop-k">Motivo da entrada</div><div class="rop-x">${escHtml(o.reason||'—')}</div>
-      <div class="rop-k">Seguiu o plano</div><div class="rop-x">${plan}</div>
-      <div class="rop-k">Observações</div><div class="rop-x">${escHtml(o.notes||'—')}</div>
-      <div class="rop-k">Vídeo</div><div class="rop-x">${o.yt?`<a href="${escHtml(o.yt)}" style="color:var(--racc)">${escHtml(o.yt)}</a>`:'—'}</div>
-      ${imgs?`<div class="rop-k" style="margin-top:6px;">Prints (${ids.length})</div><div class="rshots ${RPT.shotSize==='full'?'one':''}">${imgs}</div>`:'<div class="rop-k">Prints</div><div class="rop-x">—</div>'}
+      ${fields?`<div class="rop-meta">${fields}</div>`:''}
+      ${notes?`<div class="rop-notes">${notes}</div>`:''}
+      ${imgs?`<div class="rop-prints-label">Prints (${ids.length})</div><div class="rshots ${RPT.shotSize==='full'?'one':''}">${imgs}</div>`:'<div class="rop-empty">Sem print anexado</div>'}
     </div>`;
   }).join('');
-  return `<section class="rsec">${rptSecHead(7,'Fichas por operação',`${list.length} ficha(s)${RPT.cardMode==='withShots'?' — somente as operações com print anexado':''}, com contexto, observações e imagens.`)}
+  return `<section class="rsec">${rptSecHead(7,'Fichas por operação',`${list.length} ficha(s)${RPT.cardMode==='withShots'?' — somente as operações com print anexado':''}, com dados compactos e imagens ampliadas.`)}
     <div class="rops">${cards}</div>
     ${shown>=80?`<div class="rnote" style="margin-top:9px;">Mostrando os 80 primeiros prints para o PDF não ficar pesado.</div>`:''}
   </section>`;
 }
+
 function rptSectionGloss(m){
   const M=m.M;
   return `<section class="rsec">${rptSecHead(8,'Como ler este relatório','Um minuto de leitura para entender cada número acima.')}
