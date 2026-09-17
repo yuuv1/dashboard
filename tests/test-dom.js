@@ -12,9 +12,12 @@ const { JSDOM } = require('jsdom');
 const HTML = path.join(__dirname, '..', 'edgecontrol-glass.html');
 const FIXTURE = path.join(__dirname, '..', 'edgecontrol_2026-09-03.json');
 const CORRECTED_AI_BACKUP = path.join(__dirname, '..', 'edgecontrol_2026-09-16_corrigido.json');
+const BACKUP_WITH_IMAGES = path.join(__dirname, '..', 'edgecontrol_2026-09-16_com_imagens.json');
 const html = fs.readFileSync(HTML, 'utf8');
 const backup = JSON.parse(fs.readFileSync(FIXTURE, 'utf8'));
 const correctedAiBackupText = fs.readFileSync(CORRECTED_AI_BACKUP, 'utf8');
+const backupWithImagesText = fs.readFileSync(BACKUP_WITH_IMAGES, 'utf8');
+const backupWithImages = JSON.parse(backupWithImagesText);
 
 let fails = 0;
 const ok = (cond, msg, extra = '') => {
@@ -242,6 +245,29 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
      'capital do backup confere com a soma financeira das 50 operações');
   ok(ev("(()=>{const o=S.operations.find(x=>x.id==='1789358340000');return o.asset==='EUR/GBP'&&o.direction==='PUT'&&o.reason==='';})()"),
      'backup corrigido separa ativo e direção nas novas operações');
+
+  const embeddedShots = Object.values(backupWithImages.shots);
+  const embeddedBytes = embeddedShots.reduce((n, shot) => n + Buffer.from(shot.d.split(',', 2)[1], 'base64').length, 0);
+  const linkedPhotoOps = backupWithImages.state.operations.filter(o => (o.shots || []).length);
+  ok(embeddedShots.length === 10 && embeddedShots.every(s => s.d.startsWith('data:image/jpeg;base64,')),
+     'backup com imagens contém os 10 JPEGs embutidos');
+  ok(embeddedBytes === 484517, 'imagens embutidas preservam todos os bytes dos arquivos originais');
+  ok(linkedPhotoOps.length === 5 && linkedPhotoOps.every(o => o.shots.length === 2),
+     'cinco operações recebem análise e execução/resultado');
+
+  /* simula IndexedDB/fetch e confirma a restauração dos blobs pelo importador real */
+  w.__restoredShots = [];
+  w.fetch = async dataUrl => {
+    const [head, encoded] = String(dataUrl).split(',', 2);
+    const bytes = Buffer.from(encoded, 'base64');
+    return { blob: async () => new w.Blob([bytes], { type: head.slice(5, head.indexOf(';')) }) };
+  };
+  ev("IMGDB.put=async rec=>{window.__restoredShots.push({id:rec.id,size:rec.blob.size,name:rec.name,note:rec.note});return rec;}");
+  await w.importData({ target: { files: [{ text: async () => backupWithImagesText }], value: 'backup-com-imagens.json' } });
+  ok(w.__restoredShots.length === 10 && w.__restoredShots.reduce((n, r) => n + r.size, 0) === 484517,
+     'importador restaura os 10 arquivos originais no banco de imagens');
+  ok(ev("S.operations.filter(o=>(o.shots||[]).length===2).length") === 5,
+     'vínculos entre prints e operações sobrevivem à importação');
 
   /* restaura o backup de exemplo para a suíte histórica */
   w.localStorage.clear();
