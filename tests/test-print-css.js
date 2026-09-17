@@ -42,6 +42,10 @@ const prop = (seletor, nome) => {
 const semRespiro = v => !v || /^0(px|mm|cm|in|pt|em|rem)?$/i.test(v.replace(/!important/g, '').trim());
 
 ok(!!print, 'bloco @media print existe');
+ok(/\.rpage\{[^}]*padding-bottom:0!important/.test(print),
+   'folha sem padding de rodapé (não empurra página em branco no fim)');
+ok(/\.rshots\.one\{display:block!important;\}/.test(print),
+   'prints em página inteira fluem em bloco');
 
 /* ── 1. margem da folha ───────────────────────────────────────────── */
 const page = print.match(/@page\{([^}]*)\}/);
@@ -68,21 +72,37 @@ ok(/\.rtbl-wrap\{overflow:visible!important/.test(print), 'invólucro das tabela
 ok(/\.rtbl \.num,\.rtbl \.rmut,\.rbdg\{white-space:nowrap!important;?\}/.test(print), 'números ficam inteiros na linha');
 
 /* ── 4. grade -> flex (o Chrome sobrepõe itens de grade entre páginas) ── */
-['.rkpis', '.rops', '.rgrid2', '.rshots'].forEach(sel => {
+['.rkpis', '.rgrid2', '.rshots'].forEach(sel => {
   ok(new RegExp(sel.replace('.', '\\.') + '\\{display:flex!important').test(print), sel + ' vira flex no papel');
 });
+ok(/\.rops\{display:block!important;\}/.test(print),
+   'fichas em fluxo de bloco (item de flex não fragmenta entre páginas)');
 ok(/\.rgrid2>\*\{width:calc\(50% - 4px\)!important/.test(print), 'gráficos em 2 colunas com largura calculada');
-ok(/\.rshots>\*\{width:calc\(33\.333% - 3\.4px\)!important/.test(print), 'prints em 3 colunas com largura calculada');
+ok(/\.rshots>\*\{width:calc\(50% - 2\.5px\)!important/.test(print), 'prints em 2 colunas com largura calculada');
+ok(/\.rop\{width:100%!important/.test(print), 'fichas ocupam uma linha para dar área aos prints');
 ok(/\.rkpi\{width:calc\(25% - 4\.6px\)!important/.test(print), 'KPIs em 4 colunas com largura calculada');
 
 /* ── 5. nada se sobrepõe / nada é cortado entre páginas ───────────── */
-ok(/\.rcard,\.rkpi,\.rop,\.rins-i,\.rnote,\.rshot,\.rgloss dt,\.rgloss dd,\.rfoot\{break-inside:avoid/.test(print),
-   'cards e fichas não quebram no meio (evita sobreposição)');
+ok(/\.rcard,\.rkpi,\.rins-i,\.rnote,\.rshot,\.rgloss dt,\.rgloss dd,\.rfoot\{break-inside:avoid/.test(print),
+   'cards, prints e notas não quebram no meio');
+ok(!/\.rop\{break-inside:avoid/.test(print) && !/,[^\n]*\.rop,|\.rop,[^\n]*break-inside:avoid/.test(print),
+   'ficha de operação PODE atravessar páginas (mais alta que a folha não é cortada nem deixa meia página em branco)');
+ok(/\.rop-noimg\{break-inside:avoid;page-break-inside:avoid;\}/.test(print),
+   'ficha só-texto continua compacta (não quebra)');
+ok(/\.rop-h\{break-after:avoid;page-break-after:avoid;\}/.test(print),
+   'cabeçalho da ficha nunca fica órfão no fim da página');
+ok(/\.rop-meta,\.rop-prints-label\{break-after:avoid/.test(print),
+   'metadados/rótulo de prints acompanham o conteúdo seguinte');
+ok(/\.rcard-tbl\{break-inside:auto!important;page-break-inside:auto!important;\}/.test(print),
+   'cartão com tabela atravessa páginas (thead repete, linhas inteiras)');
 ok(/\.rsec-h\{break-inside:avoid;page-break-inside:avoid;break-after:avoid/.test(print), 'título de seção não fica órfão');
 ok(/\.rtbl thead\{display:table-header-group;\}/.test(print), 'cabeçalho da tabela repete por página');
 ok(/\.rtbl tfoot\{display:table-row-group;\}/.test(print), 'linha de total aparece uma vez só');
 ok(/\.rch,\.rch\.sm,\.rdonut\{height:auto!important/.test(print), 'gráficos com altura automática no papel');
-ok(/\.rshot img\{max-height:92mm!important/.test(print), 'print limitado à altura da folha');
+ok(/\.rshot img\{max-height:78mm!important;width:100%!important/.test(print),
+   'print mini cabe 2 fichas por página (78mm)');
+ok(/\.rshots\.one img\{max-height:100mm!important;\}/.test(print),
+   'print ampliado: ficha inteira cabe numa folha (100mm)');
 
 /* ── 6. cores e app fora de cena ─────────────────────────────────── */
 ok(/#rview,#rview \*\{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;\}/.test(print),

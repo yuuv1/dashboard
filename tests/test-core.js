@@ -16,7 +16,8 @@ const src = fs.readFileSync(HTML, 'utf8');
 const core = src.split('/*RPT-CORE-START*/')[1].split('/*RPT-CORE-END*/')[0];
 const C = new Function(core + `
   return {rpRange,rpMetrics,rpInsights,rpSort,rpApplyFilters,rpIn,rpMoney,rpPct,rpDays,rpAdd,rpToday,rpNet,rpBR,rpPad,
-    rpEquity,rpHistogram,rpHeat,rpRolling,rpCalendar,rpDailyStats,rpRMultiples,rpValueBuckets,rpISO,rpWd};
+    rpEquity,rpHistogram,rpHeat,rpRolling,rpCalendar,rpDailyStats,rpRMultiples,rpValueBuckets,rpISO,rpWd,
+    rpAsset,rpDirection,rpOperationals};
 `)();
 
 const backup = JSON.parse(fs.readFileSync(FIXTURE, 'utf8'));
@@ -55,9 +56,10 @@ eq(M.maxWinStreak, 6, 'maior sequência de wins');
 eq(M.maxLossStreak, 2, 'maior sequência de losses');
 eq(M.plan.y, 37, 'operações que seguiram o plano');
 eq(M.plan.n, 0, 'operações fora do plano');
-eq(M.byType.length, 7, 'tipos distintos (6 pares + "sem tipo")');
-eq(M.byType[0].type, '(sem tipo)', 'tipo com melhor resultado vem primeiro (confirmado no backup: 102,62)');
-ok(M.byType.every((t, i, a) => i === 0 || a[i - 1].net >= t.net), 'tipos ordenados do melhor para o pior resultado');
+eq(M.byType.length, 7, 'ativos distintos (6 pares + "sem ativo")');
+eq(M.byType[0].asset, '(sem ativo)', 'ativo com melhor resultado vem primeiro (confirmado no backup: 102,62)');
+ok(M.byType.every((t, i, a) => i === 0 || a[i - 1].net >= t.net), 'ativos ordenados do melhor para o pior resultado');
+eq(M.byOperational.length, 0, 'backup antigo sem operacionais não inventa grupos');
 ok(M.bestType === M.byType[0] && M.worstType === M.byType[M.byType.length - 1], 'bestType/worstType apontam para as pontas');
 eq(M.days.length, 24, 'dias operados');
 eq(M.days[M.days.length - 1].cum, M.capitalEnd, 'acumulado do último dia = capital final');
@@ -100,10 +102,26 @@ eq(drawOnly.capitalEnd, 100, 'só empate: capital não muda');
 eq(drawOnly.winRate, 0, 'só empate: win rate 0');
 ok(C.rpInsights(drawOnly, {}).length >= 1, 'só empate: ainda gera resumo');
 
+const contextOps = C.rpSort([
+  { date: '2026-09-01', time: '09:00', value: 25, result: 'WIN', asset: 'XAU/USD', direction: 'CALL', operationals: ['Rompimento', 'Pullback'], plan: '' },
+  { date: '2026-09-01', time: '10:00', value: 10, result: 'LOSS', asset: 'XAU/USD', direction: '', operationals: ['Rompimento'], plan: '' },
+  { date: '2026-09-02', time: '', value: 8, result: 'WIN', type: 'EUR/JPY', operationals: [], plan: '' }
+]);
+const contextM = C.rpMetrics(contextOps, 100);
+eq(contextM.byType.length, 2, 'métricas agrupam pelo ativo novo e pelo type legado');
+eq(contextM.byOperational.length, 2, 'métricas criam grupos para os 2 operacionais');
+eq(contextM.byOperational.find(x => x.operational === 'Rompimento').n, 2, 'operacional repetido contabiliza as 2 operações');
+eq(contextM.plan.u, 3, 'plano vazio fica não informado (não vira "sim")');
+eq(C.rpAsset(contextOps[2]), 'EUR/JPY', 'leitor de ativo aceita type legado com par');
+eq(C.rpDirection(contextOps[0]), 'CALL', 'direção nova é lida separadamente');
+eq(C.rpOperationals(contextOps[0]).length, 2, 'array de operacionais preserva múltipla seleção');
+ok(!/NaN|undefined/.test(JSON.stringify(contextM)), 'métricas com campos opcionais vazios não geram NaN/undefined');
+
 /* ── 4. filtros e períodos ────────────────────────────────────────── */
 eq(C.rpApplyFilters(ops, { res: 'WIN' }).length, 24, 'filtro resultado = WIN');
 eq(C.rpApplyFilters(ops, { plan: 'no' }).length, 0, 'filtro plano = não (nenhuma)');
-eq(C.rpApplyFilters(ops, { type: 'EUR/USD' }).length, 8, 'filtro tipo = EUR/USD');
+eq(C.rpApplyFilters(ops, { type: 'EUR/USD' }).length, 8, 'filtro ativo legado = EUR/USD');
+eq(C.rpApplyFilters(contextOps, { type: 'XAU/USD' }).length, 2, 'filtro usa o novo campo asset');
 const r = C.rpRange('mespassado');
 ok(!!r.from && !!r.to, 'preset "mês passado" devolve datas', r.from + ' → ' + r.to);
 ok(C.rpDays(r.from, r.to) >= 28, 'mês passado tem >= 28 dias');

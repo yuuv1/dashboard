@@ -3,16 +3,22 @@
    tabelas (com os invólucros .rtbl-wrap), temas, impressão e estado.
 
    Rodar:  npm run test:dom       (ou: node tests/test-dom.js)
-   Requer: npm install  (jsdom)
+   Requer: npm install  (jsdom + fake-indexeddb)
 ------------------------------------------------------------------ */
 const fs = require('fs');
 const path = require('path');
 const { JSDOM } = require('jsdom');
+const { IDBFactory } = require('fake-indexeddb');
 
 const HTML = path.join(__dirname, '..', 'edgecontrol-glass.html');
 const FIXTURE = path.join(__dirname, '..', 'edgecontrol_2026-09-03.json');
+const CORRECTED_AI_BACKUP = path.join(__dirname, '..', 'edgecontrol_2026-09-16_corrigido.json');
+const BACKUP_WITH_IMAGES = path.join(__dirname, '..', 'edgecontrol_2026-09-16_com_imagens.json');
 const html = fs.readFileSync(HTML, 'utf8');
 const backup = JSON.parse(fs.readFileSync(FIXTURE, 'utf8'));
+const correctedAiBackupText = fs.readFileSync(CORRECTED_AI_BACKUP, 'utf8');
+const backupWithImagesText = fs.readFileSync(BACKUP_WITH_IMAGES, 'utf8');
+const backupWithImages = JSON.parse(backupWithImagesText);
 
 let fails = 0;
 const ok = (cond, msg, extra = '') => {
@@ -27,6 +33,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     url: 'https://edgecontrol.local/',
     beforeParse(w) {
       w.__printed = 0;
+      w.indexedDB = new IDBFactory();
       w.print = () => { w.__printed++; };
       w.matchMedia = () => ({ matches: false, addEventListener() {}, removeEventListener() {}, addListener() {}, removeListener() {} });
       // canvas: o app desenha gráficos; em jsdom basta um contexto falso
@@ -56,6 +63,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 
   const d = dom.window.document;
   const w = dom.window;
+  const appDocumentTitle = d.title;
   const ev = code => w.eval(code);
   const txt = () => d.getElementById('rdoc').textContent.replace(/\s+/g, ' ');
   const errors = [];
@@ -82,9 +90,287 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   ok(ev('typeof S') === 'object', 'app inicializou (estado S existe)');
   ok(!!d.getElementById('page-report'), 'página Relatório existe no DOM');
 
-  /* injeta o backup de exemplo */
-  ev(`S.operations=${JSON.stringify(backup.state.operations)};S.settings=Object.assign(S.settings,${JSON.stringify(backup.state.settings)});`);
+  /* ── cadastro rápido + migração + novos catálogos ─────────────── */
+  const initialRpt = ev('JSON.stringify(RPT)');
+  const legacyState = {
+    settings: { initialCapital: 100, currentCapital: 100, usdRate: 5, stopLoss: 5, target: 2.5 },
+    operations: [
+      { id: 'legacy-pair', date: '2026-09-01', time: '09:00', value: 10, usd: 2, result: 'WIN', type: 'EUR/USD', reason: '', plan: 'yes' },
+      { id: 'legacy-dir', date: '2026-09-01', time: '10:00', value: 5, usd: 1, result: 'LOSS', type: 'PUT', reason: '', plan: '' }
+    ]
+  };
+  w.localStorage.setItem('ec7', JSON.stringify(legacyState));
+  ev('load()');
+  ok(ev("S.operations.find(o=>o.id==='legacy-pair').asset") === 'EUR/USD', 'load(): type antigo com par migra para asset');
+  ok(ev("S.operations.find(o=>o.id==='legacy-pair').direction") === '', 'load(): par antigo não vira direção');
+  ok(ev("S.operations.find(o=>o.id==='legacy-dir').direction") === 'PUT', 'load(): CALL/PUT antigo migra para direção');
+  ok(ev('S.assets.length') >= 6 && ev("S.assets.includes('GBP/USD')"), 'load(): seis ativos do histórico vêm semeados');
+  ok(ev('Array.isArray(S.operationals) && S.operationals.length===0'), 'migração cria lista de operacionais vazia');
+  const aiWrapped = '\uFEFFAqui está o backup:\n```json\n{"ok":true}\n```';
+  ok(ev(`parseBackupJSON(${JSON.stringify(aiWrapped)}).ok`) === true, 'importador aceita BOM, texto e cerca ```json da IA');
+  const checksAlias = ev(`migrateState({checks:[{id:'fib',label:'Fibonacci'}],operations:[{id:'c1',value:1,result:'WIN',checks:[{label:'POC'}]}]})`);
+  ok(checksAlias.operationals.includes('Fibonacci') && checksAlias.operationals.includes('POC'),
+     'migração aceita "checks" legado como lista/seleção de operacionais');
+
+  w.localStorage.clear();
+  ev(`S=migrateState({settings:{initialCapital:100,currentCapital:100,usdRate:5,stopLoss:5,target:2.5},operations:[],operationals:[]});ensureChartState();refreshAssetUI();`);
+  w.openNewOpModal();
+  ok(!!d.getElementById('opDate').value && !!d.getElementById('opTime').value, 'nova operação preenche data e hora atuais');
+  d.getElementById('opDate').value = ''; // até data/hora podem ficar vazias: só valor + resultado são obrigatórios
+  d.getElementById('opTime').value = '';
+  d.getElementById('opVal').value = '25';
+  d.getElementById('opRes').value = 'WIN';
+  w.saveOp();
+  ok(ev('S.operations.length') === 1, 'salva WIN só com valor + resultado');
+  ok(ev("(()=>{const o=S.operations[0];return o.asset===''&&o.direction===''&&o.reason===''&&o.plan===''&&o.operationals.length===0;})()"),
+     'todos os demais campos ficam opcionais e vazios');
+  ok(ev('S.settings.currentCapital') === 125, 'WIN mínimo soma o valor ao capital');
+  ok(!d.getElementById('newOpModal').classList.contains('show'), 'modal fecha depois do cadastro mínimo');
+  w.openDet(ev('S.operations[0].id'));
+  const minimalDetail = d.getElementById('detBod').textContent.replace(/\s+/g, ' ');
+  ok(/Ativo \/ Par\s*—/.test(minimalDetail) && /Operacionais\s*—/.test(minimalDetail) && /Direção\s*—/.test(minimalDetail),
+     'detalhes mostram travessão para campos opcionais vazios');
+  w.closeMod('opDetMod');
+
+  w.openNewOpModal();
+  d.getElementById('opVal').value = '10';
+  d.getElementById('opRes').value = 'LOSS';
+  w.saveOp();
+  ok(ev('S.operations.length') === 2, 'salva LOSS só com valor + resultado');
+  ok(ev('S.settings.currentCapital') === 115, 'LOSS mínimo subtrai o valor do capital');
+
+  /* editar uma operação aplica só a diferença financeira ao capital */
+  const editedOpId = ev('S.operations[0].id');
+  w.editOp(editedOpId);
+  d.getElementById('opVal').value = '40';
+  d.getElementById('opRes').value = 'WIN';
+  w.saveOp();
+  ok(ev('S.settings.currentCapital') === 130, 'editar WIN de R$ 25 para R$ 40 acrescenta somente R$ 15 ao capital');
+  ok(/130,00/.test(d.getElementById('dashCap').textContent), 'Dashboard reflete o capital corrigido após a edição');
+  ok(JSON.parse(w.localStorage.getItem('ec7')).settings.currentCapital === 130, 'capital da edição persiste no armazenamento');
+
+  w.editOp(editedOpId);
+  d.getElementById('opVal').value = '15';
+  d.getElementById('opRes').value = 'LOSS';
+  w.saveOp();
+  ok(ev('S.settings.currentCapital') === 75, 'trocar WIN de R$ 40 por LOSS de R$ 15 desconta R$ 55 do capital');
+
+  /* restaura o lançamento original para os demais cenários da suíte */
+  w.editOp(editedOpId);
+  d.getElementById('opVal').value = '25';
+  d.getElementById('opRes').value = 'WIN';
+  w.saveOp();
+  ok(ev('S.settings.currentCapital') === 115, 'segunda edição também recompõe o capital corretamente');
+
+  /* exclusão deve desfazer o mesmo impacto financeiro */
+  w.openNewOpModal();
+  d.getElementById('opVal').value = '20';
+  d.getElementById('opRes').value = 'WIN';
+  w.saveOp();
+  const deletedOpId = ev('S.operations[S.operations.length-1].id');
+  w.confirm = () => true;
+  ev(`curId=${JSON.stringify(deletedOpId)}`); w.delOp();
+  ok(ev('S.settings.currentCapital') === 115 && !ev(`S.operations.some(o=>o.id===${JSON.stringify(deletedOpId)})`),
+     'excluir operação reverte seu impacto no capital');
+
+  /* ativo novo: salva, persiste e reaparece em todas as listas */
+  w.openNewOpModal();
+  d.getElementById('opVal').value = '12';
+  d.getElementById('opRes').value = 'WIN';
+  d.getElementById('opAsset').value = 'XAU/USD';
+  w.saveOp();
+  ok(ev("S.operations[S.operations.length-1].asset") === 'XAU/USD', 'operação guarda o novo ativo');
+  ok(ev("S.assets.includes('XAU/USD')"), 'ativo novo entra no catálogo');
+  ok(JSON.parse(w.localStorage.getItem('ec7')).assets.includes('XAU/USD'), 'catálogo de ativos persiste no ec7');
+  ev('S=makeInitialState();load();refreshAssetUI();');
+  ok(ev("S.assets.includes('XAU/USD')"), 'ativo continua no catálogo depois de recarregar o ec7');
+  ok(!!d.querySelector('#opAssetList option[value="XAU/USD"]'), 'ativo reaparece para selecionar no formulário');
+  ok(!!d.querySelector('#fType option[value="XAU/USD"]'), 'ativo reaparece no filtro de operações');
+  w.rptBuildTypes();
+  ok(!!d.querySelector('#rfType option[value="XAU/USD"]'), 'ativo reaparece no filtro do relatório');
+
+  /* dois operacionais criados no modal, ambos marcados e restaurados na edição */
+  w.openNewOpModal();
+  d.getElementById('opOperationalNew').value = 'Rompimento'; w.quickAddOperational();
+  d.getElementById('opOperationalNew').value = 'Pullback'; w.quickAddOperational();
+  ok(d.querySelectorAll('#opOperationals input:checked').length === 2, 'criação rápida já marca os 2 operacionais');
+  d.getElementById('opVal').value = '7';
+  d.getElementById('opRes').value = 'LOSS';
+  d.getElementById('opAsset').value = 'XAU/USD';
+  w.saveOp();
+  const operationalOpId = ev('S.operations[S.operations.length-1].id');
+  ok(ev('S.operations[S.operations.length-1].operationals.length') === 2, 'operação salva array com 2 operacionais');
+  ev('S=makeInitialState();load();refreshAssetUI();');
+  w.editOp(operationalOpId);
+  ok(d.querySelectorAll('#opOperationals input:checked').length === 2, 'os 2 operacionais voltam marcados na edição');
+  w.closeMod('newOpModal');
+  d.getElementById('fType').value = 'XAU/USD'; w.applyFilter();
+  ok(d.querySelectorAll('#opsTb tr').length === 2, 'filtro da lista encontra operações pelo ativo real');
+  w.clearFilter();
+
+  /* seção Configurações: adicionar, renomear e apagar */
+  w.loadSetForm();
+  ok(d.querySelectorAll('#operationalSettingsList .cfg-list-row').length === 2, 'Configurações lista os operacionais');
+  d.getElementById('sOperational_0').value = 'Breakout'; w.renameOperational(0);
+  ok(ev("S.operationals.includes('Breakout') && S.operations.some(o=>o.operationals.includes('Breakout'))"),
+     'renomear atualiza o catálogo e as operações');
+  d.getElementById('sOperationalNew').value = 'Temporário'; w.addOperationalSetting();
+  w.confirm = () => true;
+  const tempIndex = ev("S.operationals.indexOf('Temporário')");
+  w.deleteOperational(tempIndex);
+  ok(!ev("S.operationals.includes('Temporário')"), 'apagar remove o operacional da lista');
+
+  /* relatório e gráficos aceitam contexto preenchido e vazio */
+  w.nav('analytics', null);
+  ok(ev("CH.anCP.data.labels.includes('XAU/USD') && CH.anCP.data.labels.includes('(sem ativo)')"),
+     'gráfico de performance agrupa ativos reais e operações sem ativo');
+  ok(ev("CH.anO.data.labels.includes('Breakout') && CH.anO.data.labels.includes('Pullback')"),
+     'gráfico de performance agrupa por operacional');
+  ok(ev('CH.anDir.data.labels.length===0'), 'gráfico de direção vazio não quebra quando direção é opcional');
+  ev("RPT.preset='tudo';RPT.cardMode='all';RPT.filt={res:'',type:'',plan:''};");
+  await fresh(() => w.rptRender());
+  ok(!!d.getElementById('rch_type') && !!d.getElementById('rch_operational'), 'relatório cria gráficos de ativo e operacional');
+  ok(ev("RCH.type.data.labels.includes('XAU/USD') && RCH.operational.data.labels.includes('Breakout')"),
+     'gráficos do relatório recebem ativos e operacionais');
+  ok(d.querySelectorAll('#rdoc .rtbl-ops tbody tr').length === 4, 'relatório inclui operações com campos preenchidos e vazios');
+  ok(/Ativo \/ Par/.test(txt()) && /Breakout/.test(txt()) && /—/.test(txt()), 'relatório mostra contexto e travessão nos campos vazios');
+  ok(!/NaN|undefined/.test(txt()), 'relatório com ativos/operacionais preenchidos e vazios não quebra');
+
+  await w.importData({ target: { files: [{ text: async () => correctedAiBackupText }], value: 'backup.json' } });
+  ok(ev("S.operations.length===50 && S.assets.includes('EUR/GBP') && S.operationals.includes('Fibonacci')"),
+     'backup corrigido da IA importa as 50 operações, ativos e operacionais');
+  ok(ev('S.settings.currentCapital') === 640.31, 'backup corrigido fecha no capital real de R$ 640,31');
+  ok(ev("(()=>{const a=S.operations.find(x=>x.id==='1789186453598'),b=S.operations.find(x=>x.id==='1789186468004');return a.date==='2026-09-11'&&a.time==='09:11'&&a.asset==='GBP/JPY'&&b.date==='2026-09-11'&&b.time==='09:20'&&b.asset==='GBP/USD';})()"),
+     'operações cadastradas em 12/09 ficam na data real de execução, 11/09');
+  ok(ev("(()=>{const values=['1789441440000','1789527120000','1789531680000'].map(id=>S.operations.find(x=>x.id===id).value);return JSON.stringify(values)===JSON.stringify([39.01,39,33.93]);})()"),
+     'WINs do extrato usam o lucro líquido, não o valor da entrada');
+  ok(ev("(()=>{const net=S.operations.reduce((n,o)=>n+(o.result==='WIN'?o.value:o.result==='LOSS'?-o.value:0),0);return Math.round((S.settings.initialCapital+net)*100)/100===S.settings.currentCapital;})()"),
+     'capital do backup confere com a soma financeira das 50 operações');
+  ok(ev("(()=>{const o=S.operations.find(x=>x.id==='1789358340000');return o.asset==='EUR/GBP'&&o.direction==='PUT'&&o.reason==='';})()"),
+     'backup corrigido separa ativo e direção nas novas operações');
+
+  const embeddedShots = Object.values(backupWithImages.shots);
+  const embeddedBytes = embeddedShots.reduce((n, shot) => n + Buffer.from(shot.d.split(',', 2)[1], 'base64').length, 0);
+  const linkedPhotoOps = backupWithImages.state.operations.filter(o => (o.shots || []).length);
+  const unlinkedBackup = JSON.parse(backupWithImagesText);
+  unlinkedBackup.state.operations = unlinkedBackup.state.operations.map(o => ({ ...o, shots: [] }));
+  const unlinkedBackupText = JSON.stringify(unlinkedBackup);
+  ok(embeddedShots.length === 10 && embeddedShots.every(s => s.d.startsWith('data:image/jpeg;base64,')),
+     'backup com imagens contém os 10 JPEGs embutidos');
+  ok(embeddedBytes === 484517, 'imagens embutidas preservam todos os bytes dos arquivos originais');
+  ok(linkedPhotoOps.length === 5 && linkedPhotoOps.every(o => o.shots.length === 2),
+     'cinco operações recebem análise e execução/resultado');
+
+  /* primeiro importa a variante problemática para que a exportação também
+     valide que os vínculos reconstruídos são carregados para o próximo backup */
+  await w.importData({ target: { files: [{ text: async () => unlinkedBackupText }], value: 'backup-com-imagens-sem-vinculo.json' } });
+  ok(ev("S.operations.filter(o=>(o.shots||[]).length===2).length") === 5,
+     'importação reconstrói os vínculos perdidos do backup __ec:3');
+
+  /* simula o caso antigo: o IndexedDB ainda sabe o opId, mas o estado perdeu
+     os arrays shots. A própria exportação precisa reparar esse vínculo. */
+  ev("S.operations.forEach(o=>o.shots=[]);save();");
+  await w.gcShots();
+  ok(ev("S.operations.filter(o=>(o.shots||[]).length===2).length")===5 && (await ev('IMGDB.all()')).length===10,
+     'limpeza de inicialização não apaga prints com vínculo no IndexedDB');
+
+  /* a exportação lê todos os registros do IndexedDB e grava o dono de cada print */
+  let exportedBlob=null;
+  const oldCreateObjectURL=w.URL.createObjectURL;
+  const oldAnchorClick=w.HTMLAnchorElement.prototype.click;
+  w.URL.createObjectURL=blob=>{exportedBlob=blob;return 'blob:backup-export';};
+  w.HTMLAnchorElement.prototype.click=()=>{};
+  await w.exportData();
+  const exportedText=await new Promise((resolve,reject)=>{
+    const fr=new w.FileReader();
+    fr.onload=()=>resolve(String(fr.result)); fr.onerror=()=>reject(fr.error);
+    fr.readAsText(exportedBlob);
+  });
+  const exportedPack=JSON.parse(exportedText);
+  ok(Object.keys(exportedPack.shots).length===10 && Object.values(exportedPack.shots).every(s=>s.d.startsWith('data:image/jpeg;base64,')),
+     'exportData inclui os 10 prints do IndexedDB no JSON');
+  ok(ev("S.operations.filter(o=>(o.shots||[]).length===2).length")===5 &&
+     exportedPack.state.operations.filter(o=>(o.shots||[]).length===2).length===5,
+     'exportData recupera os vínculos que estavam apenas no IndexedDB');
+  ok(Object.entries(exportedPack.shots).every(([id,s])=>{
+    const op=exportedPack.state.operations.find(o=>(o.shots||[]).includes(id));
+    return op && s.opId===op.id;
+  }), 'exportData preserva o vínculo de cada print com sua operação');
+  w.URL.createObjectURL=oldCreateObjectURL;
+  w.HTMLAnchorElement.prototype.click=oldAnchorClick;
+
+  /* usa IndexedDB realista e testa um __ec:3 que perdeu shots[], mas manteve
+     a associação recuperável na nota do print */
+  await w.importData({ target: { files: [{ text: async () => unlinkedBackupText }], value: 'backup-com-imagens-sem-vinculo.json' } });
+  const restoredShots = await ev('IMGDB.all()');
+  ok(restoredShots.length === 10 && restoredShots.reduce((n, r) => n + r.size, 0) === 484517,
+     'importador persiste os 10 arquivos originais no IndexedDB');
+  ok(restoredShots.every(r => r.dataUrl.startsWith('data:image/jpeg;base64,')),
+     'prints importados mantêm uma fonte de visualização compatível');
+  ok(ev("S.operations.filter(o=>(o.shots||[]).length===2).length") === 5,
+     'vínculos entre prints e operações sobrevivem à importação');
+
+  /* mesmo sem suporte a blob:, miniaturas e visor usam o data URL restaurado */
+  let blobUrlCalls = 0;
+  w.URL.createObjectURL = () => { blobUrlCalls++; throw new Error('blob indisponível'); };
+  w.openDet('1789531680000');
+  await sleep(100);
+  const detailShotImages = [...d.querySelectorAll('#detShots img')];
+  ok(detailShotImages.length === 2 && detailShotImages.every(img => img.src.startsWith('data:image/jpeg;base64,')),
+     'detalhe da operação exibe as duas miniaturas importadas');
+  await w.openShotViewer('det', 0);
+  ok(d.getElementById('svImg').src.startsWith('data:image/jpeg;base64,') && blobUrlCalls === 0,
+     'visualizador abre o print sem depender de URL blob');
+  w.closeShotViewer(); w.closeMod('opDetMod');
+  w.URL.createObjectURL = () => 'blob:mock';
+
+  /* o PDF com imagens usa fichas compactas e duas imagens por linha */
+  ev(`RPT.preset='tudo';RPT.cardMode='withShots';RPT.shotSize='mini';
+      RPT.inc={kpi:false,compare:false,charts:false,daily:false,insights:false,ops:false,cards:true,gloss:false};`);
+  await fresh(() => w.rptRender());
+  ok(d.querySelectorAll('#rdoc .rop').length === 5, 'PDF com imagens cria uma ficha por operação');
+  ok(d.querySelectorAll('#rdoc .rshot').length === 10, 'PDF com imagens mantém os 10 prints');
+  ok(d.querySelectorAll('#rdoc .rop-meta').length === 5 && !d.querySelector('#rdoc .rop-x'),
+     'dados das fichas ficam compactos, sem caixas repetidas');
+  ok(d.querySelectorAll('#rdoc .rshots:not(.one)').length === 5,
+     'modo visível usa duas colunas de prints');
+  ev(`RPT.shotSize='full';`);
+  await fresh(() => w.rptRender());
+  ok(d.querySelectorAll('#rdoc .rshots.one').length === 5, 'modo grande mantém uma coluna de prints');
+
+  /* formato v1: uma imagem em operation.img também vira print persistido e
+     reaparece na ficha do relatório */
+  const legacyBackupWithImage={__ec:3,state:{
+    settings:{initialCapital:100,currentCapital:100,usdRate:5,stopLoss:5,target:2.5},
+    operations:[{id:'legacy-img',date:'2026-09-14',time:'09:59',value:48.88,usd:9.78,
+      result:'LOSS',asset:'EUR/GBP',direction:'PUT',shots:[],img:embeddedShots[0].d}]
+  },shots:{}};
+  await w.importData({target:{files:[{text:async()=>JSON.stringify(legacyBackupWithImage)}],value:'backup-v1-com-imagem.json'}});
+  const legacyOp=ev('S.operations[0]'),legacyId='legacy_img_legacy-img';
+  const legacyRec=await ev(`IMGDB.get(${JSON.stringify(legacyId)})`);
+  ok(legacyOp.shots.length===1 && legacyOp.shots[0]===legacyId && !legacyOp.img && legacyRec && legacyRec.dataUrl===embeddedShots[0].d,
+     'backup antigo com operation.img migra para IndexedDB e shots');
+  ev(`RPT.preset='tudo';RPT.cardMode='withShots';RPT.shotSize='mini';RPT.inc={kpi:false,compare:false,charts:false,daily:false,insights:false,ops:false,cards:true,gloss:false};`);
+  await fresh(() => w.rptRender());
+  ok(d.querySelectorAll('#rdoc .rop').length===1 && d.querySelectorAll('#rdoc .rshot').length===1,
+     'relatório reaparece com o print migrado do formato antigo');
+
+  /* registro inválido não é descartado em silêncio nem gera falso sucesso */
+  await ev("IMGDB.put({id:'broken-print',blob:new Blob(['not an image'],{type:'text/plain'}),size:12,at:new Date().toISOString()})");
+  const beforeFailedExportURL=w.URL.createObjectURL, beforeFailedClick=w.HTMLAnchorElement.prototype.click;
+  w.URL.createObjectURL=()=> 'blob:failed-export'; w.HTMLAnchorElement.prototype.click=()=>{};
+  await w.exportData();
+  const failedExportToast=d.getElementById('ecT')?.textContent||'';
+  ok(/não puderam ser lidos ou migrados/.test(failedExportToast),
+     'exportação informa claramente prints que não puderam ser lidos');
+  w.URL.createObjectURL=beforeFailedExportURL; w.HTMLAnchorElement.prototype.click=beforeFailedClick;
+  await ev("IMGDB.del('broken-print')");
+
+  /* restaura o backup de exemplo para a suíte histórica */
+  w.localStorage.clear();
+  ev(`S=migrateState(${JSON.stringify(backup.state)});ensureChartState();RPT=JSON.parse(${JSON.stringify(initialRpt)});refreshAssetUI();`);
   ok(ev('S.operations.length') === 37, 'backup de exemplo carregado (37 operações)');
+  ok(ev("S.operations.every(o=>Object.prototype.hasOwnProperty.call(o,'asset'))"), 'backup inteiro passou pela migração de ativo');
 
   /* ── página do relatório: controles ─────────────────────────────── */
   w.nav('report', d.getElementById('navReport'));
@@ -114,6 +400,10 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   ok(d.getElementById('rview').classList.contains('show'), 'overlay do relatório aberto');
   ok(d.body.classList.contains('rpt-open'), 'body travado com .rpt-open (FAB/PWA não flutuam por cima)');
   ok(d.getElementById('rdoc').dataset.ready === '1', 'documento montado');
+  ok(d.querySelector('#rdoc .rcov-nm').textContent === 'Relatório de Performance — 24/07/2026 a 03/09/2026',
+     'título visível indica a data inicial e final do relatório');
+  ok(d.title === 'Relatório EdgeControl — 24-07-2026 a 03-09-2026',
+     'título do documento define um nome de PDF com início e fim');
 
   const secs = d.querySelectorAll('#rdoc .rsec');
   ok(secs.length === 8, '8 seções montadas', String(secs.length));
@@ -379,6 +669,14 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   /* ── presets de período ─────────────────────────────────────────── */
   await fresh(() => w.rptSetPreset('mespassado'));
   ok(d.getElementById('rdoc').dataset.ready === '1' && /01\/08\/2026/.test(txt()), 'preset mês passado renderiza');
+  ok(d.querySelector('#rdoc .rcov-nm').textContent === 'Relatório de Performance — 01/08/2026 a 31/08/2026' &&
+     d.title === 'Relatório EdgeControl — 01-08-2026 a 31-08-2026',
+     'trocar o período atualiza o título visível e o nome do PDF');
+  d.getElementById('rpFrom').value = '2026-08-10';
+  d.getElementById('rpTo').value = '2026-08-05';
+  await fresh(() => w.rptSetCustom());
+  ok(d.querySelector('#rdoc .rcov-nm').textContent === 'Relatório de Performance — 05/08/2026 a 10/08/2026',
+     'período personalizado também informa início e fim em ordem cronológica');
   await fresh(() => w.rptSetPreset('tudo'));
 
   /* ── avatar sem foto: data URI local ───────────────────────────── */
@@ -396,6 +694,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   w.closeReportView();
   ok(!d.getElementById('rview').classList.contains('show'), 'overlay fechado');
   ok(!d.body.classList.contains('rpt-open'), 'body destravado ao fechar');
+  ok(d.title === appDocumentTitle, 'fechar o relatório restaura o título normal do app');
   w.rptOpen();
   ok(ev('RPT.theme') === 'papel', 'tema do relatório persistido entre aberturas', ev('RPT.theme'));
   const key = (k, o) => d.dispatchEvent(new w.KeyboardEvent('keydown', Object.assign({ key: k, bubbles: true, cancelable: true }, o || {})));
