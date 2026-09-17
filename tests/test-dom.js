@@ -63,6 +63,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 
   const d = dom.window.document;
   const w = dom.window;
+  const appDocumentTitle = d.title;
   const ev = code => w.eval(code);
   const txt = () => d.getElementById('rdoc').textContent.replace(/\s+/g, ' ');
   const errors = [];
@@ -315,6 +316,10 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   ok(d.getElementById('rview').classList.contains('show'), 'overlay do relatório aberto');
   ok(d.body.classList.contains('rpt-open'), 'body travado com .rpt-open (FAB/PWA não flutuam por cima)');
   ok(d.getElementById('rdoc').dataset.ready === '1', 'documento montado');
+  ok(d.querySelector('#rdoc .rcov-nm').textContent === 'Relatório de Performance — 24/07/2026 a 03/09/2026',
+     'título visível indica a data inicial e final do relatório');
+  ok(d.title === 'Relatório EdgeControl — 24-07-2026 a 03-09-2026',
+     'título do documento define um nome de PDF com início e fim');
 
   const secs = d.querySelectorAll('#rdoc .rsec');
   ok(secs.length === 8, '8 seções montadas', String(secs.length));
@@ -580,6 +585,14 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   /* ── presets de período ─────────────────────────────────────────── */
   await fresh(() => w.rptSetPreset('mespassado'));
   ok(d.getElementById('rdoc').dataset.ready === '1' && /01\/08\/2026/.test(txt()), 'preset mês passado renderiza');
+  ok(d.querySelector('#rdoc .rcov-nm').textContent === 'Relatório de Performance — 01/08/2026 a 31/08/2026' &&
+     d.title === 'Relatório EdgeControl — 01-08-2026 a 31-08-2026',
+     'trocar o período atualiza o título visível e o nome do PDF');
+  d.getElementById('rpFrom').value = '2026-08-10';
+  d.getElementById('rpTo').value = '2026-08-05';
+  await fresh(() => w.rptSetCustom());
+  ok(d.querySelector('#rdoc .rcov-nm').textContent === 'Relatório de Performance — 05/08/2026 a 10/08/2026',
+     'período personalizado também informa início e fim em ordem cronológica');
   await fresh(() => w.rptSetPreset('tudo'));
 
   /* ── avatar sem foto: data URI local ───────────────────────────── */
@@ -597,6 +610,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   w.closeReportView();
   ok(!d.getElementById('rview').classList.contains('show'), 'overlay fechado');
   ok(!d.body.classList.contains('rpt-open'), 'body destravado ao fechar');
+  ok(d.title === appDocumentTitle, 'fechar o relatório restaura o título normal do app');
   w.rptOpen();
   ok(ev('RPT.theme') === 'papel', 'tema do relatório persistido entre aberturas', ev('RPT.theme'));
   const key = (k, o) => d.dispatchEvent(new w.KeyboardEvent('keydown', Object.assign({ key: k, bubbles: true, cancelable: true }, o || {})));

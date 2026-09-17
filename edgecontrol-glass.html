@@ -4263,6 +4263,7 @@ function rpValueBuckets(ops,passos){
 /* ══════════════════════════════════════════════════════════
    ESTADO / PREFERÊNCIAS DO RELATÓRIO
 ══════════════════════════════════════════════════════════ */
+const EDGE_APP_DOCUMENT_TITLE=document.title;
 let RPT={preset:'mes',from:'',to:'',theme:'claro',cardMode:'withShots',shotSize:'mini',
   inc:{kpi:true,compare:true,charts:true,daily:true,insights:true,ops:true,cards:true,gloss:true},
   filt:{res:'',type:'',plan:''}};
@@ -4313,11 +4314,16 @@ function rptModel(){
   all.forEach(o=>{if(o.date&&o.date<pFrom)prevCap+=rpNet(o);});
   const PM=rpMetrics(rpSort(rpApplyFilters(all.filter(o=>rpIn(o,pFrom,pTo)),RPT.filt)),prevCap);
   const shotsCount=ops.reduce((a,o)=>a+((o.shots||[]).length),0);
+  const oneDay=rng.from===rng.to;
+  const label=oneDay?rpBRlong(rng.from):(rpBRlong(rng.from)+' a '+rpBRlong(rng.to));
+  const labelShort=oneDay?rpBR(rng.from):(rpBR(rng.from)+' → '+rpBR(rng.to));
+  const titleRange=oneDay?rpBR(rng.from):(rpBR(rng.from)+' a '+rpBR(rng.to));
+  const fileRange=titleRange.replace(/\//g,'-');
   return {rng,span,ops,M,PM,capStart,prevCap,
     prev:{from:pFrom,to:pTo,n:PM.n,label:span===1?rpBR(pFrom):(rpBR(pFrom)+' → '+rpBR(pTo)),M:PM},
-    trades:inRange.length,all,shotsCount,
-    label:rng.from===rng.to?rpBRlong(rng.from):(rpBRlong(rng.from)+' a '+rpBRlong(rng.to)),
-    labelShort:rng.from===rng.to?rpBR(rng.from):(rpBR(rng.from)+' → '+rpBR(rng.to))};
+    trades:inRange.length,all,shotsCount,label,labelShort,
+    title:'Relatório de Performance — '+titleRange,
+    exportTitle:'Relatório EdgeControl — '+fileRange};
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -4466,8 +4472,8 @@ function rptCover(m){
     <div class="rcov-t">
       <img class="rcov-av" src="${escHtml(av)}" alt="" onerror="this.style.display='none'">
       <div style="min-width:0;">
-        <div class="rcov-nm">${escHtml(p.name||'Trader')}</div>
-        <div class="rcov-su">Relatório de performance · EdgeControl</div>
+        <div class="rcov-nm">${escHtml(m.title)}</div>
+        <div class="rcov-su">${escHtml(p.name||'Trader')} · EdgeControl</div>
       </div>
     </div>
     <div class="rcov-per">📅 ${escHtml(m.label)}${m.span>1?` · ${m.span} dias`:''}</div>
@@ -4842,6 +4848,7 @@ async function rptRender(){
     doc.dataset.ready='';
     doc.innerHTML='<div class="rload"><span class="rsp"></span> Montando o relatório…</div>';
     const m=rptModel();
+    if(document.getElementById('rview').classList.contains('show')) document.title=m.exportTitle;
     const urls=await rptShotURLs(m);
     rptDestroyCharts();
     doc.innerHTML=rptHTML(m,urls);
@@ -4881,11 +4888,13 @@ async function rptOpen(opts){
 function closeReportView(){
   document.getElementById('rview').classList.remove('show');
   document.body.classList.remove('rpt-open');
+  document.title=EDGE_APP_DOCUMENT_TITLE;
 }
 async function rPrint(){
   const doc=document.getElementById('rdoc');
   if(!document.getElementById('rview').classList.contains('show')) await rptOpen();
   if(!doc.dataset.ready) await rptRender();
+  document.title=rptModel().exportTitle; // também define o nome sugerido ao salvar o PDF
   await rptWaitImages(doc);
   /* reajusta gráficos (Chart.js) e layout para a largura da folha antes de imprimir */
   try{ window.dispatchEvent(new Event('resize')); }catch(e){}
