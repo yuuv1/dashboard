@@ -374,6 +374,19 @@ tbody tr:last-child td{border-bottom:none;}
 select.fi{appearance:none;cursor:pointer;}
 textarea.fi{resize:vertical;min-height:70px;}
 .s2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+/* campos repetíveis do cadastro de operação (ativos e operacionais) */
+.check-list{display:flex;flex-wrap:wrap;gap:7px;min-height:38px;padding:8px;background:color-mix(in srgb,var(--surf) 52%,transparent);border:1px solid var(--border);border-radius:11px;}
+.check-list.empty{align-items:center;color:var(--dim);font-size:10.5px;}
+.check-item{display:inline-flex;align-items:center;gap:6px;padding:6px 9px;border-radius:9px;background:color-mix(in srgb,var(--surf) 78%,transparent);border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--white);cursor:pointer;user-select:none;}
+.check-item input{accent-color:var(--accent);margin:0;}
+.quick-add{display:flex;gap:7px;margin-top:7px;}
+.quick-add .fi{min-width:0;}
+.cfg-list{display:flex;flex-direction:column;gap:7px;margin-top:9px;}
+.cfg-list-row{display:flex;align-items:center;gap:7px;padding:7px;border:1px solid var(--border);border-radius:11px;background:color-mix(in srgb,var(--surf) 52%,transparent);}
+.cfg-list-row .fi{padding:7px 9px;font-size:11.5px;min-width:0;}
+.cfg-empty{padding:12px;text-align:center;color:var(--dim);font-size:10.5px;border:1px dashed var(--border);border-radius:11px;}
+.basset{background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent);}
+.boper{background:color-mix(in srgb,var(--accent2) 15%,transparent);color:var(--accent2);}
 .prev-box{background:color-mix(in srgb,var(--surf) 55%,transparent);border:1px solid var(--border);border-radius:13px;padding:11px 13px;margin-top:6px;}
 .bkp-box{background:linear-gradient(140deg,color-mix(in srgb,var(--accent) 12%,transparent),color-mix(in srgb,var(--cyan) 10%,transparent));border:1px solid var(--border);border-radius:14px;padding:15px;box-shadow:inset 0 1px 0 var(--glass-inset);}
 
@@ -1642,7 +1655,7 @@ body.rpt-open{overflow:hidden;}
           <div class="fil-row">
             <input class="fi" style="width:145px;" type="date" id="fDate">
             <select class="fi" style="width:118px;" id="fRes"><option value="">Resultado</option><option value="WIN">WIN</option><option value="LOSS">LOSS</option></select>
-            <select class="fi" style="width:108px;" id="fType"><option value="">Tipo</option><option value="CALL">CALL</option><option value="PUT">PUT</option></select>
+            <select class="fi" style="width:150px;" id="fType"><option value="">Ativo / Par</option></select>
             <select class="fi" style="width:128px;" id="fPlan"><option value="">Plano</option><option value="yes">Seguiu</option><option value="no">Não Seguiu</option></select>
             <button class="btn-o xs" onclick="applyFilter()">Filtrar</button>
           </div>
@@ -1652,7 +1665,7 @@ body.rpt-open{overflow:hidden;}
         <div class="card">
           <div class="tbl-sc">
             <table>
-              <thead><tr><th>#</th><th>Data/Hora</th><th>Resultado (R$)</th><th>Valor (USD)</th><th>Resultado</th><th>Tipo</th><th>Motivo</th><th>Plano</th><th>Mídia</th><th>Ações</th></tr></thead>
+              <thead><tr><th>#</th><th>Data/Hora</th><th>Resultado (R$)</th><th>Valor (USD)</th><th>Resultado</th><th>Ativo / contexto</th><th>Motivo</th><th>Plano</th><th>Mídia</th><th>Ações</th></tr></thead>
               <tbody id="opsTb"><tr><td colspan="10" style="text-align:center;padding:30px;color:var(--lgray);"><div style="font-size:24px;margin-bottom:6px;">📋</div>Nenhuma operação. Clique em "+ Nova Operação".</td></tr></tbody>
             </table>
           </div>
@@ -1675,7 +1688,11 @@ body.rpt-open{overflow:hidden;}
           <div class="an-card"><div class="ctit" style="margin-bottom:6px;">Distribuição de Resultados</div><div class="ch" style="display:flex;align-items:center;justify-content:center;"><div style="position:relative;max-height:100%;aspect-ratio:1;height:100%;"><canvas id="anWC"></canvas></div></div></div>
         </div>
         <div class="an-bot">
-          <div class="an-card"><div class="ctit" style="margin-bottom:6px;">Performance por Tipo (CALL vs PUT)</div><div class="ch"><canvas id="anCPC"></canvas></div></div>
+          <div class="an-card"><div class="ctit" style="margin-bottom:6px;">Performance por Ativo / Par</div><div class="ch"><canvas id="anCPC"></canvas></div></div>
+          <div class="an-card"><div class="ctit" style="margin-bottom:6px;">Performance por Operacional</div><div class="ch"><canvas id="anOC"></canvas></div></div>
+        </div>
+        <div class="an-bot">
+          <div class="an-card"><div class="ctit" style="margin-bottom:6px;">Performance por Direção (opcional)</div><div class="ch"><canvas id="anDirC"></canvas></div></div>
           <div class="an-card"><div class="ctit" style="margin-bottom:6px;">Ops com vs sem Plano</div><div class="ch"><canvas id="anPC"></canvas></div></div>
         </div>
 
@@ -1760,6 +1777,18 @@ body.rpt-open{overflow:hidden;}
                 <div><div style="font-size:10px;color:var(--lgray);">Target</div><div style="font-family:'Space Grotesk';font-size:18px;font-weight:800;color:var(--green);" id="prevTgt">R$ 0,00</div></div>
               </div>
             </div>
+          </div>
+
+          <div class="set-card" id="operationalsSettings">
+            <div class="set-tit">🧩 Operacionais</div>
+            <div style="font-size:10.5px;color:var(--lgray);line-height:1.55;margin-bottom:9px;">
+              Cadastre seus setups/estratégias. Você poderá marcar vários — ou nenhum — em cada operação.
+            </div>
+            <div class="quick-add">
+              <input class="fi" id="sOperationalNew" placeholder="Ex: Rompimento M5" onkeydown="if(event.key==='Enter'){event.preventDefault();addOperationalSetting();}">
+              <button class="btn-o xs" onclick="addOperationalSetting()">＋ Adicionar</button>
+            </div>
+            <div class="cfg-list" id="operationalSettingsList"></div>
           </div>
 
           <div class="set-card">
@@ -1974,7 +2003,7 @@ body.rpt-open{overflow:hidden;}
                   <option value="">Todos</option><option value="WIN">Somente WIN</option>
                   <option value="LOSS">Somente LOSS</option><option value="DRAW">Somente empates</option>
                 </select></div>
-              <div class="fg"><label class="fl">Tipo / ativo</label><select class="fi" id="rfType" onchange="rptCfgChange()"></select></div>
+              <div class="fg"><label class="fl">Ativo / Par</label><select class="fi" id="rfType" onchange="rptCfgChange()"></select></div>
             </div>
             <div class="fg" style="margin-bottom:0;"><label class="fl">Seguiu o plano</label>
               <select class="fi" id="rfPlan" onchange="rptCfgChange()">
@@ -2051,18 +2080,32 @@ body.rpt-open{overflow:hidden;}
         <div class="fg"><label class="fl">Horário</label><input class="fi" id="opTime" type="time"></div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-        <div class="fg"><label class="fl" id="opValLbl">Resultado (R$)</label><input class="fi" id="opVal" type="number" placeholder="80.00" min="0" step="0.01" oninput="calcOpUsd()"><div style="font-size:9.5px;color:var(--dim);margin-top:4px;" id="opValHint">quanto voce ganhou ou perdeu nesta operacao</div></div>
+        <div class="fg"><label class="fl" id="opValLbl">Resultado (R$)</label><input class="fi" id="opVal" type="number" placeholder="80.00" min="0.01" step="0.01" oninput="calcOpUsd()"><div style="font-size:9.5px;color:var(--dim);margin-top:4px;" id="opValHint">quanto voce ganhou ou perdeu nesta operacao</div></div>
         <div class="fg"><label class="fl">Valor (USD) — automático</label><input class="fi" id="opValU" readonly style="opacity:.6;" placeholder="~$ 0.00"></div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-        <div class="fg"><label class="fl">Resultado</label><select class="fi" id="opRes" onchange="syncValLabel()"><option value="">Selecione</option><option value="WIN">✅ WIN</option><option value="LOSS">❌ LOSS</option></select></div>
-        <div class="fg"><label class="fl">Tipo</label><select class="fi" id="opType"><option value="">Selecione</option><option value="CALL">📈 CALL</option><option value="PUT">📉 PUT</option></select></div>
+        <div class="fg"><label class="fl">Resultado <span style="color:var(--red)">*</span></label><select class="fi" id="opRes" onchange="syncValLabel()"><option value="">Selecione</option><option value="WIN">✅ WIN</option><option value="LOSS">❌ LOSS</option></select></div>
+        <div class="fg"><label class="fl">Direção <span style="font-weight:400;font-size:9px;color:var(--lgray);">(opcional)</span></label><select class="fi" id="opType"><option value="">Não informada</option><option value="CALL">📈 CALL</option><option value="PUT">📉 PUT</option></select></div>
       </div>
       <div class="fg">
-        <label class="fl" style="color:var(--accent);">🎯 Motivo da Entrada <span style="font-weight:400;font-size:9px;color:var(--lgray);">(obrigatório)</span></label>
+        <label class="fl">Ativo / Par <span style="font-weight:400;font-size:9px;color:var(--lgray);">(opcional)</span></label>
+        <input class="fi" id="opAsset" list="opAssetList" autocomplete="off" placeholder="Escolha ou digite um novo, ex: EUR/USD">
+        <datalist id="opAssetList"></datalist>
+        <div style="font-size:9.5px;color:var(--dim);margin-top:4px;">Ao digitar um ativo novo, ele fica salvo na lista depois que a operação for registrada.</div>
+      </div>
+      <div class="fg">
+        <label class="fl">Operacionais <span style="font-weight:400;font-size:9px;color:var(--lgray);">(opcional · marque quantos quiser)</span></label>
+        <div class="check-list empty" id="opOperationals">Nenhum operacional cadastrado.</div>
+        <div class="quick-add">
+          <input class="fi" id="opOperationalNew" placeholder="Criar operacional sem sair daqui" onkeydown="if(event.key==='Enter'){event.preventDefault();quickAddOperational();}">
+          <button class="btn-s xs" onclick="quickAddOperational()">＋ Criar</button>
+        </div>
+      </div>
+      <div class="fg">
+        <label class="fl" style="color:var(--accent);">🎯 Motivo da Entrada <span style="font-weight:400;font-size:9px;color:var(--lgray);">(opcional)</span></label>
         <textarea class="fi" id="opReason" style="border-color:color-mix(in srgb, var(--accent) 28%, transparent);min-height:74px;" placeholder="Ex: Rompimento de resistência no M5, confluência EMA21 + RSI saindo de sobrevenda..."></textarea>
       </div>
-      <div class="fg"><label class="fl">Seguiu o Plano?</label><select class="fi" id="opPlan"><option value="yes">✅ Sim, segui o plano</option><option value="no">❌ Não segui o plano</option></select></div>
+      <div class="fg"><label class="fl">Seguiu o Plano? <span style="font-weight:400;font-size:9px;color:var(--lgray);">(opcional)</span></label><select class="fi" id="opPlan"><option value="">Não informado</option><option value="yes">✅ Sim, segui o plano</option><option value="no">❌ Não segui o plano</option></select></div>
       <div class="fg">
         <label class="fl" style="color:var(--accent);">📸 Prints da Operação</label>
         <div class="shot-zone" id="shotZone" onclick="document.getElementById('shotFile').click()">
@@ -2321,14 +2364,78 @@ const PRESETS = [
 /* ══════════════════════════════════════
    STATE
 ══════════════════════════════════════ */
-let S = {
-  profile:{ name:'Trader', avatar:'', avatarData:'', logo:'' },
-  settings:{ initialCapital:1000, currentCapital:1000, usdRate:5, stopLoss:5, target:2.5 },
-  metal:{ on:true, preset:'platinum', speed:4.5, colors:[...PRESETS[0].colors] },
-  theme:'default',
-  bg:{ on:true, opacity:26 },
-  operations:[], cp:'all'
-};
+const DEFAULT_ASSETS=['EUR/USD','EUR/GBP','EUR/JPY','USD/JPY','GBP/JPY','GBP/USD'];
+function cleanName(v){return String(v??'').trim().replace(/\s+/g,' ');}
+function nameKey(v){return cleanName(v).toLocaleUpperCase('pt-BR');}
+function uniqueNames(values){
+  const out=[],seen=new Set();
+  (Array.isArray(values)?values:[]).forEach(v=>{
+    const n=cleanName(v&&typeof v==='object'?(v.name??v.label??''):v),k=nameKey(n);
+    if(n&&!seen.has(k)){seen.add(k);out.push(n);}
+  });
+  return out;
+}
+function isTradeDirection(v){return v==='CALL'||v==='PUT';}
+/* Leitores compatíveis com backups antigos: antes, "type" podia ser direção OU ativo. */
+function opDirection(o){
+  const d=cleanName(o&&o.direction).toUpperCase();
+  if(isTradeDirection(d)) return d;
+  const t=cleanName(o&&o.type).toUpperCase();
+  return isTradeDirection(t)?t:'';
+}
+function opAsset(o){
+  const a=cleanName(o&&(o.asset??o.pair));
+  if(a) return a;
+  const t=cleanName(o&&o.type);
+  return t&&!isTradeDirection(t.toUpperCase())?t:'';
+}
+function opOperationals(o){
+  const raw=o&&(Array.isArray(o.operationals)?o.operationals:(o.operational?[o.operational]:[]));
+  return uniqueNames(raw||[]);
+}
+function makeInitialState(){
+  return {
+    profile:{name:'Trader',avatar:'',avatarData:'',logo:''},
+    settings:{initialCapital:1000,currentCapital:1000,usdRate:5,stopLoss:5,target:2.5},
+    metal:{on:true,preset:'platinum',speed:4.5,colors:[...PRESETS[0].colors]},
+    theme:'default',bg:{on:true,opacity:26},assets:[...DEFAULT_ASSETS],operationals:[],
+    operations:[],cp:'all'
+  };
+}
+/* Migração única usada tanto pelo localStorage (ec7) quanto pela importação de backup. */
+function migrateState(raw){
+  raw=raw&&typeof raw==='object'?raw:{};
+  const base=makeInitialState();
+  const out={...base,...raw};
+  out.profile={...base.profile,...(raw.profile&&typeof raw.profile==='object'?raw.profile:{})};
+  out.settings={...base.settings,...(raw.settings&&typeof raw.settings==='object'?raw.settings:{})};
+  out.metal={...base.metal,...(raw.metal&&typeof raw.metal==='object'?raw.metal:{})};
+  if(!raw.metal&&raw.rainbow) out.metal.on=!!raw.rainbow.on;
+  delete out.rainbow;
+  if(!Array.isArray(out.metal.colors)||out.metal.colors.length<2) out.metal.colors=[...PRESETS[0].colors];
+  if(!(out.metal.speed>0)) out.metal.speed=4.5;
+  if(!out.theme) out.theme='default';
+  out.bg=raw.bg&&typeof raw.bg==='object'?{...base.bg,...raw.bg}:{...base.bg};
+  const rate=Number(out.settings.usdRate)||1;
+  const sourceOps=Array.isArray(raw.operations)?raw.operations:[];
+  out.operations=sourceOps.map((old,i)=>{
+    const o=old&&typeof old==='object'?old:{};
+    const asset=opAsset(o),direction=opDirection(o),value=Number(o.value);
+    const result=cleanName(o.result).toUpperCase();
+    const usd=Number(o.usd);
+    return {...o,
+      id:String(o.id??('legacy_'+i)),date:cleanName(o.date),time:cleanName(o.time),
+      value:Number.isFinite(value)?value:0,usd:Number.isFinite(usd)?usd:((Number.isFinite(value)?value:0)/rate),
+      result,direction,type:direction,asset,operationals:opOperationals(o),
+      reason:typeof o.reason==='string'?o.reason.trim():'',plan:o.plan==='yes'||o.plan==='no'?o.plan:'',
+      img:typeof o.img==='string'?o.img:'',yt:typeof o.yt==='string'?o.yt.trim():'',notes:typeof o.notes==='string'?o.notes.trim():'',
+      shots:Array.isArray(o.shots)?[...o.shots]:[],createdAt:o.createdAt||''};
+  });
+  out.assets=uniqueNames([...DEFAULT_ASSETS,...(Array.isArray(raw.assets)?raw.assets:[]),...out.operations.map(opAsset)]);
+  out.operationals=uniqueNames([...(Array.isArray(raw.operationals)?raw.operationals:[]),...out.operations.flatMap(opOperationals)]);
+  return out;
+}
+let S=makeInitialState();
 let curId=null, CH={};
 
 /* ══════════════════════════════════════
@@ -2522,22 +2629,7 @@ async function mediaUsage(){
 /* ══════════════════════════════════════
    STORAGE
 ══════════════════════════════════════ */
-function load(){
-  try{
-    const s=localStorage.getItem('ec7');
-    if(s){
-      const p=JSON.parse(s);
-      S={...S,...p};
-      if(p.metal) S.metal={...S.metal,...p.metal};
-      else if(p.rainbow) S.metal={...S.metal, on:!!p.rainbow.on};   // migra do antigo Rainbow
-      delete S.rainbow;
-      if(!Array.isArray(S.metal.colors)||S.metal.colors.length<2)
-        S.metal.colors=[...PRESETS[0].colors];
-      if(!(S.metal.speed>0)) S.metal.speed=4.5;
-      if(!S.theme) S.theme='default';
-      if(!S.bg||typeof S.bg!=='object') S.bg={on:true,opacity:50};
-    }
-  }catch(e){}
+function ensureChartState(){
   /* rodízio de gráficos do Dashboard */
   if(!S.charts||typeof S.charts!=='object') S.charts={};
   if(!Array.isArray(S.charts.pinned)) S.charts.pinned=[];
@@ -2546,6 +2638,15 @@ function load(){
   if(!(S.charts.autoSec>0)) S.charts.autoSec=6;
   if(!(S.charts.fadeSec>0)) S.charts.fadeSec=0.8;
   if(!S.charts.fixed||typeof S.charts.fixed!=='object') S.charts.fixed={};
+}
+function load(){
+  let raw=S;
+  try{
+    const s=localStorage.getItem('ec7');
+    if(s) raw=JSON.parse(s);
+  }catch(e){ raw=S; }
+  S=migrateState(raw);
+  ensureChartState();
 }
 function save(){
   try{
@@ -2569,7 +2670,7 @@ function nav(page,el){
   if(page==='dashboard') updateDash();
   if(page==='settings'){ loadSetForm(); syncMetalUI(); syncThemeUI(); syncCycleUI(); updGalStats(); paintPWA(); }
   mtApplyAll();
-  if(page==='operations'){ renderOps(); syncOpsUsd(); }
+  if(page==='operations'){ refreshAssetUI();renderOps(); syncOpsUsd(); }
   if(page==='analytics') updateAn();
   if(page==='report') rptLoadPage();
 }
@@ -2627,7 +2728,7 @@ function loadSetForm(){
   document.getElementById('sUsd').value=S.settings.usdRate;
   document.getElementById('sSL').value=S.settings.stopLoss;
   document.getElementById('sTgt').value=S.settings.target;
-  prevSAv();prevSLogo();updSetPrev();updSum();
+  prevSAv();prevSLogo();updSetPrev();updSum();renderOperationalSettings();
 }
 function updSetPrev(){
   const c=parseFloat(document.getElementById('sCurC').value)||0;
@@ -2668,14 +2769,141 @@ function updSum(){
 }
 
 /* ══════════════════════════════════════
+   CATÁLOGOS DE ATIVOS E OPERACIONAIS
+══════════════════════════════════════ */
+function assetCatalog(){
+  return uniqueNames([...(S.assets||[]),...(S.operations||[]).map(opAsset)]);
+}
+function canonicalCatalogName(list,name){
+  const key=nameKey(name);
+  return (list||[]).find(x=>nameKey(x)===key)||cleanName(name);
+}
+function rememberAsset(value){
+  const raw=cleanName(value);
+  if(!raw) return '';
+  if(!Array.isArray(S.assets)) S.assets=[];
+  const name=canonicalCatalogName(S.assets,raw);
+  if(!S.assets.some(x=>nameKey(x)===nameKey(name))) S.assets.push(name);
+  S.assets=uniqueNames(S.assets);
+  return name;
+}
+function refreshAssetUI(){
+  const names=assetCatalog();
+  S.assets=uniqueNames([...DEFAULT_ASSETS,...names]);
+  const dl=document.getElementById('opAssetList');
+  if(dl) dl.innerHTML=S.assets.map(a=>`<option value="${escHtml(a)}"></option>`).join('');
+  const fil=document.getElementById('fType');
+  if(fil){
+    const prev=fil.value;
+    fil.innerHTML='<option value="">Ativo / Par</option>'+S.assets.map(a=>`<option value="${escHtml(a)}">${escHtml(a)}</option>`).join('');
+    fil.value=S.assets.some(a=>a===prev)?prev:'';
+  }
+}
+function getSelectedOperationals(){
+  return uniqueNames([...document.querySelectorAll('#opOperationals input[type=checkbox]:checked')].map(c=>c.value));
+}
+function renderOperationalChecks(selected){
+  const box=document.getElementById('opOperationals');
+  if(!box) return;
+  const chosen=new Set(uniqueNames(selected===undefined?getSelectedOperationals():selected).map(nameKey));
+  const list=uniqueNames(S.operationals||[]);
+  if(!list.length){box.className='check-list empty';box.textContent='Nenhum operacional cadastrado.';return;}
+  box.className='check-list';
+  box.innerHTML=list.map(n=>`<label class="check-item"><input type="checkbox" value="${escHtml(n)}" ${chosen.has(nameKey(n))?'checked':''}><span>${escHtml(n)}</span></label>`).join('');
+}
+function rememberOperational(value){
+  const raw=cleanName(value);
+  if(!raw) return '';
+  if(!Array.isArray(S.operationals)) S.operationals=[];
+  const name=canonicalCatalogName(S.operationals,raw);
+  if(!S.operationals.some(x=>nameKey(x)===nameKey(name))) S.operationals.push(name);
+  S.operationals=uniqueNames(S.operationals);
+  return name;
+}
+function quickAddOperational(){
+  const input=document.getElementById('opOperationalNew');
+  const raw=cleanName(input&&input.value);
+  if(!raw){toast('Digite o nome do operacional.','w');return;}
+  const selected=getSelectedOperationals(),before=(S.operationals||[]).length;
+  const name=rememberOperational(raw);
+  if(!selected.some(x=>nameKey(x)===nameKey(name))) selected.push(name);
+  if(input) input.value='';
+  renderOperationalChecks(selected);renderOperationalSettings();save();
+  toast(before===(S.operationals||[]).length?'Operacional selecionado.':'Operacional criado e selecionado!','s');
+}
+function renderOperationalSettings(){
+  const box=document.getElementById('operationalSettingsList');
+  if(!box) return;
+  const list=uniqueNames(S.operationals||[]);
+  if(!list.length){box.innerHTML='<div class="cfg-empty">Sua lista está vazia. Adicione o primeiro operacional acima.</div>';return;}
+  box.innerHTML=list.map((name,i)=>`<div class="cfg-list-row">
+    <input class="fi" id="sOperational_${i}" value="${escHtml(name)}" aria-label="Nome do operacional ${i+1}">
+    <button class="btn-s xs" onclick="renameOperational(${i})" title="Renomear">💾 Renomear</button>
+    <button class="btn-s xs" onclick="deleteOperational(${i})" title="Apagar">🗑️</button>
+  </div>`).join('');
+}
+function addOperationalSetting(){
+  const input=document.getElementById('sOperationalNew'),raw=cleanName(input&&input.value);
+  if(!raw){toast('Digite o nome do operacional.','w');return;}
+  const before=(S.operationals||[]).length,name=rememberOperational(raw);
+  if(input) input.value='';
+  renderOperationalSettings();renderOperationalChecks();save();
+  toast(before===(S.operationals||[]).length?`“${name}” já está na lista.`:'Operacional adicionado!','s');
+}
+function renameOperational(index){
+  const old=(S.operationals||[])[index],input=document.getElementById('sOperational_'+index);
+  const next=cleanName(input&&input.value);
+  if(!old||!next){toast('O nome do operacional não pode ficar vazio.','e');renderOperationalSettings();return;}
+  const duplicate=(S.operationals||[]).some((x,i)=>i!==index&&nameKey(x)===nameKey(next));
+  if(duplicate){toast('Já existe um operacional com esse nome.','e');renderOperationalSettings();return;}
+  const selected=getSelectedOperationals().map(x=>nameKey(x)===nameKey(old)?next:x);
+  S.operationals[index]=next;S.operationals=uniqueNames(S.operationals);
+  (S.operations||[]).forEach(o=>{o.operationals=uniqueNames(opOperationals(o).map(x=>nameKey(x)===nameKey(old)?next:x));});
+  renderOperationalSettings();renderOperationalChecks(selected);save();
+  toast('Operacional renomeado!','s');
+}
+function deleteOperational(index){
+  const name=(S.operationals||[])[index];
+  if(!name||!confirm(`Apagar “${name}”? Ele também será removido das operações em que foi marcado.`)) return;
+  const selected=getSelectedOperationals().filter(x=>nameKey(x)!==nameKey(name));
+  S.operationals=(S.operationals||[]).filter((_,i)=>i!==index);
+  (S.operations||[]).forEach(o=>{o.operationals=opOperationals(o).filter(x=>nameKey(x)!==nameKey(name));});
+  renderOperationalSettings();renderOperationalChecks(selected);save();
+  toast('Operacional apagado.','s');
+}
+function performanceBins(ops,getLabels,includeEmpty){
+  const map=new Map();
+  (ops||[]).forEach(o=>{
+    let labels=getLabels(o);
+    labels=Array.isArray(labels)?labels:[labels];
+    labels=uniqueNames(labels);
+    if(!labels.length&&includeEmpty) labels=['(sem ativo)'];
+    labels.forEach(label=>{
+      const key=nameKey(label);
+      if(!map.has(key)) map.set(key,{label,n:0,w:0,l:0,net:0});
+      const b=map.get(key);b.n++;b.net+=o.result==='WIN'?(+o.value||0):(o.result==='LOSS'?-(+o.value||0):0);
+      if(o.result==='WIN')b.w++;else if(o.result==='LOSS')b.l++;
+    });
+  });
+  return [...map.values()].sort((a,b)=>a.label.localeCompare(b.label,'pt-BR'));
+}
+function assetPerformance(ops){return performanceBins(ops,o=>opAsset(o),true);}
+function operationalPerformance(ops){return performanceBins(ops,opOperationals,false);}
+function directionPerformance(ops){return performanceBins(ops,o=>opDirection(o),false);}
+
+/* ══════════════════════════════════════
    OPERATIONS
 ══════════════════════════════════════ */
+function localInputDate(d){
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
 function openNewOpModal(){
   curId=null;const now=new Date();
-  document.getElementById('opDate').value=now.toISOString().slice(0,10);
+  document.getElementById('opDate').value=localInputDate(now);
   document.getElementById('opTime').value=now.toTimeString().slice(0,5);
-  ['opVal','opValU','opRes','opType','opReason','opYT','opNotes'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
-  document.getElementById('opPlan').value='yes';
+  ['opVal','opValU','opRes','opType','opAsset','opReason','opYT','opNotes','opOperationalNew'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  document.getElementById('opPlan').value='';
+  refreshAssetUI();renderOperationalChecks([]);
   draftShots=[]; renderShotGrid(); syncValLabel();
   showMod('newOpModal'); initShotZone();
 }
@@ -2683,58 +2911,88 @@ function syncValLabel(){
   const r=document.getElementById('opRes').value;
   const l=document.getElementById('opValLbl'),h=document.getElementById('opValHint'),i=document.getElementById('opVal');
   if(!l) return;
-  if(r==='WIN'){ l.textContent='Lucro (R$)'; l.style.color='var(--green)';
+  if(r==='WIN'){ l.textContent='Lucro (R$) *'; l.style.color='var(--green)';
     h.textContent='quanto voce LUCROU nesta operacao'; i.placeholder='80.00'; }
-  else if(r==='LOSS'){ l.textContent='Perda (R$)'; l.style.color='var(--red)';
+  else if(r==='LOSS'){ l.textContent='Perda (R$) *'; l.style.color='var(--red)';
     h.textContent='quanto voce PERDEU nesta operacao'; i.placeholder='100.00'; }
-  else{ l.textContent='Resultado (R$)'; l.style.color='';
+  else{ l.textContent='Valor (R$) *'; l.style.color='';
     h.textContent='quanto voce ganhou ou perdeu nesta operacao'; i.placeholder='80.00'; }
 }
 function calcOpUsd(){const v=parseFloat(document.getElementById('opVal').value)||0;document.getElementById('opValU').value='~$ '+(v/(S.settings.usdRate||1)).toFixed(2);}
 function saveOp(){
-  const date=document.getElementById('opDate').value,time=document.getElementById('opTime').value;
-  const value=parseFloat(document.getElementById('opVal').value),result=document.getElementById('opRes').value;
-  const type=document.getElementById('opType').value,reason=document.getElementById('opReason').value.trim();
-  const plan=document.getElementById('opPlan').value;
+  const date=cleanName(document.getElementById('opDate').value),time=cleanName(document.getElementById('opTime').value);
+  const value=parseFloat(document.getElementById('opVal').value),result=cleanName(document.getElementById('opRes').value).toUpperCase();
+  const direction=cleanName(document.getElementById('opType').value).toUpperCase();
+  const rawAsset=cleanName(document.getElementById('opAsset').value);
+  const reason=document.getElementById('opReason').value.trim(),plan=document.getElementById('opPlan').value;
   const yt=document.getElementById('opYT').value.trim(),notes=document.getElementById('opNotes').value.trim();
-  const img='';
-  if(!date||!value||isNaN(value)||!result||!type){toast('Preencha Data, Valor, Resultado e Tipo.','e');return;}
-  if(!reason){toast('O Motivo da Entrada é obrigatório!','e');return;}
+  const operationals=getSelectedOperationals(),img='';
+  if(!Number.isFinite(value)||value<=0||!['WIN','LOSS'].includes(result)){
+    toast('Informe o Valor (R$) e selecione WIN ou LOSS.','e');return;
+  }
+  const asset=rememberAsset(rawAsset);
   const usd=value/(S.settings.usdRate||1);
   const opId=curId||Date.now().toString();
+  const previous=curId?S.operations.find(o=>o.id===curId):null;
   const shots=[...draftShots];
   // vincula cada print à operação (útil para a limpeza de órfãos)
   shots.forEach(async sid=>{const r=await IMGDB.get(sid);if(r&&!r.opId){r.opId=opId;IMGDB.put(r);}});
-  const op={id:opId,date,time,value,usd,result,type,reason,plan,img,yt,notes,shots,createdAt:new Date().toISOString()};
+  const op={...(previous||{}),id:opId,date,time,value,usd,result,
+    asset,direction:isTradeDirection(direction)?direction:'',type:isTradeDirection(direction)?direction:'',operationals,
+    reason,plan:plan==='yes'||plan==='no'?plan:'',img,yt,notes,shots,
+    createdAt:(previous&&previous.createdAt)||new Date().toISOString()};
   if(curId){const i=S.operations.findIndex(o=>o.id===curId);if(i!==-1)S.operations[i]=op;toast('Operação atualizada!','s');}
   else{S.operations.push(op);if(result==='WIN')S.settings.currentCapital=Math.max(0,S.settings.currentCapital+value);else S.settings.currentCapital=Math.max(0,S.settings.currentCapital-value);toast('Operação registrada!','s');}
   draftShots=[];
-  save();closeMod('newOpModal');updateDash();renderOps();badge();
+  save();refreshAssetUI();closeMod('newOpModal');updateDash();renderOps();badge();
+  if(document.getElementById('page-report')?.classList.contains('active')) rptLoadPage();
 }
 function delOp(){
   if(!curId)return;if(!confirm('Excluir esta operação? Os prints anexados também serão apagados.'))return;
   const _op=S.operations.find(o=>o.id===curId);
   if(_op&&_op.shots) _op.shots.forEach(sid=>{IMGDB.del(sid).catch(()=>{});revokeImgURL(sid);});
   S.operations=S.operations.filter(o=>o.id!==curId);
-  save();closeMod('opDetMod');updateDash();renderOps();badge();toast('Operação excluída.','s');
+  save();refreshAssetUI();closeMod('opDetMod');updateDash();renderOps();badge();toast('Operação excluída.','s');
+}
+function resultBadgeHTML(result){
+  if(result==='WIN') return '<span class="badge bwin">✅ WIN</span>';
+  if(result==='LOSS') return '<span class="badge bloss">❌ LOSS</span>';
+  return `<span class="badge">${escHtml(result||'—')}</span>`;
+}
+function directionBadgeHTML(direction){
+  return direction==='CALL'?'<span class="badge bcall">📈 CALL</span>':direction==='PUT'?'<span class="badge bput">📉 PUT</span>':'—';
+}
+function assetBadgeHTML(asset){return asset?`<span class="badge basset">💹 ${escHtml(asset)}</span>`:'—';}
+function operationalBadgesHTML(values,compact){
+  const list=uniqueNames(values||[]);
+  if(!list.length) return '—';
+  const shown=compact?list.slice(0,2):list;
+  return shown.map(x=>`<span class="badge boper">🧩 ${escHtml(x)}</span>`).join(' ')+(compact&&list.length>2?` <span style="font-size:9px;color:var(--dim);">+${list.length-2}</span>`:'');
+}
+function planBadgeHTML(plan){
+  return plan==='yes'?'<span class="badge byes">✅ Sim</span>':plan==='no'?'<span class="badge bno">❌ Não</span>':'—';
 }
 function openDet(id){
   const op=S.operations.find(o=>o.id===id);if(!op)return;curId=id;
-  const rc=op.result==='WIN'?'bwin':'bloss',tc=op.type==='CALL'?'bcall':'bput',pc=op.plan==='yes'?'byes':'bno';
-  let ytHtml='';if(op.yt){const yid=ytId(op.yt);if(yid)ytHtml=`<div style="margin-top:11px;"><div style="font-size:10px;font-weight:700;color:var(--lgray);text-transform:uppercase;margin-bottom:5px;">🎬 Vídeo</div><iframe style="width:100%;aspect-ratio:16/9;border-radius:12px;border:none;" src="https://www.youtube.com/embed/${yid}" allowfullscreen></iframe></div>`;}
+  const asset=opAsset(op),direction=opDirection(op),operationals=opOperationals(op);
+  let ytHtml='';
+  if(op.yt){const yid=ytId(op.yt);ytHtml=yid?`<div style="margin-top:11px;"><div style="font-size:10px;font-weight:700;color:var(--lgray);text-transform:uppercase;margin-bottom:5px;">🎬 Vídeo</div><iframe style="width:100%;aspect-ratio:16/9;border-radius:12px;border:none;" src="https://www.youtube.com/embed/${escHtml(yid)}" allowfullscreen></iframe></div>`:`<div class="drow"><span class="dkey">Vídeo</span><span class="dval">${escHtml(op.yt)}</span></div>`;}
+  else ytHtml='<div class="drow"><span class="dkey">Vídeo</span><span class="dval">—</span></div>';
   const nShots=(op.shots||[]).length;
   let imgHtml=`<div style="margin-top:11px;"><div style="font-size:10px;font-weight:700;color:var(--lgray);text-transform:uppercase;margin-bottom:5px;">📸 Prints ${nShots?`(${nShots})`:''}</div><div class="det-shots" id="detShots"></div></div>`;
-  if(op.img)imgHtml+=`<div style="margin-top:11px;"><img style="max-width:100%;border-radius:12px;border:1px solid var(--border);" src="${op.img}" onerror="this.style.display='none'"></div>`;
-  document.getElementById('detTit').innerHTML=`Operação #${op.id.slice(-4)} <span class="badge ${rc}" style="margin-left:6px;">${op.result==='WIN'?'✅':'❌'} ${op.result}</span>`;
+  if(op.img)imgHtml+=`<div style="margin-top:11px;"><img style="max-width:100%;border-radius:12px;border:1px solid var(--border);" src="${escHtml(op.img)}" onerror="this.style.display='none'"></div>`;
+  document.getElementById('detTit').innerHTML=`Operação #${escHtml(String(op.id).slice(-4))} <span style="margin-left:6px;">${resultBadgeHTML(op.result)}</span>`;
   document.getElementById('detBod').innerHTML=`
-    <div class="drow"><span class="dkey">Data/Hora</span><span class="dval">${op.date} às ${op.time}</span></div>
-    <div class="drow"><span class="dkey">Valor</span><span class="dval">${fmtBRL(op.value)} <span style="color:var(--lgray);font-size:11px;font-weight:400;">≈ $${op.usd.toFixed(2)}</span></span></div>
-    <div class="drow"><span class="dkey">Resultado</span><span class="dval"><span class="badge ${rc}">${op.result==='WIN'?'✅':'❌'} ${op.result}</span></span></div>
-    <div class="drow"><span class="dkey">Tipo</span><span class="dval"><span class="badge ${tc}">${op.type==='CALL'?'📈':'📉'} ${op.type}</span></span></div>
-    <div class="drow"><span class="dkey">Seguiu o Plano</span><span class="dval"><span class="badge ${pc}">${op.plan==='yes'?'✅ Sim':'❌ Não'}</span></span></div>
-    <div style="padding:9px 0;"><div style="font-size:10px;font-weight:700;color:var(--accent);text-transform:uppercase;margin-bottom:5px;">🎯 Motivo da Entrada</div><div style="font-size:13px;color:var(--white);line-height:1.6;background:color-mix(in srgb, var(--accent) 7%, transparent);border:1px solid color-mix(in srgb, var(--accent) 18%, transparent);border-radius:12px;padding:11px;">${op.reason||'—'}</div></div>
-    ${op.notes?`<div class="drow"><span class="dkey">Obs</span><span class="dval" style="font-size:12px;font-weight:400;">${op.notes}</span></div>`:''}
-    ${imgHtml}${ytHtml}`;
+    <div class="drow"><span class="dkey">Data/Hora</span><span class="dval">${escHtml(op.date||'—')} · ${escHtml(op.time||'—')}</span></div>
+    <div class="drow"><span class="dkey">Valor</span><span class="dval">${fmtBRL(op.value)} <span style="color:var(--lgray);font-size:11px;font-weight:400;">≈ $${(Number(op.usd)||0).toFixed(2)}</span></span></div>
+    <div class="drow"><span class="dkey">Resultado</span><span class="dval">${resultBadgeHTML(op.result)}</span></div>
+    <div class="drow"><span class="dkey">Ativo / Par</span><span class="dval">${assetBadgeHTML(asset)}</span></div>
+    <div class="drow"><span class="dkey">Operacionais</span><span class="dval">${operationalBadgesHTML(operationals,false)}</span></div>
+    <div class="drow"><span class="dkey">Direção</span><span class="dval">${directionBadgeHTML(direction)}</span></div>
+    <div class="drow"><span class="dkey">Seguiu o Plano</span><span class="dval">${planBadgeHTML(op.plan)}</span></div>
+    <div style="padding:9px 0;"><div style="font-size:10px;font-weight:700;color:var(--accent);text-transform:uppercase;margin-bottom:5px;">🎯 Motivo da Entrada</div><div style="font-size:13px;color:var(--white);line-height:1.6;background:color-mix(in srgb, var(--accent) 7%, transparent);border:1px solid color-mix(in srgb, var(--accent) 18%, transparent);border-radius:12px;padding:11px;">${escHtml(op.reason||'—')}</div></div>
+    <div class="drow"><span class="dkey">Observações</span><span class="dval" style="font-size:12px;font-weight:400;">${escHtml(op.notes||'—')}</span></div>
+    ${ytHtml}${imgHtml}`;
   const _ft=document.getElementById('opDetMod').querySelector('.mft');
   _ft.querySelectorAll('button').forEach(b=>b.style.display='inline-flex');
   document.getElementById('detEditBtn').style.display='inline-flex';
@@ -2743,12 +3001,15 @@ function openDet(id){
 }
 function editOp(id){
   const op=S.operations.find(o=>o.id===id);if(!op)return;curId=id;
-  document.getElementById('opDate').value=op.date;document.getElementById('opTime').value=op.time;
-  document.getElementById('opVal').value=op.value;document.getElementById('opValU').value='~$ '+op.usd.toFixed(2);
-  document.getElementById('opRes').value=op.result;document.getElementById('opType').value=op.type;
-  document.getElementById('opReason').value=op.reason;document.getElementById('opPlan').value=op.plan;
+  refreshAssetUI();
+  document.getElementById('opDate').value=op.date||'';document.getElementById('opTime').value=op.time||'';
+  document.getElementById('opVal').value=op.value;document.getElementById('opValU').value='~$ '+(Number(op.usd)||0).toFixed(2);
+  document.getElementById('opRes').value=op.result||'';document.getElementById('opType').value=opDirection(op);
+  document.getElementById('opAsset').value=opAsset(op);
+  document.getElementById('opReason').value=op.reason||'';document.getElementById('opPlan').value=op.plan||'';
   document.getElementById('opYT').value=op.yt||'';
   document.getElementById('opNotes').value=op.notes||'';
+  document.getElementById('opOperationalNew').value='';renderOperationalChecks(opOperationals(op));
   draftShots=[...(op.shots||[])]; renderShotGrid(); syncValLabel();
   showMod('newOpModal'); initShotZone();
 }
@@ -2757,19 +3018,19 @@ function renderOps(filt){
   const tb=document.getElementById('opsTb');
   if(!ops.length){tb.innerHTML=`<tr><td colspan="10" style="text-align:center;padding:28px;color:var(--lgray);"><div style="font-size:22px;margin-bottom:5px;">📋</div>Nenhuma operação.</td></tr>`;return;}
   tb.innerHTML=ops.map((op,i)=>{
-    const rb=op.result==='WIN'?`<span class="badge bwin">✅ WIN</span>`:`<span class="badge bloss">❌ LOSS</span>`;
-    const tb2=op.type==='CALL'?`<span class="badge bcall">📈 CALL</span>`:`<span class="badge bput">📉 PUT</span>`;
-    const pb=op.plan==='yes'?`<span class="badge byes">✅</span>`:`<span class="badge bno">❌</span>`;
+    const rb=resultBadgeHTML(op.result),asset=opAsset(op),direction=opDirection(op);
+    const pb=op.plan==='yes'?'<span class="badge byes">✅</span>':op.plan==='no'?'<span class="badge bno">❌</span>':'—';
     const ns=(op.shots||[]).length;
     const med=[ns?`📸${ns}`:'',op.img?'🖼':'',op.yt?'🎬':''].filter(Boolean).join(' ')||'—';
     const rs=op.reason?(op.reason.length>24?op.reason.slice(0,24)+'…':op.reason):'—';
+    const ctx=`${assetBadgeHTML(asset)}${direction?` <span style="white-space:nowrap;">${directionBadgeHTML(direction)}</span>`:''}<div style="margin-top:4px;">${operationalBadgesHTML(opOperationals(op),true)}</div>`;
     return `<tr onclick="openDet('${op.id}')">
       <td style="color:var(--dim);font-size:11px;">${i+1}</td>
-      <td style="font-size:12px;">${op.date}<br><span style="color:var(--dim);font-size:10px;">${op.time}</span></td>
+      <td style="font-size:12px;">${escHtml(op.date||'—')}<br><span style="color:var(--dim);font-size:10px;">${escHtml(op.time||'—')}</span></td>
       <td class="td-money">${fmtBRL(op.value)}</td>
-      <td style="color:var(--lgray);font-size:12px;">$${op.usd.toFixed(2)}</td>
-      <td>${rb}</td><td>${tb2}</td>
-      <td style="max-width:135px;color:var(--lgray);font-size:11px;" title="${op.reason}">${rs}</td>
+      <td style="color:var(--lgray);font-size:12px;">$${(Number(op.usd)||0).toFixed(2)}</td>
+      <td>${rb}</td><td>${ctx}</td>
+      <td style="max-width:135px;color:var(--lgray);font-size:11px;" title="${escHtml(op.reason||'')}">${escHtml(rs)}</td>
       <td>${pb}</td><td style="font-size:13px;">${med}</td>
       <td><div style="display:flex;gap:6px;">
         <span onclick="event.stopPropagation();editOp('${op.id}')" style="cursor:pointer;font-size:13px;">✏️</span>
@@ -2781,7 +3042,7 @@ function renderOps(filt){
 function applyFilter(){
   const d=document.getElementById('fDate').value,r=document.getElementById('fRes').value,t=document.getElementById('fType').value,p=document.getElementById('fPlan').value;
   let f=[...S.operations].reverse();
-  if(d)f=f.filter(o=>o.date===d);if(r)f=f.filter(o=>o.result===r);if(t)f=f.filter(o=>o.type===t);if(p)f=f.filter(o=>o.plan===p);
+  if(d)f=f.filter(o=>o.date===d);if(r)f=f.filter(o=>o.result===r);if(t)f=f.filter(o=>opAsset(o)===t);if(p)f=f.filter(o=>o.plan===p);
   renderOps(f);
 }
 function clearFilter(){['fDate','fRes','fType','fPlan'].forEach(id=>document.getElementById(id).value='');renderOps();}
@@ -2941,7 +3202,7 @@ async function refreshDetShots(){
   if(!box) return;
   const op=S.operations.find(o=>o.id===curId);
   const ids=(op&&op.shots)||[];
-  if(!ids.length){ box.innerHTML='<div style="font-size:11px;color:var(--dim);">Nenhum print anexado.</div>'; return; }
+  if(!ids.length){ box.innerHTML='<div style="font-size:11px;color:var(--dim);">—</div>'; return; }
   const parts=[];
   for(let i=0;i<ids.length;i++){
     const rec=await IMGDB.get(ids[i]); if(!rec) continue;
@@ -2978,7 +3239,7 @@ async function renderGallery(){
   for(let i=0;i<all.length;i++){
     const r=all[i], u=await imgURL(r.id);
     const op=(S.operations||[]).find(o=>(o.shots||[]).includes(r.id));
-    const tag=op?`${op.date} · ${op.result}`:'sem operação';
+    const tag=op?`${op.date||'—'} · ${op.result||'—'} · ${opAsset(op)||'—'}`:'sem operação';
     parts.push(`<div class="shot-item ${r.note?'has-note':''}" style="aspect-ratio:16/11;" onclick="openShotViewer('gal',${i})">
       <img src="${u}" alt="">
       <span class="snote">${r.note?'📝 '+escHtml(r.note):tag}</span>
@@ -3008,14 +3269,14 @@ async function exportShotsZip(){
     for(let i=0;i<all.length;i++){
       const r=all[i];
       const op=(S.operations||[]).find(o=>(o.shots||[]).includes(r.id));
-      const pre=op?`${op.date}_${op.result}_${op.type}`:'sem-operacao';
+      const pre=op?`${op.date||'sem-data'}_${op.result}_${opAsset(op)||'sem-ativo'}`:'sem-operacao';
       const nm=`${String(i+1).padStart(3,'0')}_${pre}${r.note?'_'+r.note.slice(0,26).replace(/[^\w\s-]/g,'').trim().replace(/\s+/g,'-'):''}.jpg`;
       files.push({name:nm,data:new Uint8Array(await r.blob.arrayBuffer())});
     }
     // índice em texto, para saber a que operação cada print pertence
     const idx=all.map((r,i)=>{
       const op=(S.operations||[]).find(o=>(o.shots||[]).includes(r.id));
-      return `${String(i+1).padStart(3,'0')} | ${op?`${op.date} ${op.time} · ${op.result} ${op.type} · ${fmtBRL(op.value)}`:'sem operação'}`
+      return `${String(i+1).padStart(3,'0')} | ${op?`${op.date||'—'} ${op.time||'—'} · ${op.result} ${opAsset(op)||'—'} · ${fmtBRL(op.value)}`:'sem operação'}`
            + (r.note?`\n     nota: ${r.note}`:'')
            + (op&&op.reason?`\n     motivo: ${op.reason}`:'');
     }).join('\n');
@@ -3118,8 +3379,8 @@ function updateDash(){
   const wl=loss>0?Math.max(...ops.filter(o=>o.result==='LOSS').map(o=>o.value)):0;
   document.getElementById('stBW').textContent=fmtBRL(bw);
   document.getElementById('stWL2').textContent=fmtBRL(wl);
-  if(ops.length>0){const d=ops.map(o=>o.date).sort();document.getElementById('statsRng').textContent=`${d[0]} → ${d[d.length-1]}`;}
-  else document.getElementById('statsRng').textContent='—';
+  const validDates=ops.map(o=>o.date).filter(Boolean).sort();
+  document.getElementById('statsRng').textContent=validDates.length?`${validDates[0]} → ${validDates[validDates.length-1]}`:'—';
   renderRec(ops);chartsRefresh();badge();
 }
 function renderRec(ops){
@@ -3127,7 +3388,7 @@ function renderRec(ops){
   if(!r.length){c.innerHTML=`<div style="text-align:center;padding:16px;color:var(--lgray);font-size:11px;"><div style="font-size:20px;margin-bottom:3px;">📭</div>Nenhuma operação</div>`;return;}
   c.innerHTML=r.map(op=>{
     const cl=op.result==='WIN'?PAL.up:PAL.down,sg=op.result==='WIN'?'+':'-',v=op.value;
-    return `<div class="ri" onclick="openDet('${op.id}')"><span style="font-size:13px;">${op.result==='WIN'?'✅':'❌'}</span><div class="ri-inf"><div class="ri-top">${op.type} — ${op.date}</div><div class="ri-bot">${op.reason?op.reason.slice(0,22)+'…':'—'}</div></div><div class="ri-val" style="color:${cl};">${sg}${fmtBRL(v)}</div></div>`;
+    return `<div class="ri" onclick="openDet('${op.id}')"><span style="font-size:13px;">${op.result==='WIN'?'✅':'❌'}</span><div class="ri-inf"><div class="ri-top">${escHtml(opAsset(op)||'—')} — ${escHtml(op.date||'—')}</div><div class="ri-bot">${op.reason?escHtml(op.reason.slice(0,22)+'…'):'—'}</div></div><div class="ri-val" style="color:${cl};">${sg}${fmtBRL(v)}</div></div>`;
   }).join('');
 }
 
@@ -3156,9 +3417,17 @@ function updateAn(){
   const w=ops.filter(o=>o.result==='WIN').length,l=ops.filter(o=>o.result==='LOSS').length;
   dk('anW');CH.anW=new Chart(document.getElementById('anWC').getContext('2d'),{type:'doughnut',data:{labels:['Wins','Losses'],datasets:[{data:[w||.001,l||.001],backgroundColor:[PAL.win,PAL.loss],borderWidth:0,hoverOffset:6}]},
     options:{responsive:true,maintainAspectRatio:false,cutout:'68%',plugins:{legend:{display:true,position:'right',labels:{color:PAL.muted,font:{size:11,family:'Inter'},boxWidth:9,usePointStyle:true,pointStyle:'circle'}},tooltip:CD.plugins.tooltip}}});
-  const cW=ops.filter(o=>o.type==='CALL'&&o.result==='WIN').length,cL=ops.filter(o=>o.type==='CALL'&&o.result==='LOSS').length,pW=ops.filter(o=>o.type==='PUT'&&o.result==='WIN').length,pL=ops.filter(o=>o.type==='PUT'&&o.result==='LOSS').length;
-  dk('anCP');CH.anCP=new Chart(document.getElementById('anCPC').getContext('2d'),{type:'bar',data:{labels:['CALL Wins','CALL Losses','PUT Wins','PUT Losses'],datasets:[{data:[cW,cL,pW,pL],backgroundColor:[PAL.win,PAL.loss,PAL.win,PAL.loss],borderRadius:7,borderSkipped:false}]},
-    options:{...CD,scales:{x:{grid:{display:false,drawBorder:false},ticks:{color:PAL.muted,font:{size:10}}},y:{grid:{color:PAL.grid,drawBorder:false},ticks:{color:PAL.tick,font:{size:10}}}}}});
+  const perfChart=(key,canvasId,bins)=>{
+    dk(key);const canvas=document.getElementById(canvasId);if(!canvas)return;
+    CH[key]=new Chart(canvas.getContext('2d'),{type:'bar',data:{labels:bins.map(b=>b.label),datasets:[
+      {label:'Wins',data:bins.map(b=>b.w),backgroundColor:PAL.win,borderRadius:6,borderSkipped:false},
+      {label:'Losses',data:bins.map(b=>b.l),backgroundColor:PAL.loss,borderRadius:6,borderSkipped:false}]},
+      options:{...CD,plugins:{...CD.plugins,legend:{display:true,labels:{color:PAL.muted,font:{size:10,family:'Inter'},boxWidth:9,usePointStyle:true,pointStyle:'circle'}}},
+        scales:{x:{grid:{display:false,drawBorder:false},ticks:{color:PAL.muted,font:{size:10}}},y:{grid:{color:PAL.grid,drawBorder:false},ticks:{color:PAL.tick,font:{size:10},stepSize:1}}}}});
+  };
+  perfChart('anCP','anCPC',assetPerformance(ops));
+  perfChart('anO','anOC',operationalPerformance(ops));
+  perfChart('anDir','anDirC',directionPerformance(ops));
   const pYW=ops.filter(o=>o.plan==='yes'&&o.result==='WIN').length,pYL=ops.filter(o=>o.plan==='yes'&&o.result==='LOSS').length,pNW=ops.filter(o=>o.plan==='no'&&o.result==='WIN').length,pNL=ops.filter(o=>o.plan==='no'&&o.result==='LOSS').length;
   dk('anP');CH.anP=new Chart(document.getElementById('anPC').getContext('2d'),{type:'bar',data:{labels:['Com Plano','Sem Plano'],datasets:[{label:'Wins',data:[pYW,pNW],backgroundColor:PAL.win,borderRadius:6,borderSkipped:false},{label:'Losses',data:[pYL,pNL],backgroundColor:PAL.loss,borderRadius:6,borderSkipped:false}]},
     options:{...CD,plugins:{...CD.plugins,legend:{display:true,labels:{color:PAL.muted,font:{size:10,family:'Inter'},boxWidth:9,usePointStyle:true,pointStyle:'circle'}}},scales:{x:{grid:{display:false,drawBorder:false},ticks:{color:PAL.muted,font:{size:11}}},y:{grid:{color:PAL.grid,drawBorder:false},ticks:{color:PAL.tick,font:{size:10}}}}}});
@@ -3177,7 +3446,7 @@ async function exportData(){
       if(r.size>3*1024*1024) continue;              // pula imagens muito grandes
       imgs[r.id]={d:await blobToDataURL(r.blob),note:r.note||'',name:r.name||'',at:r.at||''};
     }
-    const pack={__ec:2,exportedAt:new Date().toISOString(),state:S,shots:imgs};
+    const pack={__ec:3,exportedAt:new Date().toISOString(),state:S,shots:imgs};
     const b=new Blob([JSON.stringify(pack)],{type:'application/json'});
     const u=URL.createObjectURL(b),a=document.createElement('a');
     a.href=u;a.download=`edgecontrol_${new Date().toISOString().slice(0,10)}.json`;a.click();
@@ -3197,9 +3466,9 @@ async function importData(ev){
     try{ raw=JSON.parse(txt); }
     catch(err){ toast('Arquivo não é um JSON válido.','e'); inputEl.value=''; return; }
 
-    /* Aceita os dois formatos:
-       v2 -> {__ec:2, state:{...}, shots:{...}}
-       v1 -> {profile,settings,operations,...}  (estado na raiz) */
+    /* Aceita todos os formatos:
+       v3/v2 -> {__ec:3|2, state:{...}, shots:{...}}
+       v1    -> {profile,settings,operations,...}  (estado na raiz) */
     const isPack = raw && typeof raw==='object' && raw.state && typeof raw.state==='object';
     const st  = isPack ? raw.state : raw;
     const pics= isPack ? (raw.shots||{}) : {};
@@ -3214,22 +3483,10 @@ async function importData(ev){
       inputEl.value=''; return;
     }
 
-    /* ── estado ── */
-    S={...S,...st};
-    S.settings={...S.settings,...(st.settings||{})};
-    S.profile ={...S.profile, ...(st.profile ||{})};
-    S.operations=Array.isArray(st.operations)?st.operations:[];
-
-    /* metal (aceita config antiga de rainbow) */
-    if(st.metal) S.metal={...S.metal,...st.metal};
-    else if(st.rainbow) S.metal={...S.metal,on:!!st.rainbow.on};
-    delete S.rainbow;
-    if(!Array.isArray(S.metal.colors)||S.metal.colors.length<2) S.metal.colors=[...PRESETS[0].colors];
-    if(!(S.metal.speed>0)) S.metal.speed=4.5;
-
-    /* tema / fundo */
-    if(!S.theme||!THEMES.some(t=>t.id===S.theme)) S.theme='default';
-    if(!S.bg||typeof S.bg!=='object') S.bg={on:true,opacity:26};
+    /* ── estado + migrações (inclusive type antigo → asset/direction) ── */
+    S=migrateState(st);
+    ensureChartState();
+    if(!THEMES.some(t=>t.id===S.theme)) S.theme='default';
 
     /* ── prints (v2) ── */
     let ok=0;
@@ -3246,9 +3503,11 @@ async function importData(ev){
     save();
     applyTheme(S.theme,{silent:true});
     await applyProfUI();
-    updateDash(); renderOps(); badge(); mtApplyAll();
+    refreshAssetUI();updateDash(); renderOps(); badge(); mtApplyAll();
     const sp=document.getElementById('page-settings');
     if(sp&&sp.classList.contains('active')){ loadSetForm(); syncMetalUI(); syncThemeUI(); updGalStats(); }
+    const rp=document.getElementById('page-report');
+    if(rp&&rp.classList.contains('active')) rptLoadPage();
     toast(`Importado: ${nOps} operações${ok?` e ${ok} prints`:''}.`,'s');
   }catch(err){
     toast('Erro ao importar: '+(err&&err.message?err.message:'desconhecido'),'e');
@@ -3503,7 +3762,7 @@ const RPT_THEMES=[
 const RPT_SECTIONS=[
   {k:'kpi',      nm:'Resumo executivo',            ds:'os números principais do período'},
   {k:'compare',  nm:'Comparação com o período anterior', ds:'o que melhorou e o que piorou'},
-  {k:'charts',   nm:'Gráficos',                    ds:'capital, resultados, tipos, dias e horários'},
+  {k:'charts',   nm:'Gráficos',                    ds:'capital, ativos, operacionais, dias e horários'},
   {k:'daily',    nm:'Dia a dia',                   ds:'tabela com o resultado de cada dia'},
   {k:'insights', nm:'Análise automática',          ds:'leitura dos números em linguagem simples'},
   {k:'ops',      nm:'Todas as operações',          ds:'tabela completa do período'},
@@ -3532,6 +3791,21 @@ function rpNet(o){return o.result==='WIN'?(+o.value||0):(o.result==='LOSS'?-(+o.
 function rpKey(o){return String(o.date||'')+' '+String(o.time||'')+' '+String(o.createdAt||'');}
 function rpSort(ops){return [...ops].sort((a,b)=>{const x=rpKey(a),y=rpKey(b);return x<y?-1:x>y?1:0;});}
 function rpResultLabel(r){return r==='WIN'?'WIN':r==='LOSS'?'LOSS':r==='DRAW'?'EMPATE':(r||'—');}
+function rpClean(v){return String(v??'').trim().replace(/\s+/g,' ');}
+function rpDirection(o){
+  const d=rpClean(o&&o.direction).toUpperCase(),t=rpClean(o&&o.type).toUpperCase();
+  return d==='CALL'||d==='PUT'?d:(t==='CALL'||t==='PUT'?t:'');
+}
+function rpAsset(o){
+  const a=rpClean(o&&(o.asset??o.pair));if(a)return a;
+  const t=rpClean(o&&o.type);return t&&t.toUpperCase()!=='CALL'&&t.toUpperCase()!=='PUT'?t:'';
+}
+function rpOperationals(o){
+  const raw=o&&(Array.isArray(o.operationals)?o.operationals:(o.operational?[o.operational]:[]));
+  const out=[],seen=new Set();
+  (raw||[]).forEach(x=>{const n=rpClean(x&&typeof x==='object'?(x.name??x.label??''):x),k=n.toUpperCase();if(n&&!seen.has(k)){seen.add(k);out.push(n);}});
+  return out;
+}
 /* período a partir de um preset (custom devolve o que veio) */
 function rpRange(preset,from,to){
   const t=rpToday(),d=rpParse(t);
@@ -3549,20 +3823,20 @@ function rpRange(preset,from,to){
 function rpIn(o,from,to){const k=o.date||'';if(from&&k<from)return false;if(to&&k>to)return false;return true;}
 function rpApplyFilters(ops,f){
   f=f||{};
-  return ops.filter(o=>(!f.res||o.result===f.res)&&(!f.type||o.type===f.type)&&(!f.plan||o.plan===f.plan));
+  return ops.filter(o=>(!f.res||o.result===f.res)&&(!f.type||rpAsset(o)===f.type)&&(!f.plan||o.plan===f.plan));
 }
 /* ── métricas do período ── */
 function rpMetrics(ops,capitalStart){
   const M={n:ops.length,wins:0,losses:0,draws:0,grossWin:0,grossLoss:0,net:0,volume:0,
     winRate:0,pf:0,avgWin:0,avgLoss:0,payoff:0,avgTicket:0,expectancy:0,
     best:null,worst:null,streakCur:0,streakCurT:'',maxWinStreak:0,maxLossStreak:0,
-    plan:{y:0,n:0,yW:0,yL:0,nW:0,nL:0},byType:[],days:[],weekdays:[],hours:[],
+    plan:{y:0,n:0,u:0,yW:0,yL:0,nW:0,nL:0},byType:[],byOperational:[],days:[],weekdays:[],hours:[],
     capitalStart:capitalStart||0,capitalEnd:capitalStart||0,returnPct:0,
     peak:capitalStart||0,trough:capitalStart||0,maxDD:0,maxDDpct:0,
     tradedDays:0,positiveDays:0,negativeDays:0,flatDays:0,avgDayNet:0,
     bestDay:null,worstDay:null,bestType:null,worstType:null,bestWd:null,worstWd:null,bestHour:null,worstHour:null,
     first:ops[0]||null,last:ops[ops.length-1]||null};
-  const tmap=new Map(),dmap=new Map(),hmap=new Map();
+  const tmap=new Map(),omap=new Map(),dmap=new Map(),hmap=new Map();
   const wd=Array.from({length:7},(_,i)=>({i,n:0,w:0,l:0,net:0}));
   let run=capitalStart||0,peak=run,dd=0,cs=0,csT='',mw=0,ml=0;
   ops.forEach(o=>{
@@ -3575,16 +3849,22 @@ function rpMetrics(ops,capitalStart){
     if(r==='WIN'&&(!M.best||v>+(M.best.value||0)))M.best=o;
     if(r==='LOSS'&&(!M.worst||v>+(M.worst.value||0)))M.worst=o;
     if(o.plan==='no'){M.plan.n++;if(r==='WIN')M.plan.nW++;else if(r==='LOSS')M.plan.nL++;}
-    else{M.plan.y++;if(r==='WIN')M.plan.yW++;else if(r==='LOSS')M.plan.yL++;}
-    const tk=o.type||'(sem tipo)';
-    if(!tmap.has(tk))tmap.set(tk,{type:tk,n:0,w:0,l:0,d:0,net:0,vol:0});
+    else if(o.plan==='yes'){M.plan.y++;if(r==='WIN')M.plan.yW++;else if(r==='LOSS')M.plan.yL++;}
+    else M.plan.u++;
+    const tk=rpAsset(o)||'(sem ativo)';
+    if(!tmap.has(tk))tmap.set(tk,{type:tk,asset:tk,n:0,w:0,l:0,d:0,net:0,vol:0});
     const T=tmap.get(tk);T.n++;T.vol+=v;T.net+=rpNet(o);
     if(r==='WIN')T.w++;else if(r==='LOSS')T.l++;else T.d++;
-    const dk=o.date||'(sem data)';
+    rpOperationals(o).forEach(name=>{
+      if(!omap.has(name))omap.set(name,{operational:name,n:0,w:0,l:0,d:0,net:0,vol:0});
+      const O=omap.get(name);O.n++;O.vol+=v;O.net+=rpNet(o);
+      if(r==='WIN')O.w++;else if(r==='LOSS')O.l++;else O.d++;
+    });
+    const dk=o.date||'';
     if(!dmap.has(dk))dmap.set(dk,{date:dk,n:0,w:0,l:0,d:0,net:0});
     const D=dmap.get(dk);D.n++;D.net+=rpNet(o);
     if(r==='WIN')D.w++;else if(r==='LOSS')D.l++;else D.d++;
-    const wi=rpWd(dk);wd[wi].n++;wd[wi].net+=rpNet(o);if(r==='WIN')wd[wi].w++;else if(r==='LOSS')wd[wi].l++;
+    if(dk){const wi=rpWd(dk);wd[wi].n++;wd[wi].net+=rpNet(o);if(r==='WIN')wd[wi].w++;else if(r==='LOSS')wd[wi].l++;}
     const hh=parseInt(String(o.time||'').slice(0,2),10);
     if(!isNaN(hh)){const b=Math.floor(hh/2)*2;
       if(!hmap.has(b))hmap.set(b,{h:b,n:0,w:0,l:0,net:0});
@@ -3620,8 +3900,12 @@ function rpMetrics(ops,capitalStart){
   M.worstDay=[...M.days].sort((a,b)=>a.net-b.net)[0]||null;
   M.byType=[...tmap.values()].map(t=>({...t,wr:(t.w+t.l)>0?t.w/(t.w+t.l)*100:0,avgt:t.n?t.vol/t.n:0}))
             .sort((a,b)=>b.net-a.net);
+  M.byOperational=[...omap.values()].map(t=>({...t,wr:(t.w+t.l)>0?t.w/(t.w+t.l)*100:0,avgt:t.n?t.vol/t.n:0}))
+            .sort((a,b)=>b.net-a.net);
   M.bestType=M.byType[0]||null;
   M.worstType=M.byType.length>1?M.byType[M.byType.length-1]:null;
+  M.bestOperational=M.byOperational[0]||null;
+  M.worstOperational=M.byOperational.length>1?M.byOperational[M.byOperational.length-1]:null;
   M.weekdays=wd.filter(w=>w.n>0).map(w=>({...w,wr:(w.w+w.l)>0?w.w/(w.w+w.l)*100:0}));
   const ws=[...M.weekdays].sort((a,b)=>b.net-a.net);
   M.bestWd=ws[0]||null;M.worstWd=ws.length>1?ws[ws.length-1]:null;
@@ -3678,9 +3962,9 @@ function rpInsights(M,ctx){
   if(M.bestType){
     const bt=M.bestType, wt=M.worstType;
     out.push({ic:'🏅',c:'g',
-      t:`Melhor ativo/tipo: ${bt.type}`,
+      t:`Melhor ativo / par: ${bt.asset||bt.type}`,
       d:`${bt.n} operação(ões), ${rpPct(bt.wr)} de acerto e ${rpMoney(bt.net)} de resultado.`+
-        (wt?` Na outra ponta ficou ${wt.type}, com ${rpMoney(wt.net)} em ${wt.n} operação(ões) — ${wt.net<0?'ponto de atenção':'ainda positivo, mas mais fraco'}.`:''),
+        (wt?` Na outra ponta ficou ${wt.asset||wt.type}, com ${rpMoney(wt.net)} em ${wt.n} operação(ões) — ${wt.net<0?'ponto de atenção':'ainda positivo, mas mais fraco'}.`:''),
       });
   }
   if(M.tradedDays>0){
@@ -3767,10 +4051,10 @@ function rpHistogram(ops,nbins){
 /* mapa de calor: dia da semana x hora (resultado e volume) */
 function rpHeat(ops){
   ops=ops||[];
-  const horas=[...new Set(ops.filter(o=>o.time).map(o=>+String(o.time).slice(0,2)))].filter(h=>!isNaN(h)).sort((a,b)=>a-b);
+  const horas=[...new Set(ops.filter(o=>o.time&&o.date).map(o=>+String(o.time).slice(0,2)))].filter(h=>!isNaN(h)).sort((a,b)=>a-b);
   const grade=Array.from({length:7},()=>horas.map(()=>({net:0,n:0,w:0,l:0})));
   ops.forEach(o=>{
-    if(!o.time) return;
+    if(!o.time||!o.date) return;
     const h=+String(o.time).slice(0,2), wi=rpWd(o.date), hi=horas.indexOf(h);
     if(hi<0) return;
     const cell=grade[wi][hi]; cell.n++; cell.net+=rpNet(o);
@@ -3929,7 +4213,7 @@ function rptModel(){
   const rng=rptCurrentRange(),all=S.operations||[];
   let capStart=S.settings.initialCapital||0;
   all.forEach(o=>{if(o.date&&o.date<rng.from)capStart+=rpNet(o);});
-  const inRange=all.filter(o=>rpIn(o,rng.from,rng.to));
+  const inRange=RPT.preset==='tudo'?[...all]:all.filter(o=>rpIn(o,rng.from,rng.to));
   const ops=rpSort(rpApplyFilters(inRange,RPT.filt));
   const M=rpMetrics(ops,capStart);
   const span=rpDays(rng.from,rng.to);
@@ -3985,9 +4269,10 @@ function rptBuildOpts(){
 }
 function rptBuildTypes(){
   const w=document.getElementById('rfType'); if(!w) return;
-  const types=[...new Set((S.operations||[]).map(o=>o.type||'(sem tipo)'))].sort();
-  w.innerHTML='<option value="">Todos os tipos</option>'+
+  const selected=w.value||RPT.filt.type||'',types=assetCatalog();
+  w.innerHTML='<option value="">Todos os ativos</option>'+
     types.map(t=>`<option value="${escHtml(t)}">${escHtml(t)}</option>`).join('');
+  w.value=types.includes(selected)?selected:'';
 }
 function rptReadForm(){
   const g=id=>document.getElementById(id);
@@ -4112,8 +4397,8 @@ function rptSectionKPI(m){
       ${rptKpi('Profit factor',pfTxt,isFinite(M.pf)?'ganhos ÷ perdas':'sem perdas no período')}
       ${rptKpi('Capital no início',rpMoney(M.capitalStart),'antes da 1ª operação do período')}
       ${rptKpi('Capital no fim',rpMoney(M.capitalEnd),'início + resultado do período')}
-      ${rptKpi('Maior ganho',M.best?rpMoney(M.best.value):'—',M.best?`${M.best.type||''} · ${rpBR(M.best.date)}`:'—',M.best?'rpos':'')}
-      ${rptKpi('Maior perda',M.worst?rpMoney(M.worst.value):'—',M.worst?`${M.worst.type||''} · ${rpBR(M.worst.date)}`:'—',M.worst?'rneg':'')}
+      ${rptKpi('Maior ganho',M.best?rpMoney(M.best.value):'—',M.best?`${rpAsset(M.best)||'—'} · ${rpBR(M.best.date)}`:'—',M.best?'rpos':'')}
+      ${rptKpi('Maior perda',M.worst?rpMoney(M.worst.value):'—',M.worst?`${rpAsset(M.worst)||'—'} · ${rpBR(M.worst.date)}`:'—',M.worst?'rneg':'')}
       ${rptKpi('Ganho médio',rpMoney(M.avgWin),M.wins?`em ${M.wins} vitória(s)`:'—')}
       ${rptKpi('Perda média',rpMoney(M.avgLoss),M.losses?`em ${M.losses} derrota(s)`:'—')}
       ${rptKpi('Payoff',M.avgLoss>0?rpNum(M.payoff):'—','ganho médio ÷ perda média')}
@@ -4163,7 +4448,7 @@ function rptSectionCompare(m){
 function rptSectionCharts(m){
   const M=m.M;
   if(!M.n) return `<section class="rsec">${rptSecHead(3,'Gráficos','Sem operações no período selecionado — nada para desenhar.')}</section>`;
-  const tipo=M.byType.length>1,wd=M.weekdays.length>1,hour=M.hours.length>1,plan=M.plan.n>0&&M.plan.y>0;
+  const tipo=M.byType.length>0,oper=M.byOperational.length>0,wd=M.weekdays.length>1,hour=M.hours.length>1,plan=M.plan.n>0&&M.plan.y>0;
   return `<section class="rsec">${rptSecHead(3,'Gráficos','Cada gráfico responde a uma pergunta: como o capital andou, quanto cada dia rendeu, de que lado você acertou mais e em que momento do dia rendeu melhor.')}
     <div class="rcard"><div class="rcard-h">Evolução do capital no período (${rpMoney(M.capitalStart)} → ${rpMoney(M.capitalEnd)})</div>
       <div class="rch"><canvas id="rch_eq"></canvas></div></div>
@@ -4172,7 +4457,8 @@ function rptSectionCharts(m){
       <div class="rcard"><div class="rcard-h">Distribuição das operações</div><div class="rdonut leg"><canvas id="rch_wr"></canvas></div></div>
     </div>
     <div class="rgrid2" style="margin-top:10px;">
-      ${tipo?`<div class="rcard"><div class="rcard-h">Resultado por tipo / ativo</div><div class="rch sm"><canvas id="rch_type"></canvas></div></div>`:''}
+      ${tipo?`<div class="rcard"><div class="rcard-h">Resultado por ativo / par</div><div class="rch sm"><canvas id="rch_type"></canvas></div></div>`:''}
+      ${oper?`<div class="rcard"><div class="rcard-h">Resultado por operacional</div><div class="rch sm"><canvas id="rch_operational"></canvas></div></div>`:''}
       ${wd?`<div class="rcard"><div class="rcard-h">Resultado por dia da semana</div><div class="rch sm"><canvas id="rch_wd"></canvas></div></div>`:''}
       ${hour?`<div class="rcard"><div class="rcard-h">Resultado por faixa de horário (2 em 2 horas)</div><div class="rch sm"><canvas id="rch_hour"></canvas></div></div>`:''}
       ${plan?`<div class="rcard"><div class="rcard-h">Seguiu o plano x não seguiu (wins e losses)</div><div class="rch sm"><canvas id="rch_plan"></canvas></div></div>`:''}
@@ -4207,7 +4493,7 @@ function rptSectionDaily(m){
   const rows=M.days.map(d=>{
     const cls=d.net>0?'rpos':d.net<0?'rneg':'rmut';
     return `<tr>
-      <td>${rpBR(d.date)}</td><td class="rmut">${RPT_WDSHORT[rpWd(d.date)]}</td>
+      <td>${rpBR(d.date)}</td><td class="rmut">${d.date?RPT_WDSHORT[rpWd(d.date)]:'—'}</td>
       <td class="num">${d.n}</td><td class="num">${d.w}</td><td class="num">${d.l}</td>
       <td class="num">${(d.w+d.l)?rpPct(d.wr):'—'}</td>
       <td class="num ${cls}">${rpMoney(d.net)}</td>
@@ -4245,21 +4531,23 @@ function rptSectionOps(m){
   const rows=m.ops.map((o,i)=>{
     const ns=(o.shots||[]).length;
     const det=[o.reason,o.notes].filter(Boolean).join(' · ');
+    const context=[rpAsset(o),rpDirection(o),rpOperationals(o).join(', ')].filter(Boolean);
+    const plan=o.plan==='yes'?'<span class="rbdg w">sim</span>':o.plan==='no'?'<span class="rbdg l">não</span>':'—';
     return `<tr>
       <td class="rmut">${i+1}</td>
-      <td>${rpBR(o.date)} <span class="rmut">${o.time||''}</span></td>
-      <td>${escHtml(o.type||'—')}</td>
+      <td>${rpBR(o.date)} <span class="rmut">${escHtml(o.time||'—')}</span></td>
+      <td class="wrap">${context.length?context.map(escHtml).join('<br>'):'—'}</td>
       <td>${rptResBadge(o.result)}</td>
       <td class="num">${rpMoney(o.value)}</td>
       <td class="num rmut">${rpUSD(o.usd||0)}</td>
-      <td>${o.plan==='no'?'<span class="rbdg l">não</span>':'<span class="rbdg w">sim</span>'}</td>
+      <td>${plan}</td>
       <td>${ns?`📸 ${ns}`:(o.yt?'🎬':(o.img?'🖼':'—'))}</td>
       <td class="wrap">${det?escHtml(det):'—'}</td></tr>`;
   }).join('');
   return `<section class="rsec">${rptSecHead(6,'Todas as operações','A lista completa, na ordem em que aconteceu.')}
     <div class="rcard" style="padding:0;overflow:hidden;">
       <div class="rtbl-wrap"><table class="rtbl rtbl-ops">
-        <thead><tr><th>#</th><th>Data/hora</th><th>Tipo</th><th>Resultado</th><th style="text-align:right">Valor</th>
+        <thead><tr><th>#</th><th>Data/hora</th><th>Ativo / contexto</th><th>Resultado</th><th style="text-align:right">Valor</th>
           <th style="text-align:right">USD</th><th>Plano</th><th>Mídia</th><th>Motivo / observações</th></tr></thead>
         <tbody>${rows}</tbody>
         <tfoot><tr><td colspan="4">${m.ops.length} operação(ões)</td>
@@ -4279,24 +4567,28 @@ function rptSectionCards(m,urls){
       if(shown>=80) return '';
       shown++;
       return `<div class="rshot"><img src="${urls.get(id)}" alt="print da operação">
-        <div class="rshot-cap">${rpBR(o.date)} ${o.time||''} · ${escHtml(o.type||'')} · print ${shown}</div></div>`;
+        <div class="rshot-cap">${rpBR(o.date)} ${escHtml(o.time||'—')} · ${escHtml(rpAsset(o)||'—')} · print ${shown}</div></div>`;
     }).join('');
+    const plan=o.plan==='yes'?'Sim':o.plan==='no'?'Não':'—';
+    const opers=rpOperationals(o);
     return `<div class="rop">
       <div class="rop-h">
         <span class="rop-d">${rpBR(o.date)}</span>
-        <span class="rmut" style="font-size:10.5px;">${o.time||''}</span>
+        <span class="rmut" style="font-size:10.5px;">${escHtml(o.time||'—')}</span>
         ${rptResBadge(o.result)}
         <span class="rop-v ${o.result==='WIN'?'rpos':o.result==='LOSS'?'rneg':'rmut'}">${o.result==='LOSS'?'-':'+'}${rpMoney(o.value)}</span>
       </div>
-      <div class="rop-k">Tipo</div><div style="font-size:11px;font-weight:700;margin-bottom:6px;">${escHtml(o.type||'—')}${o.usd?` <span class="rmut" style="font-weight:400">· ${rpUSD(o.usd)}</span>`:''}</div>
-      ${o.reason?`<div class="rop-k">Motivo da entrada</div><div class="rop-x">${escHtml(o.reason)}</div>`:''}
-      ${o.notes?`<div class="rop-k">Observações</div><div class="rop-x">${escHtml(o.notes)}</div>`:''}
-      ${o.plan==='no'?'<div class="rop-k" style="color:var(--rneg)">⚠️ Não seguiu o plano</div>':''}
-      ${o.yt?`<div class="rop-k">Vídeo</div><div class="rop-x"><a href="${escHtml(o.yt)}" style="color:var(--racc)">${escHtml(o.yt)}</a></div>`:''}
-      ${imgs?`<div class="rop-k" style="margin-top:6px;">Prints (${ids.length})</div><div class="rshots ${RPT.shotSize==='full'?'one':''}">${imgs}</div>`:''}
+      <div class="rop-k">Ativo / Par</div><div style="font-size:11px;font-weight:700;margin-bottom:6px;">${escHtml(rpAsset(o)||'—')}${o.usd?` <span class="rmut" style="font-weight:400">· ${rpUSD(o.usd)}</span>`:''}</div>
+      <div class="rop-k">Operacionais</div><div class="rop-x">${opers.length?escHtml(opers.join(', ')):'—'}</div>
+      <div class="rop-k">Direção</div><div class="rop-x">${escHtml(rpDirection(o)||'—')}</div>
+      <div class="rop-k">Motivo da entrada</div><div class="rop-x">${escHtml(o.reason||'—')}</div>
+      <div class="rop-k">Seguiu o plano</div><div class="rop-x">${plan}</div>
+      <div class="rop-k">Observações</div><div class="rop-x">${escHtml(o.notes||'—')}</div>
+      <div class="rop-k">Vídeo</div><div class="rop-x">${o.yt?`<a href="${escHtml(o.yt)}" style="color:var(--racc)">${escHtml(o.yt)}</a>`:'—'}</div>
+      ${imgs?`<div class="rop-k" style="margin-top:6px;">Prints (${ids.length})</div><div class="rshots ${RPT.shotSize==='full'?'one':''}">${imgs}</div>`:'<div class="rop-k">Prints</div><div class="rop-x">—</div>'}
     </div>`;
   }).join('');
-  return `<section class="rsec">${rptSecHead(7,'Fichas por operação',`${list.length} ficha(s)${RPT.cardMode==='withShots'?' — somente as operações com print anexado':''}, com motivo, observações e imagens.`)}
+  return `<section class="rsec">${rptSecHead(7,'Fichas por operação',`${list.length} ficha(s)${RPT.cardMode==='withShots'?' — somente as operações com print anexado':''}, com contexto, observações e imagens.`)}
     <div class="rops">${cards}</div>
     ${shown>=80?`<div class="rnote" style="margin-top:9px;">Mostrando os 80 primeiros prints para o PDF não ficar pesado.</div>`:''}
   </section>`;
@@ -4433,7 +4725,8 @@ function rptCharts(m){
   }
   if(el('rch_cal')) advCalendarHTML(el('rch_cal'),ops,advP,true);
 
-  barNet('rch_type','type',M.byType.map(t=>t.type),M.byType.map(t=>t.net),true);
+  barNet('rch_type','type',M.byType.map(t=>t.asset||t.type),M.byType.map(t=>t.net),true);
+  barNet('rch_operational','operational',M.byOperational.map(t=>t.operational),M.byOperational.map(t=>t.net),true);
   barNet('rch_wd','wd',M.weekdays.map(w=>RPT_WDSHORT[w.i]),M.weekdays.map(w=>w.net));
   barNet('rch_hour','hour',M.hours.map(h=>rpPad(h.h)+'h'),M.hours.map(h=>h.net));
   if(el('rch_plan')){
@@ -4792,7 +5085,7 @@ const GCHARTS=[
   {id:'wd',     name:'Resultado por Dia',   icon:'🗓️', desc:'Como cada dia da semana se comporta'},
   {id:'wr',     name:'Assertividade',       icon:'🎯', desc:'Distribuição de wins e losses'},
   {id:'plan',   name:'Fidelidade ao Plano', icon:'📐', desc:'Seguiu vs não seguiu o plano'},
-  {id:'cp',     name:'CALL vs PUT',         icon:'📉', desc:'Wins e losses por direção'},
+  {id:'cp',     name:'Performance por Ativo', icon:'💹', desc:'Wins e losses por ativo / par'},
   {id:'pn',     name:'Com vs Sem Plano',    icon:'⚖️', desc:'Wins e losses por disciplina'}
 ];
 const SLOT_DEF={
@@ -4934,21 +5227,21 @@ GCB.wr=(ops,body)=>{
 /* 6. fidelidade ao plano */
 GCB.plan=(ops,body)=>{
   const y=ops.filter(o=>o.plan==='yes').length, n=ops.filter(o=>o.plan==='no').length;
-  if(!y&&!n) return gNoData(body,'plan','Sem operações neste período.');
+  if(!y&&!n) return gNoData(body,'plan',ops.length?'Nenhuma operação informou o plano.':'Sem operações neste período.');
   const c=gCanvas(body); dk('gc_plan');
   CH.gc_plan=new Chart(c.getContext('2d'),{type:'doughnut',data:{labels:['Seguiu','Não seguiu'],datasets:[
     {data:[y||.001,n||.001],backgroundColor:[PAL.accent,PAL.slate],borderWidth:0,hoverOffset:5}]},options:{...CD,cutout:'68%'}});
   return [{c:PAL.accent,t:'Seguiu',v:y},{c:PAL.slate,t:'Não seguiu',v:n}];
 };
-/* 7. CALL x PUT */
+/* 7. performance por ativo / par */
 GCB.cp=(ops,body)=>{
-  const cW=ops.filter(o=>o.type==='CALL'&&o.result==='WIN').length, cL=ops.filter(o=>o.type==='CALL'&&o.result==='LOSS').length,
-        pW=ops.filter(o=>o.type==='PUT'&&o.result==='WIN').length,  pL=ops.filter(o=>o.type==='PUT'&&o.result==='LOSS').length;
-  if(!cW&&!cL&&!pW&&!pL) return gNoData(body,'cp','Sem operações neste período.');
+  const bins=assetPerformance(ops);
+  if(!bins.length) return gNoData(body,'cp','Sem operações neste período.');
   const c=gCanvas(body); dk('gc_cp');
-  CH.gc_cp=new Chart(c.getContext('2d'),{type:'bar',data:{labels:['CALL Win','CALL Loss','PUT Win','PUT Loss'],datasets:[
-    {data:[cW,cL,pW,pL],backgroundColor:[PAL.win,PAL.loss,PAL.win,PAL.loss],borderRadius:7,borderSkipped:false}]},
-    options:{...CD,scales:{x:eixoX,y:{...eixoY,ticks:{...eixoY.ticks,stepSize:1}}}}});
+  CH.gc_cp=new Chart(c.getContext('2d'),{type:'bar',data:{labels:bins.map(b=>b.label),datasets:[
+    {label:'Wins',data:bins.map(b=>b.w),backgroundColor:PAL.win,borderRadius:6,borderSkipped:false},
+    {label:'Losses',data:bins.map(b=>b.l),backgroundColor:PAL.loss,borderRadius:6,borderSkipped:false}]},
+    options:{...CD,plugins:{...CD.plugins,legend:legTop},scales:{x:eixoX,y:{...eixoY,ticks:{...eixoY.ticks,stepSize:1}}}}});
   return [];
 };
 /* 8. com x sem plano (wins e losses) */
@@ -5097,6 +5390,7 @@ function init(){
   rptInitFromState();
   applyTheme(S.theme||'default',{silent:true});
   applyProfUI();
+  refreshAssetUI();renderOperationalSettings();
   updateDash();
   syncCycleUI();
   badge();

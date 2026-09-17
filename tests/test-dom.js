@@ -82,9 +82,123 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   ok(ev('typeof S') === 'object', 'app inicializou (estado S existe)');
   ok(!!d.getElementById('page-report'), 'página Relatório existe no DOM');
 
-  /* injeta o backup de exemplo */
-  ev(`S.operations=${JSON.stringify(backup.state.operations)};S.settings=Object.assign(S.settings,${JSON.stringify(backup.state.settings)});`);
+  /* ── cadastro rápido + migração + novos catálogos ─────────────── */
+  const initialRpt = ev('JSON.stringify(RPT)');
+  const legacyState = {
+    settings: { initialCapital: 100, currentCapital: 100, usdRate: 5, stopLoss: 5, target: 2.5 },
+    operations: [
+      { id: 'legacy-pair', date: '2026-09-01', time: '09:00', value: 10, usd: 2, result: 'WIN', type: 'EUR/USD', reason: '', plan: 'yes' },
+      { id: 'legacy-dir', date: '2026-09-01', time: '10:00', value: 5, usd: 1, result: 'LOSS', type: 'PUT', reason: '', plan: '' }
+    ]
+  };
+  w.localStorage.setItem('ec7', JSON.stringify(legacyState));
+  ev('load()');
+  ok(ev("S.operations.find(o=>o.id==='legacy-pair').asset") === 'EUR/USD', 'load(): type antigo com par migra para asset');
+  ok(ev("S.operations.find(o=>o.id==='legacy-pair').direction") === '', 'load(): par antigo não vira direção');
+  ok(ev("S.operations.find(o=>o.id==='legacy-dir').direction") === 'PUT', 'load(): CALL/PUT antigo migra para direção');
+  ok(ev('S.assets.length') >= 6 && ev("S.assets.includes('GBP/USD')"), 'load(): seis ativos do histórico vêm semeados');
+  ok(ev('Array.isArray(S.operationals) && S.operationals.length===0'), 'migração cria lista de operacionais vazia');
+
+  w.localStorage.clear();
+  ev(`S=migrateState({settings:{initialCapital:100,currentCapital:100,usdRate:5,stopLoss:5,target:2.5},operations:[],operationals:[]});ensureChartState();refreshAssetUI();`);
+  w.openNewOpModal();
+  ok(!!d.getElementById('opDate').value && !!d.getElementById('opTime').value, 'nova operação preenche data e hora atuais');
+  d.getElementById('opDate').value = ''; // até data/hora podem ficar vazias: só valor + resultado são obrigatórios
+  d.getElementById('opTime').value = '';
+  d.getElementById('opVal').value = '25';
+  d.getElementById('opRes').value = 'WIN';
+  w.saveOp();
+  ok(ev('S.operations.length') === 1, 'salva WIN só com valor + resultado');
+  ok(ev("(()=>{const o=S.operations[0];return o.asset===''&&o.direction===''&&o.reason===''&&o.plan===''&&o.operationals.length===0;})()"),
+     'todos os demais campos ficam opcionais e vazios');
+  ok(ev('S.settings.currentCapital') === 125, 'WIN mínimo soma o valor ao capital');
+  ok(!d.getElementById('newOpModal').classList.contains('show'), 'modal fecha depois do cadastro mínimo');
+  w.openDet(ev('S.operations[0].id'));
+  const minimalDetail = d.getElementById('detBod').textContent.replace(/\s+/g, ' ');
+  ok(/Ativo \/ Par\s*—/.test(minimalDetail) && /Operacionais\s*—/.test(minimalDetail) && /Direção\s*—/.test(minimalDetail),
+     'detalhes mostram travessão para campos opcionais vazios');
+  w.closeMod('opDetMod');
+
+  w.openNewOpModal();
+  d.getElementById('opVal').value = '10';
+  d.getElementById('opRes').value = 'LOSS';
+  w.saveOp();
+  ok(ev('S.operations.length') === 2, 'salva LOSS só com valor + resultado');
+  ok(ev('S.settings.currentCapital') === 115, 'LOSS mínimo subtrai o valor do capital');
+
+  /* ativo novo: salva, persiste e reaparece em todas as listas */
+  w.openNewOpModal();
+  d.getElementById('opVal').value = '12';
+  d.getElementById('opRes').value = 'WIN';
+  d.getElementById('opAsset').value = 'XAU/USD';
+  w.saveOp();
+  ok(ev("S.operations[S.operations.length-1].asset") === 'XAU/USD', 'operação guarda o novo ativo');
+  ok(ev("S.assets.includes('XAU/USD')"), 'ativo novo entra no catálogo');
+  ok(JSON.parse(w.localStorage.getItem('ec7')).assets.includes('XAU/USD'), 'catálogo de ativos persiste no ec7');
+  ev('S=makeInitialState();load();refreshAssetUI();');
+  ok(ev("S.assets.includes('XAU/USD')"), 'ativo continua no catálogo depois de recarregar o ec7');
+  ok(!!d.querySelector('#opAssetList option[value="XAU/USD"]'), 'ativo reaparece para selecionar no formulário');
+  ok(!!d.querySelector('#fType option[value="XAU/USD"]'), 'ativo reaparece no filtro de operações');
+  w.rptBuildTypes();
+  ok(!!d.querySelector('#rfType option[value="XAU/USD"]'), 'ativo reaparece no filtro do relatório');
+
+  /* dois operacionais criados no modal, ambos marcados e restaurados na edição */
+  w.openNewOpModal();
+  d.getElementById('opOperationalNew').value = 'Rompimento'; w.quickAddOperational();
+  d.getElementById('opOperationalNew').value = 'Pullback'; w.quickAddOperational();
+  ok(d.querySelectorAll('#opOperationals input:checked').length === 2, 'criação rápida já marca os 2 operacionais');
+  d.getElementById('opVal').value = '7';
+  d.getElementById('opRes').value = 'LOSS';
+  d.getElementById('opAsset').value = 'XAU/USD';
+  w.saveOp();
+  const operationalOpId = ev('S.operations[S.operations.length-1].id');
+  ok(ev('S.operations[S.operations.length-1].operationals.length') === 2, 'operação salva array com 2 operacionais');
+  ev('S=makeInitialState();load();refreshAssetUI();');
+  w.editOp(operationalOpId);
+  ok(d.querySelectorAll('#opOperationals input:checked').length === 2, 'os 2 operacionais voltam marcados na edição');
+  w.closeMod('newOpModal');
+  d.getElementById('fType').value = 'XAU/USD'; w.applyFilter();
+  ok(d.querySelectorAll('#opsTb tr').length === 2, 'filtro da lista encontra operações pelo ativo real');
+  w.clearFilter();
+
+  /* seção Configurações: adicionar, renomear e apagar */
+  w.loadSetForm();
+  ok(d.querySelectorAll('#operationalSettingsList .cfg-list-row').length === 2, 'Configurações lista os operacionais');
+  d.getElementById('sOperational_0').value = 'Breakout'; w.renameOperational(0);
+  ok(ev("S.operationals.includes('Breakout') && S.operations.some(o=>o.operationals.includes('Breakout'))"),
+     'renomear atualiza o catálogo e as operações');
+  d.getElementById('sOperationalNew').value = 'Temporário'; w.addOperationalSetting();
+  w.confirm = () => true;
+  const tempIndex = ev("S.operationals.indexOf('Temporário')");
+  w.deleteOperational(tempIndex);
+  ok(!ev("S.operationals.includes('Temporário')"), 'apagar remove o operacional da lista');
+
+  /* relatório e gráficos aceitam contexto preenchido e vazio */
+  w.nav('analytics', null);
+  ok(ev("CH.anCP.data.labels.includes('XAU/USD') && CH.anCP.data.labels.includes('(sem ativo)')"),
+     'gráfico de performance agrupa ativos reais e operações sem ativo');
+  ok(ev("CH.anO.data.labels.includes('Breakout') && CH.anO.data.labels.includes('Pullback')"),
+     'gráfico de performance agrupa por operacional');
+  ok(ev('CH.anDir.data.labels.length===0'), 'gráfico de direção vazio não quebra quando direção é opcional');
+  ev("RPT.preset='tudo';RPT.cardMode='all';RPT.filt={res:'',type:'',plan:''};");
+  await fresh(() => w.rptRender());
+  ok(!!d.getElementById('rch_type') && !!d.getElementById('rch_operational'), 'relatório cria gráficos de ativo e operacional');
+  ok(ev("RCH.type.data.labels.includes('XAU/USD') && RCH.operational.data.labels.includes('Breakout')"),
+     'gráficos do relatório recebem ativos e operacionais');
+  ok(d.querySelectorAll('#rdoc .rtbl-ops tbody tr').length === 4, 'relatório inclui operações com campos preenchidos e vazios');
+  ok(/Ativo \/ Par/.test(txt()) && /Breakout/.test(txt()) && /—/.test(txt()), 'relatório mostra contexto e travessão nos campos vazios');
+  ok(!/NaN|undefined/.test(txt()), 'relatório com ativos/operacionais preenchidos e vazios não quebra');
+
+  const v3Backup = ev("JSON.stringify({__ec:3,state:S,shots:{}})");
+  await w.importData({ target: { files: [{ text: async () => v3Backup }], value: 'backup.json' } });
+  ok(ev("S.assets.includes('XAU/USD') && S.operationals.includes('Breakout')"),
+     'importação v3 restaura junto as listas de ativos e operacionais');
+
+  /* restaura o backup de exemplo para a suíte histórica */
+  w.localStorage.clear();
+  ev(`S=migrateState(${JSON.stringify(backup.state)});ensureChartState();RPT=JSON.parse(${JSON.stringify(initialRpt)});refreshAssetUI();`);
   ok(ev('S.operations.length') === 37, 'backup de exemplo carregado (37 operações)');
+  ok(ev("S.operations.every(o=>Object.prototype.hasOwnProperty.call(o,'asset'))"), 'backup inteiro passou pela migração de ativo');
 
   /* ── página do relatório: controles ─────────────────────────────── */
   w.nav('report', d.getElementById('navReport'));
