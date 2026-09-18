@@ -46,6 +46,8 @@ ok(/\.rpage\{[^}]*padding-bottom:0!important/.test(print),
    'folha sem padding de rodapé (não empurra página em branco no fim)');
 ok(/\.rshots\.one\{display:block!important;\}/.test(print),
    'prints em página inteira fluem em bloco');
+ok(/#rview\[data-rread="celular"\] \.rkpi\{width:calc\(50% - 3px\)!important;\}/.test(print),
+   'PDF no modo celular imprime KPIs 2 por linha (letras grandes)');
 
 /* ── 1. margem da folha ───────────────────────────────────────────── */
 const page = print.match(/@page\{([^}]*)\}/);

@@ -236,6 +236,27 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   ok(/Ativo \/ Par/.test(txt()) && /Breakout/.test(txt()) && /—/.test(txt()), 'relatório mostra contexto e travessão nos campos vazios');
   ok(!/NaN|undefined/.test(txt()), 'relatório com ativos/operacionais preenchidos e vazios não quebra');
 
+  /* ── regressão: scroll da visualização + modo de leitura no celular ── */
+  ok(!/#rscroll\{[^}]*display\s*:\s*flex/.test(html),
+     '#rscroll não usa flex (flex esticava a folha e impedia rolar o relatório)');
+  ok(/\.rpage\{[^}]*margin\s*:\s*0 auto/.test(html),
+     '.rpage centraliza com margin auto (altura natural -> rolagem funciona)');
+  const selRead = d.getElementById('rpRead');
+  ok(!!selRead && !!selRead.querySelector('option[value="pc"]') && !!selRead.querySelector('option[value="celular"]'),
+     'página do relatório tem seletor de Leitura (PC / celular)');
+  selRead.value = 'celular';
+  selRead.dispatchEvent(new w.Event('change'));
+  ok(ev("RPT.read==='celular' && S.report && S.report.read==='celular'"),
+     'leitura "celular" atualiza o estado e persiste no backup');
+  await fresh(() => w.rptOpen());
+  ok(d.getElementById('rview').getAttribute('data-rread') === 'celular',
+     'leitura celular aplica data-rread no relatório (vale para tela e PDF)');
+  ok(!!d.getElementById('rbarRead'), 'barra do relatório tem botão para alternar o modo de leitura');
+  ev('rptToggleRead()');
+  ok(ev("RPT.read==='pc'") && d.getElementById('rview').getAttribute('data-rread') === null,
+     'alternar na barra volta para o modo padrão (PC)');
+  w.closeReportView();
+
   await w.importData({ target: { files: [{ text: async () => correctedAiBackupText }], value: 'backup.json' } });
   ok(ev("S.operations.length===50 && S.assets.includes('EUR/GBP') && S.operationals.includes('Fibonacci')"),
      'backup corrigido da IA importa as 50 operações, ativos e operacionais');

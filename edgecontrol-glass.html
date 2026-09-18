@@ -1167,13 +1167,17 @@ body.rpt-open{overflow:hidden;}
 .rbt:hover{color:var(--rink);border-color:var(--racc);}
 .rbt.pri{background:linear-gradient(135deg,var(--racc),var(--racc2));color:#fff;border:none;box-shadow:0 6px 18px color-mix(in srgb,var(--racc) 34%,transparent);}
 .rbt.pri:hover{transform:translateY(-1px);}
-#rscroll{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px;display:flex;justify-content:center;}
+/* IMPORTANTE: #rscroll NÃO pode ser display:flex aqui. Com flex (linha) o
+   align-items padrão estica a folha até a altura do contêiner e o overflow:hidden
+   dela corta o resto do conteúdo — o navegador acha que não há nada para rolar.
+   A centralização da folha é feita com margin:0 auto na .rpage (abaixo). */
+#rscroll{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:16px;}
 .rload{display:flex;align-items:center;justify-content:center;gap:9px;padding:60px 10px;color:var(--rmut);font-size:12.5px;font-weight:600;}
 .rsp{width:15px;height:15px;border-radius:50%;border:2px solid var(--rline);border-top-color:var(--racc);animation:rspin .8s linear infinite;}
 @keyframes rspin{to{transform:rotate(360deg);}}
 
 /* ── folha ── */
-.rpage{width:100%;max-width:840px;background:var(--rpaper);color:var(--rink);border-radius:16px;overflow:hidden;
+.rpage{width:100%;max-width:840px;margin:0 auto;background:var(--rpaper);color:var(--rink);border-radius:16px;overflow:hidden;
   box-shadow:0 14px 44px rgba(12,18,45,.17);padding-bottom:22px;}
 .rcov{background:var(--rhead);color:var(--rheadink);padding:18px 20px 16px;display:flex;flex-direction:column;gap:12px;}
 .rcov-t{display:flex;align-items:center;gap:12px;}
@@ -1306,6 +1310,47 @@ body.rpt-open{overflow:hidden;}
   border:1px solid var(--border);border-radius:12px;padding:10px 12px;}
 .rp-info b{color:var(--white);}
 
+/* ── modo LEITURA NO CELULAR: letras grandes (tela e PDF) ─────────────
+   Ligado pelo seletor “Leitura” na página do relatório (RPT.read).
+   O data-rread fica no #rview, então o mesmo CSS cobre a visualização
+   em tela e a impressão/PDF. No modo padrão ("pc") nada muda. */
+#rview[data-rread="celular"] .rcov-nm{font-size:25px;}
+#rview[data-rread="celular"] .rcov-su{font-size:13.5px;}
+#rview[data-rread="celular"] .rcov-per{font-size:13.5px;}
+#rview[data-rread="celular"] .rcov-grid{grid-template-columns:1fr 1fr;}
+#rview[data-rread="celular"] .rcov-k b{font-size:22px;}
+#rview[data-rread="celular"] .rcov-k span{font-size:10.5px;}
+#rview[data-rread="celular"] .rsec-t{font-size:18px;}
+#rview[data-rread="celular"] .rsec-s{font-size:13px;}
+#rview[data-rread="celular"] .rsec-n{width:26px;height:26px;font-size:13px;border-radius:9px;}
+#rview[data-rread="celular"] .rcard-h{font-size:11.5px;}
+#rview[data-rread="celular"] .rkpis{grid-template-columns:repeat(2,1fr);}
+#rview[data-rread="celular"] .rkpi-l{font-size:10.5px;}
+#rview[data-rread="celular"] .rkpi-v{font-size:21px;}
+#rview[data-rread="celular"] .rkpi-s{font-size:11.5px;}
+#rview[data-rread="celular"] .rnote{font-size:13px;}
+#rview[data-rread="celular"] .rtbl{font-size:13px;}
+#rview[data-rread="celular"] .rtbl th{font-size:10.5px;}
+#rview[data-rread="celular"] .rtbl .wrap{font-size:12px;max-width:none;}
+#rview[data-rread="celular"] .rgrid2{grid-template-columns:1fr;}
+#rview[data-rread="celular"] .rins-t{font-size:13.5px;}
+#rview[data-rread="celular"] .rins-d{font-size:13px;}
+#rview[data-rread="celular"] .rins-ic{font-size:17px;}
+#rview[data-rread="celular"] .rop-d{font-size:13.5px;}
+#rview[data-rread="celular"] .rop-v{font-size:15px;}
+#rview[data-rread="celular"] .rop-field{font-size:12.5px;}
+#rview[data-rread="celular"] .rop-field b,#rview[data-rread="celular"] .rop-notes b{font-size:9.5px;}
+#rview[data-rread="celular"] .rop-notes{font-size:12.5px;}
+#rview[data-rread="celular"] .rop-prints-label{font-size:9.5px;}
+#rview[data-rread="celular"] .rop-empty{font-size:11.5px;}
+#rview[data-rread="celular"] .rshot-cap{font-size:10px;}
+#rview[data-rread="celular"] .rgloss dt{font-size:13px;}
+#rview[data-rread="celular"] .rgloss dd{font-size:13px;}
+#rview[data-rread="celular"] .rfoot{font-size:11px;}
+#rview[data-rread="celular"] .rch-note{font-size:12px;}
+#rview[data-rread="celular"] .rch{height:220px;}
+#rview[data-rread="celular"] .rch.sm{height:190px;}
+#rview[data-rread="celular"] .rdonut{height:190px;}
 /* ══════════════════════════════════════════════════════════
    IMPRESSÃO / PDF  (A4)
    Todo o app sai de cena: imprime apenas a folha do relatório.
@@ -1398,6 +1443,11 @@ body.rpt-open{overflow:hidden;}
   #rview[data-rtheme="escuro"]{background:#080b12!important;}
   /* a faixa de 6mm da @page fica só para cabeçalho/rodapé do navegador (se ligados) */
   .rfoot{padding-bottom:2mm!important;}
+  /* modo LEITURA NO CELULAR no PDF: KPIs saem 4 por linha por padrão —
+     aqui viram 2 por linha, e os pares de cartão viram 1 coluna. */
+  #rview[data-rread="celular"] .rkpi{width:calc(50% - 3px)!important;}
+  #rview[data-rread="celular"] .rgrid2>*{width:100%!important;}
+  #rview[data-rread="celular"] .rshots>*{width:calc(50% - 2.5px)!important;}
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -2007,6 +2057,16 @@ body.rpt-open{overflow:hidden;}
                   <option value="full">Grandes (1 por linha)</option>
                 </select></div>
             </div>
+            <div class="fg" style="margin-top:10px;margin-bottom:0;"><label class="fl">Leitura (texto)</label>
+              <select class="fi" id="rpRead" onchange="rptCfgChange()">
+                <option value="pc">Padrão — compacto, bom para PC</option>
+                <option value="celular">📱 Celular — letras grandes, fácil de ler no telefone</option>
+              </select>
+              <div style="font-size:10px;color:var(--dim);margin-top:4px;line-height:1.5;">
+                Vale para a visualização na tela e para o PDF. No modo celular as fontes ficam maiores
+                e as colunas viram uma só, para ler no telefone sem forçar a vista.
+              </div>
+            </div>
           </div>
         </div>
         <div style="display:flex;flex-direction:column;gap:12px;">
@@ -2059,6 +2119,7 @@ body.rpt-open{overflow:hidden;}
     <div class="rbar-t"><b>📄 Relatório</b><span id="rbarSub">—</span></div>
     <div class="rbar-a">
       <div class="rsw" id="rbarThemes" style="gap:5px;"></div>
+      <button class="rbt" id="rbarRead" onclick="rptToggleRead()" title="Alternar entre texto padrão e letras grandes (celular)">🖥️ Padrão</button>
       <button class="rbt" onclick="rptRebuild()" title="Recalcular com as operações atuais">🔄 Atualizar</button>
       <button class="rbt pri" onclick="rPrint()">🖨️ Baixar PDF</button>
       <button class="rbt" onclick="closeReportView()">✕ Fechar</button>
@@ -4527,7 +4588,7 @@ function rpValueBuckets(ops,passos){
    ESTADO / PREFERÊNCIAS DO RELATÓRIO
 ══════════════════════════════════════════════════════════ */
 const EDGE_APP_DOCUMENT_TITLE=document.title;
-let RPT={preset:'mes',from:'',to:'',theme:'claro',cardMode:'withShots',shotSize:'mini',
+let RPT={preset:'mes',from:'',to:'',theme:'claro',cardMode:'withShots',shotSize:'mini',read:'pc',
   inc:{kpi:true,compare:true,charts:true,daily:true,insights:true,ops:true,cards:true,gloss:true},
   filt:{res:'',type:'',plan:''}};
 const RPT_PRESETS=[['hoje','Hoje'],['7d','7 dias'],['semana','Esta semana'],['mes','Este mês'],
@@ -4544,11 +4605,12 @@ function rptInitFromState(){
   if(!r||typeof r!=='object') return;
   RPT={...RPT,...r,inc:{...RPT.inc,...(r.inc||{})},filt:{...RPT.filt,...(r.filt||{})}};
   if(!RPT_THEMES.some(t=>t.id===RPT.theme)) RPT.theme='claro';
+  if(RPT.read!=='celular') RPT.read='pc';
   if(!RPT.inc.kpi&&!RPT.inc.charts&&!RPT.inc.ops&&!RPT.inc.cards) RPT.inc.kpi=true;
 }
 function rptSave(){
   S.report={preset:RPT.preset,from:RPT.from,to:RPT.to,theme:RPT.theme,cardMode:RPT.cardMode,
-            shotSize:RPT.shotSize,inc:{...RPT.inc},filt:{...RPT.filt}};
+            shotSize:RPT.shotSize,read:RPT.read,inc:{...RPT.inc},filt:{...RPT.filt}};
   save();
 }
 function rptCurrentRange(){
@@ -4604,6 +4666,7 @@ function rptLoadPage(){
   if(t) t.value=r.to||'';
   const cm=document.getElementById('rpCardMode'),ss=document.getElementById('rpShotSize');
   if(cm) cm.value=RPT.cardMode; if(ss) ss.value=RPT.shotSize;
+  const rd=document.getElementById('rpRead'); if(rd) rd.value=RPT.read;
   const rr=document.getElementById('rfRes'),rp=document.getElementById('rfPlan'),rt=document.getElementById('rfType');
   if(rr) rr.value=RPT.filt.res||''; if(rp) rp.value=RPT.filt.plan||'';
   if(rt) rt.value=RPT.filt.type||'';
@@ -4641,6 +4704,7 @@ function rptReadForm(){
   RPT.filt={res:(g('rfRes')||{}).value||'',type:(g('rfType')||{}).value||'',plan:(g('rfPlan')||{}).value||''};
   RPT.cardMode=(g('rpCardMode')||{}).value||'withShots';
   RPT.shotSize=(g('rpShotSize')||{}).value||'mini';
+  RPT.read=(g('rpRead')||{}).value==='celular'?'celular':'pc';
   if(RPT.preset==='custom'){RPT.from=(g('rpFrom')||{}).value||'';RPT.to=(g('rpTo')||{}).value||'';}
   /* nenhuma seção marcada? o resumo executivo volta, senão o PDF sai vazio */
   if(!RPT.inc.kpi&&!RPT.inc.compare&&!RPT.inc.charts&&!RPT.inc.daily&&!RPT.inc.insights&&!RPT.inc.ops&&!RPT.inc.cards) RPT.inc.kpi=true;
@@ -5016,7 +5080,20 @@ function rptResolvedTheme(){
 }
 function rptApplyTheme(){
   const v=document.getElementById('rview');
-  if(v) v.dataset.rtheme=rptResolvedTheme();
+  if(!v) return;
+  v.dataset.rtheme=rptResolvedTheme();
+  /* modo de leitura: "celular" aplica letras grandes na tela e no PDF */
+  if(RPT.read==='celular') v.setAttribute('data-rread','celular');
+  else v.removeAttribute('data-rread');
+  const rb=document.getElementById('rbarRead');
+  if(rb) rb.textContent=(RPT.read==='celular')?'📱 Letras grandes':'🖥️ Padrão';
+}
+function rptToggleRead(){
+  RPT.read=(RPT.read==='celular')?'pc':'celular';
+  rptSave();
+  const rd=document.getElementById('rpRead'); if(rd) rd.value=RPT.read;
+  rptApplyTheme();
+  toast(RPT.read==='celular'?'Leitura para celular ativada: letras grandes.':'Leitura padrão restaurada.','s');
 }
 function rptPal(){const t=rptResolvedTheme();return RPT_PAL[t]||RPT_PAL.claro;}
 function rptDestroyCharts(){Object.keys(RCH).forEach(k=>{try{RCH[k].destroy();}catch(e){}delete RCH[k];});}
