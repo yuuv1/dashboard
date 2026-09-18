@@ -327,6 +327,16 @@ tbody tr:last-child td{border-bottom:none;}
   border:1px solid var(--border);border-radius:18px;padding:12px 15px;display:flex;flex-direction:column;min-height:0;
   box-shadow:var(--sh),inset 0 1px 0 var(--glass-inset);}
 .an-card .ch{flex:1;min-height:0;position:relative;}
+/* leitura didática (Analytics) — explica os números em linguagem simples */
+.ains{display:flex;flex-direction:column;gap:8px;overflow-y:auto;padding-right:2px;min-height:0;flex:1;}
+.ains-i{display:flex;gap:9px;background:color-mix(in srgb,var(--surf) 55%,transparent);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:11px;padding:9px 11px;}
+.ains-i.g{border-left-color:var(--green);}
+.ains-i.b{border-left-color:var(--red);}
+.ains-i.w{border-left-color:var(--warn);}
+.ains-ic{font-size:15px;line-height:1.15;flex-shrink:0;}
+.ains-t{font-size:12px;font-weight:800;margin-bottom:2px;line-height:1.35;}
+.ains-d{font-size:11px;color:var(--lgray);line-height:1.55;}
+.ains-empty{font-size:11.5px;color:var(--lgray);line-height:1.6;padding:12px;}
 /* slots de gráficos do Dashboard (rodízio automático + fixar) */
 .slot-tools{display:flex;align-items:center;gap:7px;flex-shrink:0;}
 .slot-dots{display:flex;align-items:center;gap:5px;}
@@ -387,6 +397,7 @@ textarea.fi{resize:vertical;min-height:70px;}
 .cfg-empty{padding:12px;text-align:center;color:var(--dim);font-size:10.5px;border:1px dashed var(--border);border-radius:11px;}
 .basset{background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent);}
 .boper{background:color-mix(in srgb,var(--accent2) 15%,transparent);color:var(--accent2);}
+.bemo{background:color-mix(in srgb,var(--warn) 14%,transparent);color:var(--warn);}
 .prev-box{background:color-mix(in srgb,var(--surf) 55%,transparent);border:1px solid var(--border);border-radius:13px;padding:11px 13px;margin-top:6px;}
 .bkp-box{background:linear-gradient(140deg,color-mix(in srgb,var(--accent) 12%,transparent),color-mix(in srgb,var(--cyan) 10%,transparent));border:1px solid var(--border);border-radius:14px;padding:15px;box-shadow:inset 0 1px 0 var(--glass-inset);}
 
@@ -1750,10 +1761,10 @@ body.rpt-open{overflow:hidden;}
       <div style="flex-shrink:0;padding:0 2px 9px;"><div class="pg-title">Analytics</div><div class="pg-sub">Análise detalhada de performance e métricas avançadas</div></div>
       <div class="an-body">
         <div class="an-sr">
-          <div class="an-st"><div class="an-lbl">Volume Movimentado</div><div class="an-val" id="anI">R$ 0</div><div class="an-sub">soma dos resultados (bruto)</div></div>
-          <div class="an-st"><div class="an-lbl">Total de Ganhos</div><div class="an-val tg" id="anG">R$ 0</div><div class="an-sub">soma dos lucros</div></div>
-          <div class="an-st"><div class="an-lbl">Total de Perdas</div><div class="an-val tr" id="anL">R$ 0</div><div class="an-sub">soma das perdas</div></div>
-          <div class="an-st"><div class="an-lbl">Resultado Líquido</div><div class="an-val" id="anN">R$ 0</div><div class="an-sub">capital inicial vs. atual</div></div>
+          <div class="an-st" title="Todo o dinheiro que passou pelas suas operações, somando ganhos e perdas sem descontar nada."><div class="an-lbl">Volume Movimentado</div><div class="an-val" id="anI">R$ 0</div><div class="an-sub">soma dos resultados (bruto)</div></div>
+          <div class="an-st" title="A soma de tudo que você lucrou nas operações WIN."><div class="an-lbl">Total de Ganhos</div><div class="an-val tg" id="anG">R$ 0</div><div class="an-sub">soma dos lucros</div></div>
+          <div class="an-st" title="A soma de tudo que você perdeu nas operações LOSS."><div class="an-lbl">Total de Perdas</div><div class="an-val tr" id="anL">R$ 0</div><div class="an-sub">soma das perdas</div></div>
+          <div class="an-st" title="Ganhos menos perdas: o que sobrou de fato no período."><div class="an-lbl">Resultado Líquido</div><div class="an-val" id="anN">R$ 0</div><div class="an-sub">ganhos − perdas</div></div>
         </div>
         <div class="an-top">
           <div class="an-card"><div class="ctit" style="margin-bottom:6px;">Evolução do Capital (Completa)</div><div class="ch"><canvas id="anCapC"></canvas></div></div>
@@ -1766,6 +1777,10 @@ body.rpt-open{overflow:hidden;}
         <div class="an-bot">
           <div class="an-card"><div class="ctit" style="margin-bottom:6px;">Performance por Direção (opcional)</div><div class="ch"><canvas id="anDirC"></canvas></div></div>
           <div class="an-card"><div class="ctit" style="margin-bottom:6px;">Ops com vs sem Plano</div><div class="ch"><canvas id="anPC"></canvas></div></div>
+        </div>
+        <div class="an-bot">
+          <div class="an-card"><div class="ctit" style="margin-bottom:6px;">Performance por Estado Emocional</div><div class="ch"><canvas id="anEMC"></canvas></div></div>
+          <div class="an-card"><div class="ctit" style="margin-bottom:6px;">📖 Leitura didática dos seus números</div><div class="ains" id="anInsights"></div></div>
         </div>
 
         <div class="an-top" style="min-height:300px;">
@@ -1842,6 +1857,10 @@ body.rpt-open{overflow:hidden;}
               <div class="fg"><label class="fl">Stop Loss Diário (%)</label><input class="fi" id="sSL" type="number" placeholder="5" min="0" max="100" step="0.1" oninput="updSetPrev()"></div>
             </div>
             <div class="fg"><label class="fl">Target Diário (%)</label><input class="fi" id="sTgt" type="number" placeholder="2.5" min="0" max="100" step="0.1" oninput="updSetPrev()"></div>
+            <div class="s2">
+              <div class="fg"><label class="fl">🚨 Alerta de losses seguidos</label><input class="fi" id="sMaxLoss" type="number" placeholder="3" min="1" max="20" step="1"><div style="font-size:9.5px;color:var(--dim);margin-top:4px;">Ao atingir esse número de losses em sequência, o painel pede para você parar (circuit breaker).</div></div>
+              <div class="fg"><label class="fl">🐘 Mão máx. (% do capital)</label><input class="fi" id="sMaxHand" type="number" placeholder="10" min="0" max="100" step="0.5"><div style="font-size:9.5px;color:var(--dim);margin-top:4px;">Entrada acima dessa % do capital gera aviso de “mão pesada”. Use 0 para desligar.</div></div>
+            </div>
             <div class="prev-box">
               <div style="font-size:9px;color:var(--dim);font-weight:700;text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px;">Preview</div>
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
@@ -1861,6 +1880,19 @@ body.rpt-open{overflow:hidden;}
               <button class="btn-o xs" onclick="addOperationalSetting()">＋ Adicionar</button>
             </div>
             <div class="cfg-list" id="operationalSettingsList"></div>
+          </div>
+
+          <div class="set-card" id="emotionsSettings">
+            <div class="set-tit">🧠 Estados emocionais</div>
+            <div style="font-size:10.5px;color:var(--lgray);line-height:1.55;margin-bottom:9px;">
+              Como você estava ao entrar em cada operação. Com o tempo, o Analytics mostra quais emoções
+              ajudam e quais custam dinheiro — um dos aprendizados mais valiosos do diário.
+            </div>
+            <div class="quick-add">
+              <input class="fi" id="sEmotionNew" placeholder="Ex: Inseguro, Focado, Displicente…" onkeydown="if(event.key==='Enter'){event.preventDefault();addEmotionSetting();}">
+              <button class="btn-o xs" onclick="addEmotionSetting()">＋ Adicionar</button>
+            </div>
+            <div class="cfg-list" id="emotionSettingsList"></div>
           </div>
 
           <div class="set-card">
@@ -2185,6 +2217,15 @@ body.rpt-open{overflow:hidden;}
         </div>
       </div>
       <div class="fg">
+        <label class="fl">🧠 Estado emocional <span style="font-weight:400;font-size:9px;color:var(--lgray);">(opcional · como você estava ao entrar?)</span></label>
+        <div class="check-list empty" id="opEmotions">Nenhum estado cadastrado.</div>
+        <div class="quick-add">
+          <input class="fi" id="opEmotionNew" placeholder="Criar estado sem sair daqui (ex: Inseguro)" onkeydown="if(event.key==='Enter'){event.preventDefault();quickAddEmotion();}">
+          <button class="btn-s xs" onclick="quickAddEmotion()">＋ Criar</button>
+        </div>
+        <div style="font-size:9.5px;color:var(--dim);margin-top:4px;">Registrar a emoção revela, com o tempo, quais estados ajudam e quais atrapalham seu resultado.</div>
+      </div>
+      <div class="fg">
         <label class="fl" style="color:var(--accent);">🎯 Motivo da Entrada <span style="font-weight:400;font-size:9px;color:var(--lgray);">(opcional)</span></label>
         <textarea class="fi" id="opReason" style="border-color:color-mix(in srgb, var(--accent) 28%, transparent);min-height:74px;" placeholder="Ex: Rompimento de resistência no M5, confluência EMA21 + RSI saindo de sobrevenda..."></textarea>
       </div>
@@ -2448,6 +2489,8 @@ const PRESETS = [
    STATE
 ══════════════════════════════════════ */
 const DEFAULT_ASSETS=['EUR/USD','EUR/GBP','EUR/JPY','USD/JPY','GBP/JPY','GBP/USD'];
+/* Estados emocionais padrão: o usuário pode criar outros nas Configurações. */
+const DEFAULT_EMOTIONS=['Calmo','Confiante','Ansioso','Apressado','Cansado','Revanche','FOMO'];
 function cleanName(v){return String(v??'').trim().replace(/\s+/g,' ');}
 function nameKey(v){return cleanName(v).toLocaleUpperCase('pt-BR');}
 function uniqueNames(values){
@@ -2477,13 +2520,19 @@ function opOperationals(o){
     (Array.isArray(o.checks)?o.checks:(o.operational?[o.operational]:[])));
   return uniqueNames(raw||[]);
 }
+/* Estado emocional registrado na operação (opcional, multi-seleção). */
+function opEmotions(o){
+  const raw=o&&(Array.isArray(o.emotions)?o.emotions:(o.emotion?[o.emotion]:[]));
+  return uniqueNames(raw||[]);
+}
 function makeInitialState(){
   return {
     profile:{name:'Trader',avatar:'',avatarData:'',logo:''},
-    settings:{initialCapital:1000,currentCapital:1000,usdRate:5,stopLoss:5,target:2.5},
+    settings:{initialCapital:1000,currentCapital:1000,usdRate:5,stopLoss:5,target:2.5,
+      maxLosses:3,maxHand:10},
     metal:{on:true,preset:'platinum',speed:4.5,colors:[...PRESETS[0].colors]},
     theme:'default',bg:{on:true,opacity:26},assets:[...DEFAULT_ASSETS],operationals:[],
-    operations:[],cp:'all'
+    emotions:[...DEFAULT_EMOTIONS],operations:[],cp:'all'
   };
 }
 /* Migração única usada tanto pelo localStorage (ec7) quanto pela importação de backup. */
@@ -2510,7 +2559,7 @@ function migrateState(raw){
     return {...o,
       id:String(o.id??('legacy_'+i)),date:cleanName(o.date),time:cleanName(o.time),
       value:Number.isFinite(value)?value:0,usd:Number.isFinite(usd)?usd:((Number.isFinite(value)?value:0)/rate),
-      result,direction,type:direction,asset,operationals:opOperationals(o),
+      result,direction,type:direction,asset,operationals:opOperationals(o),emotions:opEmotions(o),
       reason:typeof o.reason==='string'?o.reason.trim():'',plan:o.plan==='yes'||o.plan==='no'?o.plan:'',
       img:typeof o.img==='string'?o.img:'',yt:typeof o.yt==='string'?o.yt.trim():'',notes:typeof o.notes==='string'?o.notes.trim():'',
       shots:Array.isArray(o.shots)?o.shots.filter(Boolean).map(String):[],createdAt:o.createdAt||''};
@@ -2518,6 +2567,8 @@ function migrateState(raw){
   out.assets=uniqueNames([...DEFAULT_ASSETS,...(Array.isArray(raw.assets)?raw.assets:[]),...out.operations.map(opAsset)]);
   const savedOperationals=Array.isArray(raw.operationals)?raw.operationals:(Array.isArray(raw.checks)?raw.checks:[]);
   out.operationals=uniqueNames([...savedOperationals,...out.operations.flatMap(opOperationals)]);
+  const savedEmotions=Array.isArray(raw.emotions)?raw.emotions:[];
+  out.emotions=uniqueNames([...DEFAULT_EMOTIONS,...savedEmotions,...out.operations.flatMap(opEmotions)]);
   delete out.checks;
   return out;
 }
@@ -2898,7 +2949,9 @@ function loadSetForm(){
   document.getElementById('sUsd').value=S.settings.usdRate;
   document.getElementById('sSL').value=S.settings.stopLoss;
   document.getElementById('sTgt').value=S.settings.target;
-  prevSAv();prevSLogo();updSetPrev();updSum();renderOperationalSettings();
+  document.getElementById('sMaxLoss').value=S.settings.maxLosses||3;
+  document.getElementById('sMaxHand').value=S.settings.maxHand||0;
+  prevSAv();prevSLogo();updSetPrev();updSum();renderOperationalSettings();renderEmotionSettings();
 }
 function updSetPrev(){
   const c=parseFloat(document.getElementById('sCurC').value)||0;
@@ -2925,6 +2978,8 @@ function saveSettings(){
   S.settings.usdRate=parseFloat(document.getElementById('sUsd').value)||5;
   S.settings.stopLoss=parseFloat(document.getElementById('sSL').value)||5;
   S.settings.target=parseFloat(document.getElementById('sTgt').value)||2.5;
+  S.settings.maxLosses=Math.max(1,parseInt(document.getElementById('sMaxLoss').value)||3);
+  S.settings.maxHand=Math.max(0,parseFloat(document.getElementById('sMaxHand').value)||0);
   const tog=document.getElementById('rbToggle');
   S.metal.on=tog?tog.checked:false;
   save();applyProfUI();updSum();mtApplyAll();
@@ -3060,6 +3115,81 @@ function performanceBins(ops,getLabels,includeEmpty){
 function assetPerformance(ops){return performanceBins(ops,o=>opAsset(o),true);}
 function operationalPerformance(ops){return performanceBins(ops,opOperationals,false);}
 function directionPerformance(ops){return performanceBins(ops,o=>opDirection(o),false);}
+function emotionPerformance(ops){return performanceBins(ops,opEmotions,false);}
+
+/* ── catálogo de estados emocionais (mesmo padrão dos operacionais) ── */
+function rememberEmotion(value){
+  const raw=cleanName(value);
+  if(!raw) return '';
+  if(!Array.isArray(S.emotions)) S.emotions=[];
+  const name=canonicalCatalogName(S.emotions,raw);
+  if(!S.emotions.some(x=>nameKey(x)===nameKey(name))) S.emotions.push(name);
+  S.emotions=uniqueNames(S.emotions);
+  return name;
+}
+function getSelectedEmotions(){
+  return uniqueNames([...document.querySelectorAll('#opEmotions input[type=checkbox]:checked')].map(c=>c.value));
+}
+function renderEmotionChecks(selected){
+  const box=document.getElementById('opEmotions');
+  if(!box) return;
+  const chosen=new Set(uniqueNames(selected===undefined?getSelectedEmotions():selected).map(nameKey));
+  const list=uniqueNames(S.emotions||[]);
+  if(!list.length){box.className='check-list empty';box.textContent='Nenhum estado cadastrado.';return;}
+  box.className='check-list';
+  box.innerHTML=list.map(n=>`<label class="check-item"><input type="checkbox" value="${escHtml(n)}" ${chosen.has(nameKey(n))?'checked':''}><span>${escHtml(n)}</span></label>`).join('');
+}
+function quickAddEmotion(){
+  const input=document.getElementById('opEmotionNew');
+  const raw=cleanName(input&&input.value);
+  if(!raw){toast('Digite o nome do estado emocional.','w');return;}
+  const selected=getSelectedEmotions();
+  const name=rememberEmotion(raw);
+  if(!selected.some(x=>nameKey(x)===nameKey(name))) selected.push(name);
+  if(input) input.value='';
+  renderEmotionChecks(selected);renderEmotionSettings();save();
+  toast('Estado emocional disponível e selecionado!','s');
+}
+function renderEmotionSettings(){
+  const box=document.getElementById('emotionSettingsList');
+  if(!box) return;
+  const list=uniqueNames(S.emotions||[]);
+  if(!list.length){box.innerHTML='<div class="cfg-empty">Sua lista está vazia. Adicione o primeiro estado acima.</div>';return;}
+  box.innerHTML=list.map((name,i)=>`<div class="cfg-list-row">
+    <input class="fi" id="sEmotion_${i}" value="${escHtml(name)}" aria-label="Nome do estado emocional ${i+1}">
+    <button class="btn-s xs" onclick="renameEmotion(${i})" title="Renomear">💾 Renomear</button>
+    <button class="btn-s xs" onclick="deleteEmotion(${i})" title="Apagar">🗑️</button>
+  </div>`).join('');
+}
+function addEmotionSetting(){
+  const input=document.getElementById('sEmotionNew'),raw=cleanName(input&&input.value);
+  if(!raw){toast('Digite o nome do estado emocional.','w');return;}
+  const before=(S.emotions||[]).length,name=rememberEmotion(raw);
+  if(input) input.value='';
+  renderEmotionSettings();renderEmotionChecks();save();
+  toast(before===(S.emotions||[]).length?`“${escHtml(name)}” já está na lista.`:'Estado emocional adicionado!','s');
+}
+function renameEmotion(index){
+  const old=(S.emotions||[])[index],input=document.getElementById('sEmotion_'+index);
+  const next=cleanName(input&&input.value);
+  if(!old||!next){toast('O nome do estado não pode ficar vazio.','e');renderEmotionSettings();return;}
+  const duplicate=(S.emotions||[]).some((x,i)=>i!==index&&nameKey(x)===nameKey(next));
+  if(duplicate){toast('Já existe um estado com esse nome.','e');renderEmotionSettings();return;}
+  const selected=getSelectedEmotions().map(x=>nameKey(x)===nameKey(old)?next:x);
+  S.emotions[index]=next;S.emotions=uniqueNames(S.emotions);
+  (S.operations||[]).forEach(o=>{o.emotions=uniqueNames(opEmotions(o).map(x=>nameKey(x)===nameKey(old)?next:x));});
+  renderEmotionSettings();renderEmotionChecks(selected);save();
+  toast('Estado emocional renomeado!','s');
+}
+function deleteEmotion(index){
+  const name=(S.emotions||[])[index];
+  if(!name||!confirm(`Apagar “${name}”? Ele também será removido das operações em que foi marcado.`)) return;
+  const selected=getSelectedEmotions().filter(x=>nameKey(x)!==nameKey(name));
+  S.emotions=(S.emotions||[]).filter((_,i)=>i!==index);
+  (S.operations||[]).forEach(o=>{o.emotions=opEmotions(o).filter(x=>nameKey(x)!==nameKey(name));});
+  renderEmotionSettings();renderEmotionChecks(selected);save();
+  toast('Estado emocional apagado.','s');
+}
 
 /* ══════════════════════════════════════
    OPERATIONS
@@ -3081,9 +3211,9 @@ function openNewOpModal(){
   curId=null;const now=new Date();
   document.getElementById('opDate').value=localInputDate(now);
   document.getElementById('opTime').value=now.toTimeString().slice(0,5);
-  ['opVal','opValU','opRes','opType','opAsset','opReason','opYT','opNotes','opOperationalNew'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  ['opVal','opValU','opRes','opType','opAsset','opReason','opYT','opNotes','opOperationalNew','opEmotionNew'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
   document.getElementById('opPlan').value='';
-  refreshAssetUI();renderOperationalChecks([]);
+  refreshAssetUI();renderOperationalChecks([]);renderEmotionChecks([]);
   draftShots=[]; renderShotGrid(); syncValLabel();
   showMod('newOpModal'); initShotZone();
 }
@@ -3116,7 +3246,7 @@ function saveOp(){
   const rawAsset=cleanName(document.getElementById('opAsset').value);
   const reason=document.getElementById('opReason').value.trim(),plan=document.getElementById('opPlan').value;
   const yt=document.getElementById('opYT').value.trim(),notes=document.getElementById('opNotes').value.trim();
-  const operationals=getSelectedOperationals(),img='';
+  const operationals=getSelectedOperationals(),emotions=getSelectedEmotions(),img='';
   if(!Number.isFinite(value)||value<=0||!['WIN','LOSS'].includes(result)){
     toast('Informe o Valor (R$) e selecione WIN ou LOSS.','e');return;
   }
@@ -3128,7 +3258,7 @@ function saveOp(){
   // vincula cada print à operação (útil para a limpeza de órfãos)
   shots.forEach(async sid=>{const r=await IMGDB.get(sid);if(r&&!r.opId){r.opId=opId;IMGDB.put(r);}});
   const op={...(previous||{}),id:opId,date,time,value,usd,result,
-    asset,direction:isTradeDirection(direction)?direction:'',type:isTradeDirection(direction)?direction:'',operationals,
+    asset,direction:isTradeDirection(direction)?direction:'',type:isTradeDirection(direction)?direction:'',operationals,emotions,
     reason,plan:plan==='yes'||plan==='no'?plan:'',img,yt,notes,shots,
     createdAt:(previous&&previous.createdAt)||new Date().toISOString()};
   const mediaNote=shots.length?` com ${shots.length} print(s)`:'';
@@ -3139,10 +3269,24 @@ function saveOp(){
       S.operations[i]=op;
       applyCapitalDelta(opCapitalEffect(op)-previousEffect);
     }
-    toast(`Operação atualizada${mediaNote}!`,'s');
   }else{
-    S.operations.push(op);applyCapitalDelta(opCapitalEffect(op));toast(`Operação registrada${mediaNote}!`,'s');
+    S.operations.push(op);applyCapitalDelta(opCapitalEffect(op));
   }
+  /* avisos didáticos de risco (não bloqueiam o registro) */
+  const avisos=[];
+  const maxHandPct=Number(S.settings.maxHand)||0;
+  if(maxHandPct>0&&S.settings.currentCapital>0&&op.value>S.settings.currentCapital*maxHandPct/100){
+    avisos.push(`🐘 Mão pesada: ${fmtBRL(op.value)} é ${(op.value/S.settings.currentCapital*100).toFixed(1)}% do capital (limite ${maxHandPct}%). Entradas grandes demais quebram a conta rápido.`);
+  }
+  if(op.result==='LOSS'){
+    const ch=chronoOps(S.operations);let ls=0;
+    for(let i=ch.length-1;i>=0;i--){if(ch[i].result==='LOSS')ls++;else break;}
+    const maxL=parseInt(S.settings.maxLosses)||3;
+    if(ls>=maxL) avisos.push(`🚨 ${ls} losses seguidos — seu limite é ${maxL}. Pare, respire e revise o dia antes da próxima entrada.`);
+  }
+  const baseMsg=(curId?'Operação atualizada':'Operação registrada')+mediaNote+'!';
+  if(avisos.length) toast(baseMsg+'<br><span style="font-weight:700;">'+avisos.join('<br>')+'</span>','w');
+  else toast(baseMsg,'s');
   draftShots=[];
   save();refreshAssetUI();closeMod('newOpModal');updateDash();renderOps();badge();
   if(document.getElementById('page-report')?.classList.contains('active')) rptLoadPage();
@@ -3170,12 +3314,18 @@ function operationalBadgesHTML(values,compact){
   const shown=compact?list.slice(0,2):list;
   return shown.map(x=>`<span class="badge boper">🧩 ${escHtml(x)}</span>`).join(' ')+(compact&&list.length>2?` <span style="font-size:9px;color:var(--dim);">+${list.length-2}</span>`:'');
 }
+function emotionBadgesHTML(values,compact){
+  const list=uniqueNames(values||[]);
+  if(!list.length) return '—';
+  const shown=compact?list.slice(0,2):list;
+  return shown.map(x=>`<span class="badge bemo">🧠 ${escHtml(x)}</span>`).join(' ')+(compact&&list.length>2?` <span style="font-size:9px;color:var(--dim);">+${list.length-2}</span>`:'');
+}
 function planBadgeHTML(plan){
   return plan==='yes'?'<span class="badge byes">✅ Sim</span>':plan==='no'?'<span class="badge bno">❌ Não</span>':'—';
 }
 function openDet(id){
   const op=S.operations.find(o=>o.id===id);if(!op)return;curId=id;
-  const asset=opAsset(op),direction=opDirection(op),operationals=opOperationals(op);
+  const asset=opAsset(op),direction=opDirection(op),operationals=opOperationals(op),emotions=opEmotions(op);
   let ytHtml='';
   if(op.yt){const yid=ytId(op.yt);ytHtml=yid?`<div style="margin-top:11px;"><div style="font-size:10px;font-weight:700;color:var(--lgray);text-transform:uppercase;margin-bottom:5px;">🎬 Vídeo</div><iframe style="width:100%;aspect-ratio:16/9;border-radius:12px;border:none;" src="https://www.youtube.com/embed/${escHtml(yid)}" allowfullscreen></iframe></div>`:`<div class="drow"><span class="dkey">Vídeo</span><span class="dval">${escHtml(op.yt)}</span></div>`;}
   else ytHtml='<div class="drow"><span class="dkey">Vídeo</span><span class="dval">—</span></div>';
@@ -3189,6 +3339,7 @@ function openDet(id){
     <div class="drow"><span class="dkey">Resultado</span><span class="dval">${resultBadgeHTML(op.result)}</span></div>
     <div class="drow"><span class="dkey">Ativo / Par</span><span class="dval">${assetBadgeHTML(asset)}</span></div>
     <div class="drow"><span class="dkey">Operacionais</span><span class="dval">${operationalBadgesHTML(operationals,false)}</span></div>
+    <div class="drow"><span class="dkey">Estado emocional</span><span class="dval">${emotionBadgesHTML(emotions,false)}</span></div>
     <div class="drow"><span class="dkey">Direção</span><span class="dval">${directionBadgeHTML(direction)}</span></div>
     <div class="drow"><span class="dkey">Seguiu o Plano</span><span class="dval">${planBadgeHTML(op.plan)}</span></div>
     <div style="padding:9px 0;"><div style="font-size:10px;font-weight:700;color:var(--accent);text-transform:uppercase;margin-bottom:5px;">🎯 Motivo da Entrada</div><div style="font-size:13px;color:var(--white);line-height:1.6;background:color-mix(in srgb, var(--accent) 7%, transparent);border:1px solid color-mix(in srgb, var(--accent) 18%, transparent);border-radius:12px;padding:11px;">${escHtml(op.reason||'—')}</div></div>
@@ -3211,6 +3362,7 @@ function editOp(id){
   document.getElementById('opYT').value=op.yt||'';
   document.getElementById('opNotes').value=op.notes||'';
   document.getElementById('opOperationalNew').value='';renderOperationalChecks(opOperationals(op));
+  document.getElementById('opEmotionNew').value='';renderEmotionChecks(opEmotions(op));
   draftShots=opShotIds(op); renderShotGrid(); syncValLabel();
   showMod('newOpModal'); initShotZone();
 }
@@ -3224,7 +3376,8 @@ function renderOps(filt){
     const ns=opShotIds(op).length;
     const med=[ns?`📸${ns}`:'',op.img?'🖼':'',op.yt?'🎬':''].filter(Boolean).join(' ')||'—';
     const rs=op.reason?(op.reason.length>24?op.reason.slice(0,24)+'…':op.reason):'—';
-    const ctx=`${assetBadgeHTML(asset)}${direction?` <span style="white-space:nowrap;">${directionBadgeHTML(direction)}</span>`:''}<div style="margin-top:4px;">${operationalBadgesHTML(opOperationals(op),true)}</div>`;
+    const emos=opEmotions(op);
+    const ctx=`${assetBadgeHTML(asset)}${direction?` <span style="white-space:nowrap;">${directionBadgeHTML(direction)}</span>`:''}<div style="margin-top:4px;">${operationalBadgesHTML(opOperationals(op),true)}</div>${emos.length?`<div style="margin-top:4px;">${emotionBadgesHTML(emos,true)}</div>`:''}`;
     return `<tr onclick="openDet(${jsStr(op.id)})">
       <td style="color:var(--dim);font-size:11px;">${i+1}</td>
       <td style="font-size:12px;">${escHtml(op.date||'—')}<br><span style="color:var(--dim);font-size:10px;">${escHtml(op.time||'—')}</span></td>
@@ -3583,10 +3736,16 @@ function updateDash(){
   document.getElementById('tgtBar').style.width=tp+'%';document.getElementById('tgtPct').textContent=tp.toFixed(0)+'%';
   document.getElementById('dashProfT').textContent=fmtBRL(profT);
 
+  /* sequência de losses atual (ordem cronológica) — usada no circuit breaker */
+  const _chBrk=chronoOps(ops);let lossStreak=0;
+  for(let i=_chBrk.length-1;i>=0;i--){if(_chBrk[i].result==='LOSS')lossStreak++;else break;}
+  const maxLossLimit=Math.max(1,parseInt(s.maxLosses)||3);
+
   const ab=document.getElementById('alertBar');
   document.getElementById('stopCard').classList.remove('stop-r');document.getElementById('targetCard').classList.remove('tgt-r');
   if(lossT>=stopA&&stopA>0){ab.style.display='flex';ab.className='abar al-d';ab.innerHTML='🛑 STOP LOSS ATINGIDO! Você atingiu seu limite de perda diária. Pare de operar hoje.';document.getElementById('stopCard').classList.add('stop-r');document.getElementById('statusTxt').textContent='Stop Loss atingido!';}
   else if(profT>=tgtA&&tgtA>0){ab.style.display='flex';ab.className='abar al-s';ab.innerHTML='🎯 TARGET ATINGIDO! Parabéns, você alcançou seu objetivo diário!';document.getElementById('targetCard').classList.add('tgt-r');document.getElementById('statusTxt').textContent='Target atingido!';}
+  else if(lossStreak>=maxLossLimit){ab.style.display='flex';ab.className='abar al-d';ab.innerHTML=`🚨 CIRCUIT BREAKER: ${lossStreak} losses seguidos (seu limite é ${maxLossLimit}). Depois de uma sequência assim, a melhor entrada é não entrar — revise o dia antes de continuar.`;document.getElementById('statusTxt').textContent='Circuit breaker!';}
   else if(sp>=70){ab.style.display='flex';ab.className='abar al-w';ab.innerHTML=`⚠️ Atenção! Você já consumiu ${sp.toFixed(0)}% do stop loss diário. Opere com cautela.`;document.getElementById('statusTxt').textContent='Atenção ao risco!';}
   else{ab.style.display='none';document.getElementById('statusTxt').textContent='Operando normalmente';}
 
@@ -3656,10 +3815,24 @@ function updateAn(){
   perfChart('anCP','anCPC',assetPerformance(ops));
   perfChart('anO','anOC',operationalPerformance(ops));
   perfChart('anDir','anDirC',directionPerformance(ops));
+  perfChart('anEM','anEMC',emotionPerformance(ops));
+  renderAnInsights();
   const pYW=ops.filter(o=>o.plan==='yes'&&o.result==='WIN').length,pYL=ops.filter(o=>o.plan==='yes'&&o.result==='LOSS').length,pNW=ops.filter(o=>o.plan==='no'&&o.result==='WIN').length,pNL=ops.filter(o=>o.plan==='no'&&o.result==='LOSS').length;
   dk('anP');CH.anP=new Chart(document.getElementById('anPC').getContext('2d'),{type:'bar',data:{labels:['Com Plano','Sem Plano'],datasets:[{label:'Wins',data:[pYW,pNW],backgroundColor:PAL.win,borderRadius:6,borderSkipped:false},{label:'Losses',data:[pYL,pNL],backgroundColor:PAL.loss,borderRadius:6,borderSkipped:false}]},
     options:{...CD,plugins:{...CD.plugins,legend:{display:true,labels:{color:PAL.muted,font:{size:10,family:'Inter'},boxWidth:9,usePointStyle:true,pointStyle:'circle'}}},scales:{x:{grid:{display:false,drawBorder:false},ticks:{color:PAL.muted,font:{size:11}}},y:{grid:{color:PAL.grid,drawBorder:false},ticks:{color:PAL.tick,font:{size:10}}}}}});
   try{advRenderPanel();}catch(e){console.warn('gráficos avançados:',e);}
+}
+/* Leitura didática: o mesmo motor do relatório (rpInsights) aplicado ao
+   histórico inteiro, direto no painel — explica os números em linguagem simples. */
+function renderAnInsights(){
+  const box=document.getElementById('anInsights'); if(!box) return;
+  const ops=chronoOps(S.operations);
+  if(!ops.length){ box.innerHTML='<div class="ains-empty">Registre operações para receber a leitura automática dos seus números.</div>'; return; }
+  let ins=[];
+  try{ ins=rpInsights(rpMetrics(ops,S.settings.initialCapital),{}); }catch(e){ ins=[]; }
+  if(!ins.length){ box.innerHTML='<div class="ains-empty">Ainda não há leituras para mostrar.</div>'; return; }
+  box.innerHTML=ins.slice(0,6).map(x=>
+    `<div class="ains-i ${x.c||''}"><div class="ains-ic">${x.ic}</div><div class="ains-bd"><div class="ains-t">${escHtml(x.t)}</div><div class="ains-d">${escHtml(x.d)}</div></div></div>`).join('');
 }
 
 /* ══════════════════════════════════════
@@ -4080,7 +4253,7 @@ function buildManifest(){
    navegador guarda a página em cache. */
 const SW_FILENAME='sw.js';
 const SW_SRC=`/* EdgeControl SW */
-const CACHE='edgecontrol-v1';
+const CACHE='edgecontrol-v2';
 self.addEventListener('install',e=>self.skipWaiting());
 self.addEventListener('activate',e=>e.waitUntil(self.clients.claim()));
 self.addEventListener('fetch',e=>{
@@ -4175,7 +4348,7 @@ async function initPWA(){
   if(!('serviceWorker' in navigator)){ pwaState='unsupported'; paintPWA(); return; }
   // guarda a página no cache mesmo sem SW (ajuda o navegador a servi-la offline)
   try{
-    const c=await caches.open('edgecontrol-v1');
+    const c=await caches.open('edgecontrol-v2');
     await c.add(location.href.split('#')[0]).catch(()=>{});
   }catch(e){}
   try{
@@ -4281,6 +4454,12 @@ function rpOperationals(o){
   (raw||[]).forEach(x=>{const n=rpClean(x&&typeof x==='object'?(x.name??x.label??''):x),k=n.toUpperCase();if(n&&!seen.has(k)){seen.add(k);out.push(n);}});
   return out;
 }
+function rpEmotion(o){
+  const raw=o&&(Array.isArray(o.emotions)?o.emotions:(o.emotion?[o.emotion]:[]));
+  const out=[],seen=new Set();
+  (raw||[]).forEach(x=>{const n=rpClean(x&&typeof x==='object'?(x.name??x.label??''):x),k=n.toUpperCase();if(n&&!seen.has(k)){seen.add(k);out.push(n);}});
+  return out;
+}
 /* período a partir de um preset (custom devolve o que veio) */
 function rpRange(preset,from,to){
   const t=rpToday(),d=rpParse(t);
@@ -4311,7 +4490,7 @@ function rpMetrics(ops,capitalStart){
     tradedDays:0,positiveDays:0,negativeDays:0,flatDays:0,avgDayNet:0,
     bestDay:null,worstDay:null,bestType:null,worstType:null,bestWd:null,worstWd:null,bestHour:null,worstHour:null,
     first:ops[0]||null,last:ops[ops.length-1]||null};
-  const tmap=new Map(),omap=new Map(),dmap=new Map(),hmap=new Map();
+  const tmap=new Map(),omap=new Map(),emap=new Map(),dmap=new Map(),hmap=new Map();
   const wd=Array.from({length:7},(_,i)=>({i,n:0,w:0,l:0,net:0}));
   let run=capitalStart||0,peak=run,dd=0,cs=0,csT='',mw=0,ml=0;
   ops.forEach(o=>{
@@ -4334,6 +4513,11 @@ function rpMetrics(ops,capitalStart){
       if(!omap.has(name))omap.set(name,{operational:name,n:0,w:0,l:0,d:0,net:0,vol:0});
       const O=omap.get(name);O.n++;O.vol+=v;O.net+=rpNet(o);
       if(r==='WIN')O.w++;else if(r==='LOSS')O.l++;else O.d++;
+    });
+    rpEmotion(o).forEach(name=>{
+      if(!emap.has(name))emap.set(name,{emotion:name,n:0,w:0,l:0,d:0,net:0,vol:0});
+      const E=emap.get(name);E.n++;E.vol+=v;E.net+=rpNet(o);
+      if(r==='WIN')E.w++;else if(r==='LOSS')E.l++;else E.d++;
     });
     const dk=o.date||'';
     if(!dmap.has(dk))dmap.set(dk,{date:dk,n:0,w:0,l:0,d:0,net:0});
@@ -4376,6 +4560,8 @@ function rpMetrics(ops,capitalStart){
   M.byType=[...tmap.values()].map(t=>({...t,wr:(t.w+t.l)>0?t.w/(t.w+t.l)*100:0,avgt:t.n?t.vol/t.n:0}))
             .sort((a,b)=>b.net-a.net);
   M.byOperational=[...omap.values()].map(t=>({...t,wr:(t.w+t.l)>0?t.w/(t.w+t.l)*100:0,avgt:t.n?t.vol/t.n:0}))
+            .sort((a,b)=>b.net-a.net);
+  M.byEmotion=[...emap.values()].map(t=>({...t,wr:(t.w+t.l)>0?t.w/(t.w+t.l)*100:0,avgt:t.n?t.vol/t.n:0}))
             .sort((a,b)=>b.net-a.net);
   M.bestType=M.byType[0]||null;
   M.worstType=M.byType.length>1?M.byType[M.byType.length-1]:null;
@@ -4441,6 +4627,15 @@ function rpInsights(M,ctx){
       d:`${bt.n} operação(ões), ${rpPct(bt.wr)} de acerto e ${rpMoney(bt.net)} de resultado.`+
         (wt?` Na outra ponta ficou ${wt.asset||wt.type}, com ${rpMoney(wt.net)} em ${wt.n} operação(ões) — ${wt.net<0?'ponto de atenção':'ainda positivo, mas mais fraco'}.`:''),
       });
+  }
+  if(M.byEmotion&&M.byEmotion.length>=2){
+    const be=M.byEmotion[0],we=M.byEmotion[M.byEmotion.length-1];
+    out.push({ic:'🧠',c:we.net<0?'w':'g',
+      t:`Estado emocional: melhor com “${be.emotion}”, pior com “${we.emotion}”`,
+      d:`Com “${be.emotion}”: ${be.n} operação(ões), acerto de ${rpPct(be.wr)} e resultado de ${rpMoney(be.net)}. `+
+        `Com “${we.emotion}”: ${we.n} operação(ões) e ${rpMoney(we.net)}. `+
+        (we.net<0?'Quando perceber esse estado chegando, considere ficar de fora — proteger o capital também é operar.':
+                 'Os dois estados fecharam positivos; siga registrando para a amostra crescer.')});
   }
   if(M.tradedDays>0){
     const posRate=M.positiveDays/M.tradedDays*100;
@@ -5059,12 +5254,14 @@ function rptSectionCards(m,urls){
     }).join('');
     const asset=rpAsset(o);
     const opers=rpOperationals(o);
+    const emos=rpEmotion(o);
     const plan=o.plan==='yes'?'Sim':o.plan==='no'?'Não':'';
     const video=o.yt?`<a href="${escHtml(o.yt)}" target="_blank" rel="noopener">Abrir vídeo ↗</a>`:'';
     const fields=[
       rptOpField('Ativo / Par',`${escHtml(asset||'')}${o.usd?` <span class="rmut">· ${rpUSD(o.usd)}</span>`:''}`),
       rptOpField('Direção',escHtml(rpDirection(o)||'')),
       rptOpField('Operacionais',escHtml(opers.join(', '))),
+      rptOpField('Estado emocional',escHtml(emos.join(', '))),
       rptOpField('Plano',plan?`<span class="${o.plan==='yes'?'rpos':'rneg'}">${plan}</span>`:''),
       rptOpField('Vídeo',video)
     ].filter(Boolean).join('');
@@ -5903,7 +6100,7 @@ function chartsRefresh(){ if(isChartsActive()) renderCharts(); }
 /* ══════════════════════════════════════
    INIT
 ══════════════════════════════════════ */
-var EC_BUILD='2026-09-18.1-auditoria';   /* digite EC_BUILD no console p/ ver a versão */
+var EC_BUILD='2026-09-18.2-didatico';   /* digite EC_BUILD no console p/ ver a versão */
 async function init(){
   console.info('EdgeControl build: '+EC_BUILD);
   load();

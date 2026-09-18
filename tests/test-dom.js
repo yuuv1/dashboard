@@ -272,6 +272,32 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   ok(ev("jsStr('x')") === '&quot;x&quot;', 'jsStr produz literal JS escapado para HTML');
   ev('S.operations=[];');
 
+  /* ── emoções, circuit breaker, mão pesada e leitura didática ────── */
+  ok(!!d.getElementById('opEmotions') && !!d.getElementById('opEmotionNew'),
+     'modal de operação tem o campo de estado emocional com criação rápida');
+  ok(!!d.getElementById('sMaxLoss') && !!d.getElementById('sMaxHand'),
+     'configurações expõem alerta de losses seguidos e limite de mão');
+  ok(!!d.getElementById('anEMC') && !!d.getElementById('anInsights'),
+     'Analytics tem gráfico por emoção e cartão de leitura didática');
+  ok(!!d.getElementById('emotionSettingsList'), 'configurações têm a gestão do catálogo de emoções');
+  ev("openNewOpModal();document.getElementById('opDate').value='2026-03-02';document.getElementById('opTime').value='10:00';document.getElementById('opVal').value='25';document.getElementById('opRes').value='WIN';document.getElementById('opAsset').value='EUR/USD';");
+  ev("renderEmotionChecks(['Calmo']);");
+  ev("saveOp();");
+  ok(ev("opEmotions(S.operations[S.operations.length-1]).join(',')") === 'Calmo',
+     'emoção marcada no modal é salva junto com a operação');
+  ev("S.settings.maxLosses=2;S.settings.currentCapital=1000;");
+  ev(`var _mkL=(id,time)=>({id,date:'2026-03-02',time,value:10,result:'LOSS',usd:2,asset:'',direction:'',type:'',operationals:[],emotions:[],reason:'',plan:'',img:'',yt:'',notes:'',shots:[],createdAt:''});
+      S.operations.push(_mkL('cb1','11:00'));S.operations.push(_mkL('cb2','11:30'));`);
+  w.updateDash();
+  ok(/CIRCUIT BREAKER/.test(d.getElementById('alertBar').textContent),
+     'circuit breaker aparece no dashboard ao atingir o limite de losses seguidos');
+  w.updateAn();
+  ok(d.getElementById('anInsights').textContent.length > 0,
+     'Analytics exibe a leitura didática dos números');
+  ev("RPT.preset='tudo';RPT.cardMode='all';");
+  await fresh(() => w.rptRender());
+  ok(/Estado emocional/.test(txt()), 'ficha da operação no relatório mostra o estado emocional');
+
   await w.importData({ target: { files: [{ text: async () => correctedAiBackupText }], value: 'backup.json' } });
   ok(ev("S.operations.length===50 && S.assets.includes('EUR/GBP') && S.operationals.includes('Fibonacci')"),
      'backup corrigido da IA importa as 50 operações, ativos e operacionais');

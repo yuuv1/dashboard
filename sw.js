@@ -1,5 +1,5 @@
 /* EdgeControl SW */
-const CACHE='edgecontrol-v1';
+const CACHE='edgecontrol-v2';
 self.addEventListener('install',e=>self.skipWaiting());
 self.addEventListener('activate',e=>e.waitUntil(self.clients.claim()));
 self.addEventListener('fetch',e=>{
