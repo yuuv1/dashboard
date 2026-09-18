@@ -298,6 +298,21 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   await fresh(() => w.rptRender());
   ok(/Estado emocional/.test(txt()), 'ficha da operação no relatório mostra o estado emocional');
 
+  /* ── faixa de resultados (ticker no topo) ───────────────────────── */
+  ok(!!d.getElementById('ticker') && !!d.getElementById('tickerInner'),
+     'a faixa de resultados (ticker) existe no topo da tela');
+  ok(!!d.getElementById('tickerToggle') && !!d.getElementById('tickerSpeed'),
+     'configurações têm o interruptor e a velocidade da faixa');
+  w.updateDash();
+  ok(d.querySelectorAll('#tickerInner .tk-item').length > 0,
+     'ticker exibe blocos com as operações registradas');
+  ev("S.settings.tickerOn=false;renderTicker();");
+  ok(d.getElementById('ticker').style.display === 'none',
+     'ticker fica oculto quando desligado nas configurações');
+  ev("S.settings.tickerOn=true;S.settings.tickerSpeed=60;renderTicker();syncTickerUI();");
+  ok(ev("document.getElementById('tickerSpeedVal').textContent") === '60 px/s',
+     'velocidade da faixa é persistida e refletida no controle');
+
   await w.importData({ target: { files: [{ text: async () => correctedAiBackupText }], value: 'backup.json' } });
   ok(ev("S.operations.length===50 && S.assets.includes('EUR/GBP') && S.operationals.includes('Fibonacci')"),
      'backup corrigido da IA importa as 50 operações, ativos e operacionais');

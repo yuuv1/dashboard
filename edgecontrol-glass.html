@@ -415,6 +415,22 @@ textarea.fi{resize:vertical;min-height:70px;}
 .preset-btn:hover{background:var(--surf);color:var(--white);transform:translateY(-1px);}
 .preset-btn.sel{border-color:color-mix(in srgb,var(--accent) 45%,transparent);background:color-mix(in srgb,var(--accent) 10%,transparent);color:var(--accent);box-shadow:0 3px 12px color-mix(in srgb,var(--accent) 18%,transparent);}
 .preset-strip{height:5px;border-radius:3px;width:100%;margin-top:2px;}
+/* ══ FAIXA DE RESULTADOS (ticker no topo) ══ */
+.ticker{flex-shrink:0;height:38px;margin:9px 0 0;position:relative;overflow:hidden;border-radius:12px;
+  background:var(--card);border:1px solid var(--border);box-shadow:var(--sh),inset 0 1px 0 var(--glass-inset);}
+.ticker::before,.ticker::after{content:'';position:absolute;top:0;bottom:0;width:46px;z-index:2;pointer-events:none;}
+.ticker::before{left:0;background:linear-gradient(90deg,var(--bg),transparent);}
+.ticker::after{right:0;background:linear-gradient(-90deg,var(--bg),transparent);}
+.ticker-inner{display:inline-flex;align-items:center;height:100%;white-space:nowrap;will-change:transform;gap:10px;}
+.ticker-inner:hover{animation-play-state:paused;}
+@keyframes tkScroll{from{transform:translateX(0);}to{transform:translateX(-50%);}}
+.tk-item{display:inline-flex;align-items:center;gap:7px;padding:0 14px;height:28px;border-radius:9px;
+  font-size:22px;font-weight:700;line-height:1;color:#fff;flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,.18);}
+.tk-item.win{background:var(--green);}
+.tk-item.loss{background:var(--red);}
+.tk-item.tk-empty{background:transparent;box-shadow:none;color:var(--lgray);font-size:14px;font-weight:600;}
+.tk-item .tk-v{font-weight:800;}
+.tk-item .tk-mute{color:var(--dim);font-weight:500;}
 .speed-row{display:flex;align-items:center;gap:9px;margin-bottom:12px;}
 .speed-lbl{font-size:10px;color:var(--lgray);font-weight:600;white-space:nowrap;}
 .speed-val{font-size:11px;font-weight:700;color:var(--accent);min-width:32px;text-align:right;}
@@ -1605,6 +1621,8 @@ body.rpt-open{overflow:hidden;}
     </div>
   </header>
 
+  <div class="ticker" id="ticker" title="Faixa de resultados: suas últimas operações desfilando no topo"><div class="ticker-inner" id="tickerInner"></div></div>
+
   <div id="content">
 
     <!-- DASHBOARD -->
@@ -1893,6 +1911,26 @@ body.rpt-open{overflow:hidden;}
               <button class="btn-o xs" onclick="addEmotionSetting()">＋ Adicionar</button>
             </div>
             <div class="cfg-list" id="emotionSettingsList"></div>
+          </div>
+
+          <div class="set-card">
+            <div class="set-tit">📺 Faixa de Resultados</div>
+            <div class="toggle-row">
+              <label class="tgl">
+                <input type="checkbox" id="tickerToggle" onchange="tickerToggleChange()">
+                <div class="tgl-track"></div>
+                <div class="tgl-thumb"></div>
+              </label>
+              <span style="font-size:12px;font-weight:600;color:var(--white);">Mostrar faixa no topo</span>
+            </div>
+            <div style="font-size:10px;font-weight:700;color:var(--lgray);text-transform:uppercase;letter-spacing:.7px;margin-bottom:7px;">Velocidade da faixa</div>
+            <div class="speed-row">
+              <span class="speed-lbl">🐢 Lento</span>
+              <input type="range" class="rb-slider" id="tickerSpeed" min="10" max="100" step="5" value="40" oninput="tickerSpeedChange(this)">
+              <span class="speed-lbl">⚡ Rápido</span>
+              <span class="speed-val" id="tickerSpeedVal">40 px/s</span>
+            </div>
+            <div style="font-size:10px;color:var(--dim);line-height:1.55;margin-top:8px;">Os resultados das suas operações desfilam no topo, como a faixa de preços dos terminais de trading. Passe o mouse sobre um bloco para pausar e ver os detalhes (direção e emoções).</div>
           </div>
 
           <div class="set-card">
@@ -2529,7 +2567,7 @@ function makeInitialState(){
   return {
     profile:{name:'Trader',avatar:'',avatarData:'',logo:''},
     settings:{initialCapital:1000,currentCapital:1000,usdRate:5,stopLoss:5,target:2.5,
-      maxLosses:3,maxHand:10},
+      maxLosses:3,maxHand:10,tickerOn:true,tickerSpeed:40},
     metal:{on:true,preset:'platinum',speed:4.5,colors:[...PRESETS[0].colors]},
     theme:'default',bg:{on:true,opacity:26},assets:[...DEFAULT_ASSETS],operationals:[],
     emotions:[...DEFAULT_EMOTIONS],operations:[],cp:'all'
@@ -2547,6 +2585,8 @@ function migrateState(raw){
   delete out.rainbow;
   if(!Array.isArray(out.metal.colors)||out.metal.colors.length<2) out.metal.colors=[...PRESETS[0].colors];
   if(!(out.metal.speed>0)) out.metal.speed=4.5;
+  if(typeof out.settings.tickerOn!=='boolean') out.settings.tickerOn=true;
+  if(!(out.settings.tickerSpeed>0)) out.settings.tickerSpeed=40;
   if(!out.theme) out.theme='default';
   out.bg=raw.bg&&typeof raw.bg==='object'?{...base.bg,...raw.bg}:{...base.bg};
   const rate=Number(out.settings.usdRate)||1;
@@ -2951,7 +2991,7 @@ function loadSetForm(){
   document.getElementById('sTgt').value=S.settings.target;
   document.getElementById('sMaxLoss').value=S.settings.maxLosses||3;
   document.getElementById('sMaxHand').value=S.settings.maxHand||0;
-  prevSAv();prevSLogo();updSetPrev();updSum();renderOperationalSettings();renderEmotionSettings();
+  prevSAv();prevSLogo();updSetPrev();updSum();renderOperationalSettings();renderEmotionSettings();syncTickerUI();
 }
 function updSetPrev(){
   const c=parseFloat(document.getElementById('sCurC').value)||0;
@@ -3116,6 +3156,56 @@ function assetPerformance(ops){return performanceBins(ops,o=>opAsset(o),true);}
 function operationalPerformance(ops){return performanceBins(ops,opOperationals,false);}
 function directionPerformance(ops){return performanceBins(ops,o=>opDirection(o),false);}
 function emotionPerformance(ops){return performanceBins(ops,opEmotions,false);}
+
+/* ══════════════════════════════════════
+   FAIXA DE RESULTADOS (ticker no topo)
+══════════════════════════════════════ */
+function renderTicker(){
+  const wrap=document.getElementById('ticker'), inner=document.getElementById('tickerInner');
+  if(!wrap||!inner) return;
+  const on=S.settings.tickerOn!==false;
+  if(!on){ wrap.style.display='none'; return; }
+  wrap.style.display='block';
+  const ops=[...S.operations].sort((a,b)=>(b.date||'').localeCompare(a.date||'')||(b.time||'').localeCompare(a.time||'')).slice(0,40);
+  let html='';
+  if(!ops.length){
+    html='<span class="tk-item tk-empty">Sem operações ainda — registre a primeira.</span>';
+  }else{
+    const seg=ops.map(o=>{
+      const w=o.result==='WIN';
+      const dd=(o.date||'').slice(8,10)+'/'+(o.date||'').slice(5,7);
+      const dir=opDirection(o)||'—';
+      const emos=opEmotions(o);
+      const tip=escHtml(`${dd} ${o.time||''} · ${dir} · ${w?'WIN':'LOSS'}${emos.length?' · '+emos.join(', '):''}`);
+      return `<span class="tk-item ${w?'win':'loss'}" title="${tip}">${dd} ${escHtml(dir)} · ${w?'WIN':'LOSS'} <span class="tk-v">${w?'+':'-'}${fmtBRL(o.value)}</span></span>`;
+    }).join('');
+    html=seg+seg;
+  }
+  inner.innerHTML=html;
+  inner.style.animation='none';
+  void inner.offsetWidth;
+  const speed=(S.settings.tickerSpeed>0)?S.settings.tickerSpeed:40;
+  const w=inner.scrollWidth;
+  const dur=w>0?((w/2)/speed):20;
+  inner.style.animation=`tkScroll ${dur}s linear infinite`;
+}
+function tickerToggleChange(){
+  const t=document.getElementById('tickerToggle');
+  S.settings.tickerOn=!!(t&&t.checked);
+  renderTicker(); save();
+}
+function tickerSpeedChange(el){
+  const v=parseInt(el.value)||40;
+  S.settings.tickerSpeed=v;
+  const out=document.getElementById('tickerSpeedVal'); if(out) out.textContent=v+' px/s';
+  renderTicker(); save();
+}
+function syncTickerUI(){
+  const t=document.getElementById('tickerToggle');
+  if(t) t.checked=S.settings.tickerOn!==false;
+  const s=document.getElementById('tickerSpeed');
+  if(s){ s.value=S.settings.tickerSpeed||40; const out=document.getElementById('tickerSpeedVal'); if(out) out.textContent=(S.settings.tickerSpeed||40)+' px/s'; }
+}
 
 /* ── catálogo de estados emocionais (mesmo padrão dos operacionais) ── */
 function rememberEmotion(value){
@@ -3768,7 +3858,7 @@ function updateDash(){
   document.getElementById('stWL2').textContent=fmtBRL(wl);
   const validDates=ops.map(o=>o.date).filter(Boolean).sort();
   document.getElementById('statsRng').textContent=validDates.length?`${validDates[0]} → ${validDates[validDates.length-1]}`:'—';
-  renderRec(ops);chartsRefresh();badge();
+  renderRec(ops);chartsRefresh();badge();renderTicker();
 }
 function renderRec(ops){
   const c=document.getElementById('recOps'),r=chronoOps(ops).reverse().slice(0,5);
@@ -4253,7 +4343,7 @@ function buildManifest(){
    navegador guarda a página em cache. */
 const SW_FILENAME='sw.js';
 const SW_SRC=`/* EdgeControl SW */
-const CACHE='edgecontrol-v2';
+const CACHE='edgecontrol-v3';
 self.addEventListener('install',e=>self.skipWaiting());
 self.addEventListener('activate',e=>e.waitUntil(self.clients.claim()));
 self.addEventListener('fetch',e=>{
@@ -4348,7 +4438,7 @@ async function initPWA(){
   if(!('serviceWorker' in navigator)){ pwaState='unsupported'; paintPWA(); return; }
   // guarda a página no cache mesmo sem SW (ajuda o navegador a servi-la offline)
   try{
-    const c=await caches.open('edgecontrol-v2');
+    const c=await caches.open('edgecontrol-v3');
     await c.add(location.href.split('#')[0]).catch(()=>{});
   }catch(e){}
   try{
@@ -6100,7 +6190,7 @@ function chartsRefresh(){ if(isChartsActive()) renderCharts(); }
 /* ══════════════════════════════════════
    INIT
 ══════════════════════════════════════ */
-var EC_BUILD='2026-09-18.2-didatico';   /* digite EC_BUILD no console p/ ver a versão */
+var EC_BUILD='2026-09-18.3-ticker';   /* digite EC_BUILD no console p/ ver a versão */
 async function init(){
   console.info('EdgeControl build: '+EC_BUILD);
   load();
