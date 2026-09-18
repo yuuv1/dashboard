@@ -257,6 +257,21 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
      'alternar na barra volta para o modo padrão (PC)');
   w.closeReportView();
 
+  /* ── regressão: ordem cronológica e ids maliciosos de backup ────────── */
+  const q = 'String.fromCharCode(39)'; // aspa simples sem quebrar o eval
+  ev(`var _mk=(id,date,time,result)=>({id,date,time,value:10,result,usd:2,asset:'',direction:'',type:'',operationals:[],reason:'',plan:'',img:'',yt:'',notes:'',shots:[],createdAt:''});
+      S.operations=[_mk('a','2026-01-01','09:00','WIN'),_mk('b'+${q}+'x','2026-01-05','10:00','LOSS'),_mk('c','2026-01-03','11:00','WIN')];`);
+  ok(ev("chronoOps(S.operations).map(o=>o.id).join('|')") === "a|c|b'x",
+     'chronoOps ordena por data/hora independentemente da ordem de inserção');
+  w.renderOps();
+  const tbHtml = d.getElementById('opsTb').innerHTML;
+  ok(tbHtml.includes('openDet(&quot;') && !tbHtml.includes("openDet('b"),
+     'ids com aspas vindos de backup são escapados no onclick da tabela (sem injeção)');
+  ok(/2026-01-05[\s\S]*?2026-01-03[\s\S]*?2026-01-01/.test(d.getElementById('opsTb').textContent),
+     'lista de operações sai da mais recente para a mais antiga (ordem cronológica)');
+  ok(ev("jsStr('x')") === '&quot;x&quot;', 'jsStr produz literal JS escapado para HTML');
+  ev('S.operations=[];');
+
   await w.importData({ target: { files: [{ text: async () => correctedAiBackupText }], value: 'backup.json' } });
   ok(ev("S.operations.length===50 && S.assets.includes('EUR/GBP') && S.operationals.includes('Fibonacci')"),
      'backup corrigido da IA importa as 50 operações, ativos e operacionais');

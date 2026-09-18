@@ -2776,12 +2776,22 @@ function load(){
   S=migrateState(raw);
   ensureChartState();
 }
+let _saveFailWarned=false;
 function save(){
   try{
     localStorage.setItem('ec7',JSON.stringify(S));
+    _saveFailWarned=false;
     const e=document.getElementById('sumSync');
     if(e) e.textContent=new Date().toLocaleString('pt-BR');
-  }catch(e){}
+  }catch(e){
+    /* QuotaExceededError: o armazenamento encheu (ex.: avatar muito grande).
+       Antes o erro era engolido em silêncio e o usuário perdia dados sem saber. */
+    if(!_saveFailWarned){
+      _saveFailWarned=true;
+      try{ toast('⚠️ Não consegui salvar: armazenamento do navegador cheio. Faça um backup (⬇ Exportar) e reduza fotos/prints.','e'); }catch(err){}
+    }
+    console.error('save() falhou:',e);
+  }
 }
 
 /* ══════════════════════════════════════
@@ -2814,14 +2824,46 @@ function openProfileModal(){
   document.getElementById('pAvFN').textContent='Nenhum';
   updProfPrev(); showMod('profileModal');
 }
+/* Avatar grande estoura o localStorage (~5 MB) e aí NADA mais salva.
+   Arquivos acima de 400 KB são reduzidos para no máximo 384 px antes de guardar. */
+function shrinkAvatar(file,maxDim=384,limitKB=400){
+  return new Promise(res=>{
+    if(!file||file.size<=limitKB*1024){
+      const r=new FileReader();
+      r.onload=e=>res(e.target.result);
+      r.onerror=()=>res('');
+      r.readAsDataURL(file);
+      return;
+    }
+    const url=URL.createObjectURL(file);
+    const im=new Image();
+    im.onload=()=>{
+      let w=im.naturalWidth,h=im.naturalHeight;
+      const k=Math.min(1,maxDim/Math.max(w,h));
+      w=Math.max(1,Math.round(w*k));h=Math.max(1,Math.round(h*k));
+      const c=document.createElement('canvas');c.width=w;c.height=h;
+      c.getContext('2d').drawImage(im,0,0,w,h);
+      URL.revokeObjectURL(url);
+      res(c.toDataURL('image/jpeg',.85));
+    };
+    im.onerror=()=>{
+      URL.revokeObjectURL(url);
+      const r=new FileReader();
+      r.onload=e=>res(e.target.result);
+      r.onerror=()=>res('');
+      r.readAsDataURL(file);
+    };
+    im.src=url;
+  });
+}
 function handleAvUp(ev,ctx){
   const f=ev.target.files[0];if(!f)return;
-  const r=new FileReader();
-  r.onload=e=>{
-    S.profile.avatarData=e.target.result; S.profile.avatar='';
-    if(ctx==='p'){document.getElementById('pAv').value='';document.getElementById('pAvFN').textContent=f.name;document.getElementById('pModAv').src=e.target.result;}
-    if(ctx==='s'){document.getElementById('sAv').value='';document.getElementById('sAvFN').textContent=f.name;document.getElementById('sAvPrev').src=e.target.result;}
-  };r.readAsDataURL(f);
+  shrinkAvatar(f).then(data=>{
+    if(!data) return;
+    S.profile.avatarData=data; S.profile.avatar='';
+    if(ctx==='p'){document.getElementById('pAv').value='';document.getElementById('pAvFN').textContent=f.name;document.getElementById('pModAv').src=data;}
+    if(ctx==='s'){document.getElementById('sAv').value='';document.getElementById('sAvFN').textContent=f.name;document.getElementById('sAvPrev').src=data;}
+  });
 }
 function updProfPrev(){
   const n=document.getElementById('pName').value||'Trader',a=document.getElementById('pAv').value,l=document.getElementById('pLogo').value;
@@ -2976,7 +3018,7 @@ function addOperationalSetting(){
   const before=(S.operationals||[]).length,name=rememberOperational(raw);
   if(input) input.value='';
   renderOperationalSettings();renderOperationalChecks();save();
-  toast(before===(S.operationals||[]).length?`“${name}” já está na lista.`:'Operacional adicionado!','s');
+  toast(before===(S.operationals||[]).length?`“${escHtml(name)}” já está na lista.`:'Operacional adicionado!','s');
 }
 function renameOperational(index){
   const old=(S.operationals||[])[index],input=document.getElementById('sOperational_'+index);
@@ -3024,6 +3066,16 @@ function directionPerformance(ops){return performanceBins(ops,o=>opDirection(o),
 ══════════════════════════════════════ */
 function localInputDate(d){
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+/* Ordem cronológica estável (data, hora, criação). S.operations fica em ordem
+   de inserção e pode sair de ordem após editar datas ou importar backups —
+   sequência de wins/losses, listas e gráficos dependem da ordem certa. */
+function chronoOps(list){
+  return [...(list||[])].sort((a,b)=>{
+    const x=(a.date||'')+' '+(a.time||'')+' '+(a.createdAt||'');
+    const y=(b.date||'')+' '+(b.time||'')+' '+(b.createdAt||'');
+    return x<y?-1:x>y?1:0;
+  });
 }
 function openNewOpModal(){
   curId=null;const now=new Date();
@@ -3163,7 +3215,7 @@ function editOp(id){
   showMod('newOpModal'); initShotZone();
 }
 function renderOps(filt){
-  const ops=filt!==undefined?filt:[...S.operations].reverse();
+  const ops=filt!==undefined?filt:chronoOps(S.operations).reverse();
   const tb=document.getElementById('opsTb');
   if(!ops.length){tb.innerHTML=`<tr><td colspan="10" style="text-align:center;padding:28px;color:var(--lgray);"><div style="font-size:22px;margin-bottom:5px;">📋</div>Nenhuma operação.</td></tr>`;return;}
   tb.innerHTML=ops.map((op,i)=>{
@@ -3173,7 +3225,7 @@ function renderOps(filt){
     const med=[ns?`📸${ns}`:'',op.img?'🖼':'',op.yt?'🎬':''].filter(Boolean).join(' ')||'—';
     const rs=op.reason?(op.reason.length>24?op.reason.slice(0,24)+'…':op.reason):'—';
     const ctx=`${assetBadgeHTML(asset)}${direction?` <span style="white-space:nowrap;">${directionBadgeHTML(direction)}</span>`:''}<div style="margin-top:4px;">${operationalBadgesHTML(opOperationals(op),true)}</div>`;
-    return `<tr onclick="openDet('${op.id}')">
+    return `<tr onclick="openDet(${jsStr(op.id)})">
       <td style="color:var(--dim);font-size:11px;">${i+1}</td>
       <td style="font-size:12px;">${escHtml(op.date||'—')}<br><span style="color:var(--dim);font-size:10px;">${escHtml(op.time||'—')}</span></td>
       <td class="td-money">${fmtBRL(op.value)}</td>
@@ -3182,15 +3234,15 @@ function renderOps(filt){
       <td style="max-width:135px;color:var(--lgray);font-size:11px;" title="${escHtml(op.reason||'')}">${escHtml(rs)}</td>
       <td>${pb}</td><td style="font-size:13px;">${med}</td>
       <td><div style="display:flex;gap:6px;">
-        <span onclick="event.stopPropagation();editOp('${op.id}')" style="cursor:pointer;font-size:13px;">✏️</span>
-        <span onclick="event.stopPropagation();curId='${op.id}';delOp()" style="cursor:pointer;font-size:13px;">🗑️</span>
+        <span onclick="event.stopPropagation();editOp(${jsStr(op.id)})" style="cursor:pointer;font-size:13px;">✏️</span>
+        <span onclick="event.stopPropagation();curId=${jsStr(op.id)};delOp()" style="cursor:pointer;font-size:13px;">🗑️</span>
       </div></td>
     </tr>`;
   }).join('');
 }
 function applyFilter(){
   const d=document.getElementById('fDate').value,r=document.getElementById('fRes').value,t=document.getElementById('fType').value,p=document.getElementById('fPlan').value;
-  let f=[...S.operations].reverse();
+  let f=chronoOps(S.operations).reverse();
   if(d)f=f.filter(o=>o.date===d);if(r)f=f.filter(o=>o.result===r);if(t)f=f.filter(o=>opAsset(o)===t);if(p)f=f.filter(o=>o.plan===p);
   renderOps(f);
 }
@@ -3376,6 +3428,9 @@ async function refreshDetShots(){
   box.innerHTML=parts.join('');
 }
 function escHtml(t){return String(t??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+/* string segura para handlers inline: JSON.stringify escapa para JavaScript e
+   escHtml protege o atributo HTML (ids vindos de backup podem conter aspas). */
+function jsStr(v){return escHtml(JSON.stringify(String(v??'')));}
 
 
 /* ══════════════════════════════════════
@@ -3435,7 +3490,9 @@ async function exportShotsZip(){
     for(let i=0;i<all.length;i++){
       const r=all[i];
       const op=(S.operations||[]).find(o=>opShotIds(o).includes(r.id));
-      const pre=op?`${op.date||'sem-data'}_${op.result}_${opAsset(op)||'sem-ativo'}`:'sem-operacao';
+      /* "/" (ex.: EUR/USD) viraria pasta dentro do zip — troca por hífen */
+      const safeAsset=(opAsset(op)||'sem-ativo').replace(/[\\/:*?"<>|]+/g,'-');
+      const pre=op?`${op.date||'sem-data'}_${op.result}_${safeAsset}`:'sem-operacao';
       const nm=`${String(i+1).padStart(3,'0')}_${pre}${r.note?'_'+r.note.slice(0,26).replace(/[^\w\s-]/g,'').trim().replace(/\s+/g,'-'):''}.jpg`;
       const blob=await shotBlob(r);
       if(!blob) throw new Error('Print sem dados: '+r.id);
@@ -3451,7 +3508,7 @@ async function exportShotsZip(){
     files.push({name:'_indice.txt',data:new TextEncoder().encode('EdgeControl — prints\n\n'+idx+'\n')});
     const blob=makeZip(files);
     const u=URL.createObjectURL(blob),a=document.createElement('a');
-    a.href=u;a.download=`edgecontrol_prints_${new Date().toISOString().slice(0,10)}.zip`;a.click();
+    a.href=u;a.download=`edgecontrol_prints_${localInputDate(new Date())}.zip`;a.click();
     setTimeout(()=>URL.revokeObjectURL(u),1200);
     toast(`${all.length} prints exportados!`,'s');
   }catch(e){ toast('Falha ao gerar o arquivo.','e'); }
@@ -3493,7 +3550,9 @@ function makeZip(files){
 ══════════════════════════════════════ */
 function updateDash(){
   const s=S.settings,ops=S.operations;
-  const today=new Date().toISOString().slice(0,10),tOps=ops.filter(o=>o.date===today);
+  /* "hoje" tem que ser a data LOCAL: toISOString() é UTC e, no fuso do Brasil,
+     entre 00:00 e 03:00 devolve o dia anterior — stop/meta/alertas saíam errados. */
+  const today=localInputDate(new Date()),tOps=ops.filter(o=>o.date===today);
   const profT=tOps.filter(o=>o.result==='WIN').reduce((a,o)=>a+o.value,0);
   const lossT=tOps.filter(o=>o.result==='LOSS').reduce((a,o)=>a+o.value,0);
   /* Meta e stop são % do capital do INÍCIO do dia (âncora), não do capital que já
@@ -3539,7 +3598,8 @@ function updateDash(){
   document.getElementById('stWL').textContent=`${wins}W / ${loss}L`;
   const pfEl=document.getElementById('stPF');pfEl.textContent=pf===Infinity?'∞':pf.toFixed(2);pfEl.style.color=pf>=1.5?PAL.up:pf>=1?PAL.warn:PAL.down;
   let streak=0,st='';
-  if(ops.length>0){st=ops[ops.length-1].result;for(let i=ops.length-1;i>=0;i--){if(ops[i].result===st)streak++;else break;}}
+  const chrono=chronoOps(ops);
+  if(chrono.length>0){st=chrono[chrono.length-1].result;for(let i=chrono.length-1;i>=0;i--){if(chrono[i].result===st)streak++;else break;}}
   document.getElementById('stStreak').textContent=streak>0?streak+'x':'—';
   document.getElementById('stStreak').style.color=st==='WIN'?PAL.up:st==='LOSS'?PAL.down:PAL.ink;
   document.getElementById('stStreakT').textContent=streak>0?(st==='WIN'?'🔥 Sequência de Wins':'❄️ Sequência de Losses'):'—';
@@ -3552,11 +3612,11 @@ function updateDash(){
   renderRec(ops);chartsRefresh();badge();
 }
 function renderRec(ops){
-  const c=document.getElementById('recOps'),r=[...ops].reverse().slice(0,5);
+  const c=document.getElementById('recOps'),r=chronoOps(ops).reverse().slice(0,5);
   if(!r.length){c.innerHTML=`<div style="text-align:center;padding:16px;color:var(--lgray);font-size:11px;"><div style="font-size:20px;margin-bottom:3px;">📭</div>Nenhuma operação</div>`;return;}
   c.innerHTML=r.map(op=>{
     const cl=op.result==='WIN'?PAL.up:PAL.down,sg=op.result==='WIN'?'+':'-',v=op.value;
-    return `<div class="ri" onclick="openDet('${op.id}')"><span style="font-size:13px;">${op.result==='WIN'?'✅':'❌'}</span><div class="ri-inf"><div class="ri-top">${escHtml(opAsset(op)||'—')} — ${escHtml(op.date||'—')}</div><div class="ri-bot">${op.reason?escHtml(op.reason.slice(0,22)+'…'):'—'}</div></div><div class="ri-val" style="color:${cl};">${sg}${fmtBRL(v)}</div></div>`;
+    return `<div class="ri" onclick="openDet(${jsStr(op.id)})"><span style="font-size:13px;">${op.result==='WIN'?'✅':'❌'}</span><div class="ri-inf"><div class="ri-top">${escHtml(opAsset(op)||'—')} — ${escHtml(op.date||'—')}</div><div class="ri-bot">${op.reason?escHtml(op.reason.slice(0,22)+'…'):'—'}</div></div><div class="ri-val" style="color:${cl};">${sg}${fmtBRL(v)}</div></div>`;
   }).join('');
 }
 
@@ -3573,7 +3633,7 @@ function setCP(p){S.cp=p;renderCharts();document.getElementById('btnW').classNam
    ANALYTICS
 ══════════════════════════════════════ */
 function updateAn(){
-  const ops=S.operations;
+  const ops=chronoOps(S.operations);   // curva de capital e gráficos em ordem cronológica
   const tI=ops.reduce((a,o)=>a+o.value,0),tG=ops.filter(o=>o.result==='WIN').reduce((a,o)=>a+o.value,0),tL=ops.filter(o=>o.result==='LOSS').reduce((a,o)=>a+o.value,0),net=tG-tL;
   document.getElementById('anI').textContent=fmtBRL(tI);document.getElementById('anG').textContent=fmtBRL(tG);document.getElementById('anL').textContent=fmtBRL(tL);
   const ne=document.getElementById('anN');ne.textContent=(net>=0?'+':'')+fmtBRL(net);ne.style.color=net>=0?PAL.up:PAL.down;
@@ -3643,7 +3703,7 @@ async function exportData(){
     const pack={__ec:3,exportedAt:new Date().toISOString(),state:S,shots:imgs};
     const b=new Blob([JSON.stringify(pack)],{type:'application/json'});
     const u=URL.createObjectURL(b),a=document.createElement('a');
-    a.href=u;a.download=`edgecontrol_${new Date().toISOString().slice(0,10)}.json`;a.click();
+    a.href=u;a.download=`edgecontrol_${localInputDate(new Date())}.json`;a.click();
     setTimeout(()=>URL.revokeObjectURL(u),1200);
     const failedTotal=new Set([...failed,...(legacyMigration.failed||[])].map(String)).size;
     const aviso=failedTotal?` (${failedTotal} print(s) não puderam ser lidos ou migrados)`:'';
@@ -5316,6 +5376,7 @@ function advHistogram(canvas,ops,P){
     plugins:[mediaLinha]});
 }
 /* 3. mapa de calor desenhado à mão (canvas 2D) — dia × hora */
+let heatRedraw=null,heatHooked=false;
 function advHeatmap(canvas,ops,P){
   if(!canvas) return null;
   const ctx=canvas.getContext('2d');
@@ -5351,8 +5412,12 @@ function advHeatmap(canvas,ops,P){
     }
   };
   desenha();
-  if(!canvas.__heatHook){canvas.__heatHook=true;window.addEventListener('resize',()=>{try{desenha();}catch(e){}});}
-  return {destroy(){}};
+  /* um único listener global de resize redesenha o mapa atual. Antes cada
+     montagem do relatório adicionava um listener novo, segurando canvases
+     mortos na memória (vazamento em sessões longas). */
+  heatRedraw=desenha;
+  if(!heatHooked){heatHooked=true;window.addEventListener('resize',()=>{try{if(heatRedraw)heatRedraw();}catch(e){}});}
+  return {destroy(){ if(heatRedraw===desenha) heatRedraw=null; }};
 }
 /* 4. média móvel: win rate (%) e profit factor (linhas em eixos separados) */
 function advRolling(canvas,ops,P){
@@ -5838,7 +5903,7 @@ function chartsRefresh(){ if(isChartsActive()) renderCharts(); }
 /* ══════════════════════════════════════
    INIT
 ══════════════════════════════════════ */
-var EC_BUILD='2026-09-17.3-relatorio';   /* digite EC_BUILD no console p/ ver a versão */
+var EC_BUILD='2026-09-18.1-auditoria';   /* digite EC_BUILD no console p/ ver a versão */
 async function init(){
   console.info('EdgeControl build: '+EC_BUILD);
   load();
