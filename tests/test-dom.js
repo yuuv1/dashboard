@@ -236,6 +236,83 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   ok(/Ativo \/ Par/.test(txt()) && /Breakout/.test(txt()) && /—/.test(txt()), 'relatório mostra contexto e travessão nos campos vazios');
   ok(!/NaN|undefined/.test(txt()), 'relatório com ativos/operacionais preenchidos e vazios não quebra');
 
+  /* ── regressão: scroll da visualização + modo de leitura no celular ── */
+  ok(!/#rscroll\{[^}]*display\s*:\s*flex/.test(html),
+     '#rscroll não usa flex (flex esticava a folha e impedia rolar o relatório)');
+  ok(/\.rpage\{[^}]*margin\s*:\s*0 auto/.test(html),
+     '.rpage centraliza com margin auto (altura natural -> rolagem funciona)');
+  const selRead = d.getElementById('rpRead');
+  ok(!!selRead && !!selRead.querySelector('option[value="pc"]') && !!selRead.querySelector('option[value="celular"]'),
+     'página do relatório tem seletor de Leitura (PC / celular)');
+  selRead.value = 'celular';
+  selRead.dispatchEvent(new w.Event('change'));
+  ok(ev("RPT.read==='celular' && S.report && S.report.read==='celular'"),
+     'leitura "celular" atualiza o estado e persiste no backup');
+  await fresh(() => w.rptOpen());
+  ok(d.getElementById('rview').getAttribute('data-rread') === 'celular',
+     'leitura celular aplica data-rread no relatório (vale para tela e PDF)');
+  ok(!!d.getElementById('rbarRead'), 'barra do relatório tem botão para alternar o modo de leitura');
+  ev('rptToggleRead()');
+  ok(ev("RPT.read==='pc'") && d.getElementById('rview').getAttribute('data-rread') === null,
+     'alternar na barra volta para o modo padrão (PC)');
+  w.closeReportView();
+
+  /* ── regressão: ordem cronológica e ids maliciosos de backup ────────── */
+  const q = 'String.fromCharCode(39)'; // aspa simples sem quebrar o eval
+  ev(`var _mk=(id,date,time,result)=>({id,date,time,value:10,result,usd:2,asset:'',direction:'',type:'',operationals:[],reason:'',plan:'',img:'',yt:'',notes:'',shots:[],createdAt:''});
+      S.operations=[_mk('a','2026-01-01','09:00','WIN'),_mk('b'+${q}+'x','2026-01-05','10:00','LOSS'),_mk('c','2026-01-03','11:00','WIN')];`);
+  ok(ev("chronoOps(S.operations).map(o=>o.id).join('|')") === "a|c|b'x",
+     'chronoOps ordena por data/hora independentemente da ordem de inserção');
+  w.renderOps();
+  const tbHtml = d.getElementById('opsTb').innerHTML;
+  ok(tbHtml.includes('openDet(&quot;') && !tbHtml.includes("openDet('b"),
+     'ids com aspas vindos de backup são escapados no onclick da tabela (sem injeção)');
+  ok(/2026-01-05[\s\S]*?2026-01-03[\s\S]*?2026-01-01/.test(d.getElementById('opsTb').textContent),
+     'lista de operações sai da mais recente para a mais antiga (ordem cronológica)');
+  ok(ev("jsStr('x')") === '&quot;x&quot;', 'jsStr produz literal JS escapado para HTML');
+  ev('S.operations=[];');
+
+  /* ── emoções, circuit breaker, mão pesada e leitura didática ────── */
+  ok(!!d.getElementById('opEmotions') && !!d.getElementById('opEmotionNew'),
+     'modal de operação tem o campo de estado emocional com criação rápida');
+  ok(!!d.getElementById('sMaxLoss') && !!d.getElementById('sMaxHand'),
+     'configurações expõem alerta de losses seguidos e limite de mão');
+  ok(!!d.getElementById('anEMC') && !!d.getElementById('anInsights'),
+     'Analytics tem gráfico por emoção e cartão de leitura didática');
+  ok(!!d.getElementById('emotionSettingsList'), 'configurações têm a gestão do catálogo de emoções');
+  ev("openNewOpModal();document.getElementById('opDate').value='2026-03-02';document.getElementById('opTime').value='10:00';document.getElementById('opVal').value='25';document.getElementById('opRes').value='WIN';document.getElementById('opAsset').value='EUR/USD';");
+  ev("renderEmotionChecks(['Calmo']);");
+  ev("saveOp();");
+  ok(ev("opEmotions(S.operations[S.operations.length-1]).join(',')") === 'Calmo',
+     'emoção marcada no modal é salva junto com a operação');
+  ev("S.settings.maxLosses=2;S.settings.currentCapital=1000;");
+  ev(`var _mkL=(id,time)=>({id,date:'2026-03-02',time,value:10,result:'LOSS',usd:2,asset:'',direction:'',type:'',operationals:[],emotions:[],reason:'',plan:'',img:'',yt:'',notes:'',shots:[],createdAt:''});
+      S.operations.push(_mkL('cb1','11:00'));S.operations.push(_mkL('cb2','11:30'));`);
+  w.updateDash();
+  ok(/CIRCUIT BREAKER/.test(d.getElementById('alertBar').textContent),
+     'circuit breaker aparece no dashboard ao atingir o limite de losses seguidos');
+  w.updateAn();
+  ok(d.getElementById('anInsights').textContent.length > 0,
+     'Analytics exibe a leitura didática dos números');
+  ev("RPT.preset='tudo';RPT.cardMode='all';");
+  await fresh(() => w.rptRender());
+  ok(/Estado emocional/.test(txt()), 'ficha da operação no relatório mostra o estado emocional');
+
+  /* ── faixa de resultados (ticker no topo) ───────────────────────── */
+  ok(!!d.getElementById('ticker') && !!d.getElementById('tickerInner'),
+     'a faixa de resultados (ticker) existe no topo da tela');
+  ok(!!d.getElementById('tickerToggle') && !!d.getElementById('tickerSpeed'),
+     'configurações têm o interruptor e a velocidade da faixa');
+  w.updateDash();
+  ok(d.querySelectorAll('#tickerInner .tk-item').length > 0,
+     'ticker exibe blocos com as operações registradas');
+  ev("S.settings.tickerOn=false;renderTicker();");
+  ok(d.getElementById('ticker').style.display === 'none',
+     'ticker fica oculto quando desligado nas configurações');
+  ev("S.settings.tickerOn=true;S.settings.tickerSpeed=60;renderTicker();syncTickerUI();");
+  ok(ev("document.getElementById('tickerSpeedVal').textContent") === '60 px/s',
+     'velocidade da faixa é persistida e refletida no controle');
+
   await w.importData({ target: { files: [{ text: async () => correctedAiBackupText }], value: 'backup.json' } });
   ok(ev("S.operations.length===50 && S.assets.includes('EUR/GBP') && S.operationals.includes('Fibonacci')"),
      'backup corrigido da IA importa as 50 operações, ativos e operacionais');
