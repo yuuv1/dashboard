@@ -12,6 +12,7 @@ cp -r ferramentas/_modelo ferramentas/minha-ferramenta
 1. Em `ferramentas/minha-ferramenta/ferramenta.json`:
    - `"id": "minha-ferramenta"` (letras, números, `-` e `_`);
    - `"ativa": true`;
+   - `"montagem"`: `"operacoes"`, `"analytics"`, `"ambos"` ou lista — onde a aba aparece;
    - `"nome"`, `"rotulo"`, `"icone"`, `"descricao"`, `"versao"` do seu jeito.
 2. Em `ferramentas/registro.json`, acrescente `{ "pasta": "minha-ferramenta" }`.
 3. Edite `index.js` (troque a constante `ID` para o mesmo valor do manifesto) e

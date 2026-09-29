@@ -3,6 +3,10 @@
 Esta é a pasta onde entra o **sistema de visualização complexa das operações**
 (estilo TradingView) dentro da catalogação de operações do EdgeControl.
 
+Ela já está configurada para aparecer em **dois lugares**: na página **Operações**
+(aba ao lado da tabela) e na página **Analytics** (aba ao lado dos painéis). Dá para
+mudar isso no campo `"montagem"` do `ferramenta.json`.
+
 O que está aqui hoje é um **painel de referência funcional**: ele já recebe os dados
 do app, desenha a linha de capital e as velas diárias, reage aos eventos e abre
 operações/prints. Serve de prova de que o caminho todo funciona e de exemplo para
@@ -33,6 +37,10 @@ o sistema real.
 
 4. Atualize `"versao"` no `ferramenta.json` e recarregue o app
    (ou use 🧩 → ⚙ na aba → **Recarregar**).
+
+> Se a sua pasta tiver muitos arquivos (libs, assets, fontes), pode jogar tudo aqui
+> dentro: o iframe usa a pasta como base, então os caminhos relativos continuam
+> valendo. Só caminhos **absolutos** (`/assets/…`) precisam virar relativos.
 
 > Nenhum arquivo do app precisa ser editado. Se o seu sistema quebrar, o app continua
 > igual — a ferramenta é carregada de forma isolada e preguiçosa.
@@ -86,7 +94,7 @@ Detalhes completos, formato dos objetos e regras de segurança: `ferramentas/LEI
 
 | Arquivo | Papel |
 |---|---|
-| `ferramenta.json` | manifesto (id, modo iframe, entrada, aba, ícone, versão) |
+| `ferramenta.json` | manifesto (id, modo iframe, entrada, ícone, versão e **onde aparece**: Operações + Analytics) |
 | `index.html` | painel de referência — **substituir pelo sistema real** |
 | `estilo.css` | estilos do painel — **substituir junto** |
 | `LEIA-ME.md` | este arquivo (pode manter ou apagar) |

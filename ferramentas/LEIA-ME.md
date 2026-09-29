@@ -47,7 +47,7 @@ Se o `registro.json` não existir, ele tenta apenas as pastas padrão
 | `script` | no modo script | JS que chama `EC.host.registrar(id,{mount,update,unmount})` |
 | `estilo` | opcional (script) | CSS carregado junto |
 | `nome`, `rotulo`, `descricao`, `versao`, `icone` | opcionais | textos da aba e do modal 🧩 (`rotulo` e `icone` aparecem na aba) |
-| `montagem` | opcional | onde aparece. Hoje só `"operacoes"` (página Operações) |
+| `montagem` | opcional | onde aparece: `"operacoes"`, `"analytics"`, `"ambos"` — ou lista `["operacoes","analytics"]`. Padrão: `["operacoes"]` |
 | `tela-cheia` | opcional | oferece o botão ⛶ (padrão `true`) |
 | `ativa` | opcional | `false` = registrada mas escondida (reativa pelo modal 🧩) |
 | `api-host` | opcional | versão da API que a ferramenta exige; se for maior que a do app, ela é **recusada** |
@@ -55,6 +55,14 @@ Se o `registro.json` não existir, ele tenta apenas as pastas padrão
 
 Manifesto inválido ⇒ a ferramenta é ignorada e o motivo fica em **🧩 → ⚙** (e no
 console como `[ECX] …`). O app segue normal.
+
+> **Sem `ferramenta.json`?** Se a pasta estiver listada no `registro.json` (ou for a
+> pasta reservada) e tiver um `index.html`, o hospedeiro carrega assim mesmo, no
+> padrão: **iframe + `index.html`, em Operações e Analytics**, com o nome da pasta
+> como rótulo. Fica um aviso em 🧩 → ⚙ dizendo que o manifesto não existe. Ou seja:
+> dá para simplesmente **jogar a pasta do sistema aqui dentro** e ver funcionando —
+> depois você cria o `ferramenta.json` para dar nome, versão, ícone e escolher onde
+> aparece.
 
 ## 3. Os dois modos
 
@@ -135,7 +143,7 @@ Ação no app:
 
 ```js
 {
-  api: 1, build: '2026-09-29.3-ecx-hospedeiro-v2', geradoEm: 'ISO',
+  api: 1, build: '<build do app>', geradoEm: 'ISO',
   capitalInicial: 1000,
   filtro: { data:'', resultado:'', ativo:'', plano:'' },
   operacoes: [ /* em ordem cronológica, com saldo acumulado */ ],
@@ -182,15 +190,25 @@ Cada operação normalizada:
 
 ## 5. Onde a ferramenta aparece
 
-Página **Operações**: acima dos filtros nasce uma barra de abas
-(`📋 Tabela` | `📈 <sua ferramenta>` | ⚙ | ⛶). Enquanto a visão for a tabela, nada
-muda no layout atual; ao abrir a aba, a tabela é escondida (não destruída) e a
-ferramenta monta em `#ecxHost`. Sair da página Operações desmonta a ferramenta e
-volta para a tabela automaticamente.
+São **dois pontos de montagem**, cada um com a sua barra de abas e o seu slot:
 
-O ⚙ abre o modal **🧩 Ferramentas**: lista o que está instalado, versão, modo, pasta,
-erros de carregamento, e permite **Abrir**, **Desativar/Ativar** e **Recarregar**
-(relê a pasta sem recarregar o app).
+| `montagem` | Página | Abas | Slot | O que é escondido ao abrir |
+|---|---|---|---|---|
+| `operacoes` | Operações | `#ecxTabs` | `#ecxSlot` → `#ecxHost` | `.ops-tbl` (a tabela) |
+| `analytics` | Analytics | `#ecxTabsAn` | `#ecxSlotAn` → `#ecxHostAn` | `.an-body` (os painéis) |
+
+Uma ferramenta pode aparecer nos dois (`"montagem": "ambos"`), mas **fica montada num
+só por vez**: abrir em Analytics desmonta a de Operações. Nada é destruído — o
+conteúdo original da página só é escondido (`display:none`) e volta ao fechar a aba.
+Sair da página desmonta a ferramenta e restaura a visão padrão automaticamente.
+
+O ⚙ abre o modal **🧩 Ferramentas**: lista o que está instalado, versão, modo, onde
+monta, pasta, erros de carregamento, e permite **Abrir em Operações**, **Abrir em
+Analytics**, **Desativar/Ativar** e **Recarregar** (relê a pasta sem recarregar o app).
+
+> Caminhos dentro da ferramenta são relativos à pasta dela (`./assets/app.js`,
+> `../ponte.js`). Se o seu sistema usa caminhos **absolutos** (`/assets/…`), avise:
+> nesse caso a pasta precisa ser servida na raiz, ou os caminhos viram relativos.
 
 ## 6. Segurança e limites
 

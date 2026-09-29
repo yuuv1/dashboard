@@ -25,9 +25,11 @@
     "script": { "type": "string", "description": "Obrigatório no modo script: arquivo JS que chama EC.host.registrar(id, {mount, update, unmount})." },
     "estilo": { "type": "string", "description": "Opcional no modo script: CSS carregado junto (caminhos relativos à pasta da ferramenta)." },
     "montagem": {
-      "type": "string",
-      "enum": ["operacoes"],
-      "description": "Onde a ferramenta aparece. Hoje só existe 'operacoes' (página Operações, ao lado da tabela)."
+      "oneOf": [
+        { "type": "string", "enum": ["operacoes", "analytics", "ambos"] },
+        { "type": "array", "items": { "type": "string", "enum": ["operacoes", "analytics", "ambos"] }, "minItems": 1 }
+      ],
+      "description": "Onde a ferramenta aparece: 'operacoes' (aba ao lado da tabela), 'analytics' (aba ao lado dos painéis) ou as duas. Aceita string ou lista; 'ambos' = todas. Padrão: ['operacoes']."
     },
     "tela-cheia": { "type": "boolean", "description": "Oferece o botão ⛶ de expandir (padrão: true)." },
     "ativa": { "type": "boolean", "description": "false = registrada mas escondida (dá para reativar no modal 🧩). Padrão: true." },

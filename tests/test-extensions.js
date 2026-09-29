@@ -52,10 +52,17 @@ ok(srcV1.indexOf('ecxInit(') < 0 && srcV1.indexOf('ECX_ROOT') < 0 && srcV1.index
   && srcV1.indexOf('ecx-slot') < 0 && srcV1.indexOf('ferramentas/') < 0,
   'v1 não recebeu nada do hospedeiro');
 ok(srcV1.indexOf("EC_BUILD='2026-09-18.3-ticker'") > 0, 'v1 mantém o build antigo');
-ok(srcV2.indexOf("EC_BUILD='2026-09-29.3-ecx-hospedeiro-v2'") > 0, 'v2 tem o build do hospedeiro');
+ok(srcV2.indexOf("EC_BUILD='2026-09-29.4-ecx-analytics-v2'") > 0, 'v2 tem o build do hospedeiro');
 
-['id="ecxTabs"', 'id="ecxSlot"', 'id="ecxHost"', 'id="ecxMod"', 'id="ecxLista"', 'id="ecxStatus"'].forEach(id =>
+['id="ecxTabs"', 'id="ecxSlot"', 'id="ecxHost"', 'id="ecxTabsAn"', 'id="ecxSlotAn"', 'id="ecxHostAn"',
+  'id="ecxMod"', 'id="ecxLista"', 'id="ecxStatus"'].forEach(id =>
   ok(srcV2.indexOf(id) > 0, `v2 tem ${id}`));
+ok(srcV2.indexOf('id="ecxTabsAn"') > srcV2.indexOf('id="page-analytics"'),
+  'as abas do Analytics ficam dentro da página Analytics');
+ok(srcV2.indexOf('id="ecxSlotAn"') < srcV2.indexOf('<div class="an-body">'),
+  'o slot do Analytics fica antes dos painéis');
+ok(srcV2.indexOf("analytics:{pagina:'analytics'") > 0, 'Analytics é um ponto de montagem declarado');
+ok(srcV2.indexOf("oculta:'#page-analytics .an-body'") > 0, 'abrir a ferramenta esconde os painéis do Analytics');
 ok(srcV2.indexOf('<div class="ecx-tabs" id="ecxTabs" hidden></div>') > 0, 'as abas nascem escondidas');
 ok(srcV2.indexOf('<div class="ecx-slot" id="ecxSlot" hidden>') > 0, 'o slot de montagem nasce escondido');
 ok(srcV2.indexOf('<div class="ops-tbl">') > srcV2.indexOf('id="ecxSlot"'),
@@ -115,7 +122,8 @@ ok(true, 'ponte.js compila');
   eq(m.id, 'visual-operacoes', 'manifesto da pasta reservada: id');
   eq(m.modo, 'iframe', 'modo padrão é iframe (isolamento total)');
   eq(m.entrada, 'index.html', 'entrada do iframe');
-  eq(m.montagem, 'operacoes', 'montagem na página Operações');
+  ok(Array.isArray(m.montagem) && m.montagem.indexOf('operacoes') >= 0 && m.montagem.indexOf('analytics') >= 0,
+    'a pasta reservada monta em Operações e Analytics', JSON.stringify(m.montagem));
   eq(m['api-host'], 1, 'api-host compatível');
   const html = fs.readFileSync(path.join(FERR, 'visual-operacoes', 'index.html'), 'utf8');
   ok(html.indexOf('<script src="../ponte.js"></script>') > 0, 'o painel de referência inclui a ponte');
@@ -169,7 +177,9 @@ function fetchStub(sobrescrever) {
     if (!/^ferramentas\//.test(rel)) return { ok: false, status: 404, text: async () => '' };
     const abs = path.join(ROOT, rel);
     if (!abs.startsWith(FERR)) return { ok: false, status: 403, text: async () => '' };
-    try { return { ok: true, status: 200, text: async () => fs.readFileSync(abs, 'utf8') }; }
+    /* lê na hora: o "ok" tem que refletir a existência do arquivo, senão o
+       hospedeiro acha index.html onde não existe (o fallback sem manifesto) */
+    try { const t = fs.readFileSync(abs, 'utf8'); return { ok: true, status: 200, text: async () => t }; }
     catch (e) { return { ok: false, status: 404, text: async () => '' }; }
   };
 }
@@ -278,7 +288,7 @@ function mensagem(w, data, origin, source) {
   eq(wR.eval('ECX.tools[0].entrada'), 'ferramentas/visual-operacoes/index.html', 'caminho da entrada montado');
   eq(wR.document.getElementById('ecxTabs').hidden, false, 'as abas aparecem');
   ok(/Análise gráfica/.test(wR.document.getElementById('ecxTabs').textContent), 'a aba usa o rótulo do manifesto');
-  eq(wR.eval('ECX.view'), 'tabela', 'a visão inicial continua sendo a tabela');
+  eq(wR.eval('ECX.views.operacoes'), 'tabela', 'a visão inicial continua sendo a tabela');
   eq(wR.document.getElementById('ecxSlot').hidden, true, 'e nada foi montado ainda (montagem preguiçosa)');
 
   await runImport(wR, fs.readFileSync(FIXTURE, 'utf8'));
@@ -290,7 +300,7 @@ function mensagem(w, data, origin, source) {
   /* abre a aba → iframe */
   await wR.eval("ecxSetView('visual-operacoes')");
   await sleep(160);
-  eq(wR.eval('ECX.view'), 'visual-operacoes', 'a visão trocou');
+  eq(wR.eval('ECX.views.operacoes'), 'visual-operacoes', 'a visão trocou');
   eq(wR.document.getElementById('ecxSlot').hidden, false, 'o slot aparece');
   eq(wR.document.querySelector('#page-operations .ops-tbl').style.display, 'none', 'a tabela é escondida (não destruída)');
   const frame = wR.document.querySelector('#ecxHost iframe.ecx-frame');
@@ -341,9 +351,53 @@ function mensagem(w, data, origin, source) {
   eq(wR.eval('typeof renderOps'), 'function', 'e continua sendo uma função do app');
   await wR.eval("nav('dashboard',document.querySelector('.nav-item'))");
   await sleep(140);
-  eq(wR.eval('ECX.view'), 'tabela', 'sair de Operações volta para a tabela');
+  eq(wR.eval('ECX.views.operacoes'), 'tabela', 'sair de Operações volta para a tabela');
   eq(wR.document.getElementById('ecxSlot').hidden, true, 'o slot some');
   ok(!wR.document.querySelector('#ecxHost iframe'), 'e o iframe é removido');
+
+  /* ── D2. segundo ponto de montagem: Analytics ── */
+  await wR.eval("nav('analytics')");
+  await sleep(160);
+  eq(wR.document.getElementById('ecxTabsAn').hidden, false, 'as abas aparecem no Analytics também');
+  ok(/Análise gráfica/.test(wR.document.getElementById('ecxTabsAn').textContent), 'com a mesma ferramenta');
+  ok(/Painéis/.test(wR.document.getElementById('ecxTabsAn').textContent), 'e a aba padrão do Analytics é "📊 Painéis"');
+  eq(wR.document.getElementById('ecxSlotAn').hidden, true, 'nada montado antes do clique (preguiçoso)');
+  await wR.eval("ecxSetView('visual-operacoes','analytics')");
+  await sleep(180);
+  eq(wR.eval('ECX.views.analytics'), 'visual-operacoes', 'a visão do Analytics trocou');
+  eq(wR.document.getElementById('ecxSlotAn').hidden, false, 'o slot do Analytics aparece');
+  eq(wR.document.querySelector('#page-analytics .an-body').style.display, 'none', 'os painéis são escondidos (não destruídos)');
+  ok(!!wR.document.querySelector('#ecxHostAn iframe.ecx-frame'), 'o iframe montou no Analytics');
+  eq(wR.eval('ECX.tools[0].montadoEm'), 'analytics', 'a ferramenta sabe onde está montada');
+  /* uma ferramenta só, um lugar por vez */
+  await wR.eval("nav('operations',document.getElementById('navOps'))");
+  await sleep(160);
+  eq(wR.eval('ECX.views.analytics'), 'tabela', 'sair do Analytics restaura a visão padrão de lá');
+  eq(wR.document.getElementById('ecxSlotAn').hidden, true, 'o slot do Analytics some');
+  ok(!wR.document.querySelector('#ecxHostAn iframe'), 'e o iframe de lá é removido');
+  await wR.eval("ecxSetView('visual-operacoes','operacoes')");
+  await sleep(180);
+  eq(wR.eval('ECX.tools[0].montadoEm'), 'operacoes', 'abrir em Operações monta em Operações');
+  ok(!!wR.document.querySelector('#ecxHost iframe'), 'com o iframe no lugar certo');
+  await wR.eval("ecxSetView('visual-operacoes','analytics')");
+  await sleep(180);
+  ok(!wR.document.querySelector('#ecxHost iframe'), 'montar no Analytics desmonta o de Operações');
+  ok(!!wR.document.querySelector('#ecxHostAn iframe'), 'ficando uma instância só');
+  /* tela cheia usa o slot da página atual */
+  await wR.eval("ecxTelaCheia(true,'analytics')");
+  ok(wR.document.getElementById('ecxSlotAn').classList.contains('ecx-fs'), '⛶ expande o slot da página em uso');
+  await wR.eval("ecxTelaCheia(false,'analytics')");
+  ok(!wR.document.getElementById('ecxSlotAn').classList.contains('ecx-fs'), 'e recolhe');
+  await wR.eval("ecxSetView('tabela','analytics')");
+  await sleep(140);
+  eq(wR.document.querySelector('#page-analytics .an-body').style.display, '', 'fechar a aba devolve os painéis do Analytics');
+  /* o modal oferece abrir em cada ponto de montagem */
+  await wR.eval('ecxMod(true)');
+  await sleep(80);
+  const modalTxt = wR.document.getElementById('ecxLista').textContent;
+  ok(/Abrir em Operações/.test(modalTxt) && /Abrir em Analytics/.test(modalTxt), 'o modal lista os dois pontos de montagem');
+  ok(/Operações \+ Analytics/.test(modalTxt), 'e mostra onde a ferramenta aparece');
+  await wR.eval('ecxMod(false)');
 
   /* ── E. storage privativo não encosta nas chaves do app ── */
   await wR.eval("EC.host.guardar({ferramenta:'visual-operacoes',chave:'layout',valor:{colunas:3}})");
@@ -376,7 +430,9 @@ function mensagem(w, data, origin, source) {
       'ferramentas/ruim/ferramenta.json': '{ isto não é json',
       'ferramentas/sem-modo/ferramenta.json': JSON.stringify({ id: 'sem-modo', modo: 'telepatia' }),
       'ferramentas/api-futura/ferramenta.json': JSON.stringify({ id: 'api-futura', modo: 'iframe', entrada: 'i.html', 'api-host': 99 }),
-      'ferramentas/visual-operacoes/ferramenta.json': 404   /* isola o cenário */
+      'ferramentas/visual-operacoes/ferramenta.json': 404,
+      'ferramentas/visual-operacoes/index.html': 404,   /* isola o cenário */
+      'ferramentas/visual-operacoes/index.html': 404
     })
   }).win;
   await sleep(420);
@@ -411,7 +467,9 @@ function mensagem(w, data, origin, source) {
       }),
       'ferramentas/teste-script/index.js': SCRIPT_JS,
       'ferramentas/teste-script/estilo.css': '.tx{color:#f00}',
-      'ferramentas/visual-operacoes/ferramenta.json': 404   /* isola o cenário */
+      'ferramentas/visual-operacoes/ferramenta.json': 404,
+      'ferramentas/visual-operacoes/index.html': 404,   /* isola o cenário */
+      'ferramentas/visual-operacoes/index.html': 404
     })
   }).win;
   await sleep(420);
@@ -433,6 +491,58 @@ function mensagem(w, data, origin, source) {
   ok(/unmount/.test(wS.eval('window.__log').join(',')), 'voltar para a tabela chama unmount()');
   eq(wS.document.getElementById('ecxHost').childElementCount, 0, 'o slot é esvaziado');
   wS.close();
+
+  /* ── H2. jogar a pasta dentro sem ferramenta.json ── */
+  const wN = boot({
+    fetch: fetchStub({
+      'ferramentas/registro.json': JSON.stringify({ versao: 1, ferramentas: ['sistema-colado'] }),
+      'ferramentas/sistema-colado/index.html': '<!doctype html><title>sistema inteiro</title><p>oi</p>',
+      'ferramentas/visual-operacoes/ferramenta.json': 404,
+      'ferramentas/visual-operacoes/index.html': 404
+    })
+  }).win;
+  await sleep(420);
+  eq(wN.eval('ECX.tools.length'), 1, 'pasta só com index.html é carregada no padrão');
+  eq(wN.eval('ECX.tools[0].id'), 'sistema-colado', 'o id vem do nome da pasta');
+  eq(wN.eval('ECX.tools[0].modo'), 'iframe', 'no modo iframe (isolamento total)');
+  eq(wN.eval('ECX.tools[0].entrada'), 'ferramentas/sistema-colado/index.html', 'apontando para o index.html da pasta');
+  eq(wN.eval('ECX.tools[0].semManifesto'), true, 'marcada como "sem manifesto"');
+  eq(wN.eval('ECX.tools[0].montagem.join("+")'), 'operacoes+analytics', 'disponível nas duas páginas');
+  ok(wN.eval('ECX.errors.some(e=>/sem ferramenta.json/.test(e.msg))'), 'com aviso explicando o padrão aplicado');
+  eq(wN.document.getElementById('ecxTabs').hidden, false, 'a aba aparece em Operações');
+  eq(wN.document.getElementById('ecxTabsAn').hidden, false, 'e no Analytics');
+  await wN.eval('ecxMod(true)'); await sleep(80);
+  ok(/sem ferramenta.json/.test(wN.document.getElementById('ecxLista').textContent), 'o modal sinaliza a falta do manifesto');
+  wN.close();
+
+  /* ── H3. montagem restrita a uma página ── */
+  const wO = boot({
+    fetch: fetchStub({
+      'ferramentas/registro.json': JSON.stringify({ versao: 1, ferramentas: ['so-analytics'] }),
+      'ferramentas/so-analytics/ferramenta.json': JSON.stringify({ id: 'so-analytics', modo: 'iframe', entrada: 'i.html', montagem: 'analytics' }),
+      'ferramentas/visual-operacoes/ferramenta.json': 404,
+      'ferramentas/visual-operacoes/index.html': 404
+    })
+  }).win;
+  await sleep(420);
+  eq(wO.eval('ECX.tools[0].montagem.join("+")'), 'analytics', 'montagem em string única vira lista');
+  eq(wO.document.getElementById('ecxTabsAn').hidden, false, 'a aba aparece só no Analytics');
+  eq(wO.document.getElementById('ecxTabs').hidden, true, 'e não em Operações');
+  wO.close();
+
+  /* ── H4. montagem desconhecida é recusada ── */
+  const wP = boot({
+    fetch: fetchStub({
+      'ferramentas/registro.json': JSON.stringify({ versao: 1, ferramentas: ['lugar-errado'] }),
+      'ferramentas/lugar-errado/ferramenta.json': JSON.stringify({ id: 'lugar-errado', modo: 'iframe', entrada: 'i.html', montagem: ['relatorio'] }),
+      'ferramentas/visual-operacoes/ferramenta.json': 404,
+      'ferramentas/visual-operacoes/index.html': 404
+    })
+  }).win;
+  await sleep(400);
+  eq(wP.eval('ECX.tools.length'), 0, 'ponto de montagem inexistente recusa a ferramenta');
+  ok(wP.eval('ECX.errors.some(e=>/montagem desconhecida/.test(e.det))'), 'com o motivo e as opções válidas');
+  wP.close();
 
   /* ── I. contrato de dados: a matemática da série ── */
   console.log('\n── 3. contrato de dados (série × cálculo independente) ──');

@@ -7,7 +7,7 @@
   "icone": "📈",
   "modo": "iframe",
   "entrada": "index.html",
-  "montagem": "operacoes",
+  "montagem": ["operacoes", "analytics"],
   "tela-cheia": true,
   "ativa": true,
   "api-host": 1,
