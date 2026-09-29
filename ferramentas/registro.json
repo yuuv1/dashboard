@@ -1,0 +1,10 @@
+{
+  "versao": 1,
+  "comentario": "Lista das ferramentas que o app deve procurar dentro desta pasta. Sem este arquivo o app tenta só as pastas padrão (visual-operacoes). Cada entrada precisa de uma pasta com ferramenta.json válido.",
+  "ferramentas": [
+    {
+      "pasta": "visual-operacoes",
+      "comentario": "Sistema de visualização complexa das operações (estilo TradingView)"
+    }
+  ]
+}

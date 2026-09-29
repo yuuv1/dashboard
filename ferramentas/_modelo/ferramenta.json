@@ -1,0 +1,16 @@
+{
+  "id": "modelo-script",
+  "nome": "Modelo (modo script)",
+  "rotulo": "Modelo",
+  "descricao": "Esqueleto para copiar: ferramenta em modo script, montada dentro da página do app",
+  "versao": "0.0.1",
+  "icone": "🧪",
+  "modo": "script",
+  "script": "index.js",
+  "estilo": "estilo.css",
+  "montagem": "operacoes",
+  "tela-cheia": true,
+  "ativa": false,
+  "api-host": 1,
+  "comentario": "Esta pasta é só exemplo: não está no registro.json e nasce desativada. Copie para ferramentas/<sua-pasta>/, troque o id, liste no registro.json e ative."
+}

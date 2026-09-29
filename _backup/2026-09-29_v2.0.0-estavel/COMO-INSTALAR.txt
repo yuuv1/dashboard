@@ -1,0 +1,111 @@
+═══════════════════════════════════════════════════════════
+  EDGECONTROL — INSTALAÇÃO EM 1 CLIQUE
+═══════════════════════════════════════════════════════════
+
+ARQUIVOS (mantenha os três na MESMA PASTA):
+
+   EdgeControl.bat            ← dê dois cliques neste
+   edgecontrol-glass.html     ← o aplicativo
+   sw.js                      ← modo offline
+
+
+COMO USAR
+─────────────────────────────────────────────────────────
+
+1. Dois cliques em  EdgeControl.bat
+
+2. Ele verifica sozinho se você tem Python.
+   • Tem Python?  usa ele.
+   • Não tem?     oferece o servidor embutido (opção 1),
+                  que não instala nada no seu PC.
+
+3. Pergunta a porta. Só apertar ENTER usa a 8080.
+   Se a porta estiver ocupada, ele sugere a seguinte.
+
+4. O navegador abre sozinho no endereço certo.
+
+5. Clique no ícone de INSTALAR na barra de endereço
+   (um monitorzinho com uma seta, do lado direito da URL).
+
+   Não apareceu? Menu do navegador (⋮) → "Instalar EdgeControl".
+
+Pronto: o EdgeControl vira um aplicativo com ícone próprio,
+abre em janela sem barra de navegador e funciona offline.
+
+
+DEPOIS DE INSTALADO
+─────────────────────────────────────────────────────────
+
+O app fica no menu Iniciar / área de trabalho.
+
+⚠️ Importante: mantenha o EdgeControl.bat para quando quiser
+   abrir de novo — o app instalado precisa que o servidor
+   esteja no ar para carregar da primeira vez em cada sessão.
+   Depois disso ele usa o cache e abre mesmo sem o servidor.
+
+   Quer algo 100% independente do .bat?
+   Publique o arquivo em https://app.netlify.com/drop
+   (arraste a pasta, sai um endereço https em segundos).
+   Aí instala direto do link, e nunca mais precisa do servidor.
+
+
+USAR NO CELULAR
+─────────────────────────────────────────────────────────
+
+Com o .bat rodando, ele mostra na tela um endereço tipo
+http://192.168.x.x:8080/... — abra esse endereço no celular,
+desde que esteja no mesmo Wi-Fi.
+
+   • Android → Chrome → menu ⋮ → "Instalar aplicativo"
+   • iPhone  → precisa ser o SAFARI → Compartilhar →
+               "Adicionar à Tela de Início"
+
+Se não abrir no celular, o firewall do Windows pode estar
+bloqueando: na primeira vez ele pergunta — clique "Permitir".
+
+
+MENU DO .BAT
+─────────────────────────────────────────────────────────
+
+   [A]      abre de novo no navegador
+   [P]      para o servidor e sai
+   [ENTER]  fecha a janela e DEIXA o servidor rodando
+
+Para parar depois, feche a janela "EdgeControl-Server"
+que fica minimizada na barra de tarefas.
+
+
+PROBLEMAS COMUNS
+─────────────────────────────────────────────────────────
+
+"Não aparece o botão de instalar"
+   → Precisa ser Chrome ou Edge. Firefox não instala PWA
+     no desktop. Confirme que a URL é http://localhost:...
+     e não file:///
+
+"Nenhum arquivo .html encontrado"
+   → O .bat está em pasta diferente do app. Coloque os
+     três arquivos juntos.
+
+"A porta já está em uso"
+   → Aceite a sugestão de usar a próxima, ou escolha
+     outra (ex.: 3000, 5500, 8090).
+
+"O Windows bloqueou o script"
+   → Clique com o botão direito no .bat → Propriedades →
+     marque "Desbloquear" → OK.
+
+"Quero desinstalar"
+   → No Chrome: chrome://apps → botão direito no ícone →
+     "Remover do Chrome". Seus dados ficam salvos no
+     navegador; exporte o JSON antes se quiser guardá-los.
+
+
+SEUS DADOS
+─────────────────────────────────────────────────────────
+
+Tudo fica salvo no seu navegador (IndexedDB + localStorage),
+neste computador. Não há servidor nem conta.
+
+Faça backup: Configurações → "Exportar Dados (JSON)".
+O arquivo inclui operações E os prints anexados.

@@ -1,0 +1,44 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "ferramentas/ferramenta.schema.json",
+  "title": "Manifesto de ferramenta — EdgeControl (ECX)",
+  "description": "Arquivo ferramenta.json que fica na raiz da pasta de cada ferramenta. O app só carrega o que passar nesta validação; qualquer campo inválido faz a ferramenta ser ignorada (o app continua funcionando normalmente).",
+  "type": "object",
+  "required": ["id", "modo"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{1,40}$",
+      "description": "Identificador único. Usado no storage privativo (ecx:<id>:<chave>) e nos eventos."
+    },
+    "nome": { "type": "string", "description": "Nome legível, mostrado no modal 🧩 Ferramentas." },
+    "rotulo": { "type": "string", "description": "Texto curto da aba (se omitido, usa nome)." },
+    "descricao": { "type": "string", "description": "Uma linha explicando o que a ferramenta faz (vira o title da aba)." },
+    "versao": { "type": "string", "description": "Versão da ferramenta (ex.: 1.0.0)." },
+    "icone": { "type": "string", "description": "Emoji mostrado na aba (ex.: 📈)." },
+    "modo": {
+      "type": "string",
+      "enum": ["iframe", "script"],
+      "description": "iframe = página própria dentro de um quadro isolado (recomendado: zero colisão de CSS/JS). script = JS injetado na página do app, montando num <div>."
+    },
+    "entrada": { "type": "string", "description": "Obrigatório no modo iframe: página HTML da ferramenta (ex.: index.html)." },
+    "script": { "type": "string", "description": "Obrigatório no modo script: arquivo JS que chama EC.host.registrar(id, {mount, update, unmount})." },
+    "estilo": { "type": "string", "description": "Opcional no modo script: CSS carregado junto (caminhos relativos à pasta da ferramenta)." },
+    "montagem": {
+      "oneOf": [
+        { "type": "string", "enum": ["operacoes", "analytics", "ambos"] },
+        { "type": "array", "items": { "type": "string", "enum": ["operacoes", "analytics", "ambos"] }, "minItems": 1 }
+      ],
+      "description": "Onde a ferramenta aparece: 'operacoes' (aba ao lado da tabela), 'analytics' (aba ao lado dos painéis) ou as duas. Aceita string ou lista; 'ambos' = todas. Padrão: ['operacoes']."
+    },
+    "tela-cheia": { "type": "boolean", "description": "Oferece o botão ⛶ de expandir (padrão: true)." },
+    "ativa": { "type": "boolean", "description": "false = registrada mas escondida (dá para reativar no modal 🧩). Padrão: true." },
+    "api-host": { "type": "number", "description": "Versão da API do hospedeiro que a ferramenta exige. Se for maior que a do app, ela é recusada." },
+    "permissao": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Documentação das capacidades usadas (ops, prints, tema, ui, storage). Não é enforced — serve de contrato legível."
+    }
+  },
+  "additionalProperties": true
+}
