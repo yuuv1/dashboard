@@ -1,0 +1,26 @@
+/* estilo.css do MODELO (modo script).
+   No modo script este CSS entra na página do app — por isso tudo é prefixado
+   com .mx- e nada usa seletores soltos (body, div, .card…). */
+.mx{display:flex;flex-direction:column;gap:9px;}
+.mx-topo{display:flex;gap:7px;align-items:center;flex-wrap:wrap;}
+.mx-topo>b{font-size:13px;color:var(--white);}
+.mx-tag{font-size:9.5px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;
+  color:var(--lgray);border:1px solid var(--border);border-radius:6px;padding:2px 6px;
+  background:color-mix(in srgb,var(--surf) 60%,transparent);}
+.mx-bt{border:1px solid var(--border);background:color-mix(in srgb,var(--surf) 62%,transparent);
+  color:var(--lgray);border-radius:9px;padding:5px 10px;font-size:11px;font-weight:600;
+  cursor:pointer;font-family:'Inter',sans-serif;transition:all .16s;}
+.mx-bt:hover{color:var(--white);border-color:color-mix(in srgb,var(--accent) 50%,transparent);}
+.mx-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));gap:7px;}
+.mx-kpi{border:1px solid var(--border);border-radius:12px;padding:8px 10px;
+  background:color-mix(in srgb,var(--surf) 46%,transparent);}
+.mx-kpi span{display:block;font-size:9.5px;font-weight:700;letter-spacing:.5px;
+  text-transform:uppercase;color:var(--lgray);}
+.mx-kpi b{display:block;font-size:15px;margin-top:2px;color:var(--white);font-variant-numeric:tabular-nums;}
+.mx-tela{position:relative;height:150px;border:1px solid var(--border);border-radius:12px;
+  background:color-mix(in srgb,var(--surf) 40%,transparent);overflow:hidden;}
+.mx-tela canvas{position:absolute;inset:0;width:100%;height:100%;display:block;}
+.mx-log{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10px;color:var(--lgray);
+  border:1px solid var(--border);border-radius:10px;padding:7px 9px;max-height:88px;overflow-y:auto;
+  white-space:pre-wrap;background:color-mix(in srgb,var(--surf) 34%,transparent);}
+.mx-vazio{color:var(--lgray);font-size:11px;padding:8px;}

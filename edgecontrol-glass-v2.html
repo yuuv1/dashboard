@@ -1833,6 +1833,55 @@ body.rpt-open{overflow:hidden;}
   .rcov-k b{font-size:17px;}
 }
 
+/* ══ ECX — hospedeiro de ferramentas externas (pasta /ferramentas) ══
+   Tudo aqui é aditivo e só aparece quando existe ferramenta instalada:
+   sem a pasta, nenhuma destas regras tem efeito (as abas ficam hidden). */
+.ecx-tabs{display:flex;gap:6px;align-items:center;margin:0 0 9px;flex-wrap:wrap;}
+.ecx-tabs[hidden]{display:none;}
+.ecx-tab{background:color-mix(in srgb,var(--surf) 62%,transparent);border:1px solid var(--border);color:var(--lgray);
+  padding:6px 12px;border-radius:10px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;
+  display:inline-flex;align-items:center;gap:6px;transition:all .18s;white-space:nowrap;}
+.ecx-tab:hover{color:var(--white);border-color:color-mix(in srgb,var(--accent) 40%,transparent);}
+.ecx-tab.on{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border-color:transparent;
+  box-shadow:0 5px 16px color-mix(in srgb,var(--accent) 32%,transparent);}
+.ecx-gear{width:26px;height:26px;border-radius:8px;border:1px solid var(--border);
+  background:color-mix(in srgb,var(--surf) 70%,transparent);color:var(--lgray);cursor:pointer;font-size:12px;
+  display:inline-flex;align-items:center;justify-content:center;padding:0;margin-left:2px;transition:all .15s;}
+.ecx-gear:hover{color:var(--white);border-color:color-mix(in srgb,var(--accent) 40%,transparent);}
+.ecx-slot{margin:0 0 10px;}
+.ecx-slot[hidden]{display:none;}
+.ecx-host{position:relative;min-height:340px;border-radius:16px;overflow:hidden;
+  border:1px solid var(--border);background:color-mix(in srgb,var(--surf) 55%,transparent);
+  box-shadow:0 18px 44px rgba(0,0,0,.10);}
+.ecx-frame{display:block;width:100%;height:min(74vh,780px);border:0;background:transparent;}
+.ecx-nativo{padding:14px;}
+.ecx-slot.ecx-fs{position:fixed;inset:12px;z-index:1200;margin:0;}
+.ecx-slot.ecx-fs .ecx-host{height:100%;border-radius:14px;}
+.ecx-slot.ecx-fs .ecx-frame{height:100%;}
+body.ecx-travado{overflow:hidden;}
+.ecx-carregando{padding:26px 18px;text-align:center;color:var(--lgray);font-size:12px;}
+.ecx-vazio{padding:26px 18px;text-align:center;color:var(--lgray);font-size:12px;}
+.ecx-vazio-i{font-size:26px;margin-bottom:6px;}
+.ecx-vazio b{display:block;font-size:13px;color:var(--white);margin-bottom:5px;}
+.ecx-vazio p{margin:4px 0;line-height:1.55;}
+.ecx-vazio code,.ecx-item-d code,.ecx-erros code{background:color-mix(in srgb,var(--surf) 78%,transparent);
+  border:1px solid var(--border);border-radius:6px;padding:1px 5px;font-size:11px;}
+.ecx-dica{color:var(--dim);font-size:11px;}
+.ecx-item{display:flex;gap:10px;align-items:flex-start;padding:11px 12px;border-radius:13px;
+  border:1px solid var(--border);background:color-mix(in srgb,var(--surf) 46%,transparent);margin-bottom:8px;}
+.ecx-item.off{opacity:.6;}
+.ecx-item-i{font-size:19px;line-height:1.2;}
+.ecx-item-c{flex:1;min-width:0;font-size:12px;color:var(--white);}
+.ecx-tag{font-size:9.5px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--lgray);
+  border:1px solid var(--border);border-radius:6px;padding:1px 5px;margin-left:4px;}
+.ecx-item-d{color:var(--lgray);font-size:11px;margin-top:3px;word-break:break-word;}
+.ecx-item-e{color:var(--warn);font-size:11px;margin-top:3px;}
+.ecx-item-a{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end;}
+.ecx-erros{margin-top:10px;padding:10px 12px;border-radius:12px;
+  border:1px solid color-mix(in srgb,var(--warn) 40%,transparent);
+  background:color-mix(in srgb,var(--warn) 8%,transparent);font-size:11px;color:var(--lgray);}
+.ecx-erros ul{margin:5px 0 0 16px;padding:0;}
+@media print{.ecx-tabs,.ecx-slot{display:none!important;}}
 </style>
 </head>
 <body>
@@ -2031,6 +2080,8 @@ body.rpt-open{overflow:hidden;}
           <button class="btn-o" onclick="openNewOpModal()">＋ Nova Operação</button>
         </div>
       </div>
+      <!-- ECX: abas de visão — só aparecem se houver ferramenta instalada em /ferramentas -->
+      <div class="ecx-tabs" id="ecxTabs" hidden></div>
       <div class="ops-fil">
         <div class="card" style="border-radius:14px;">
           <div class="fil-row">
@@ -2042,6 +2093,8 @@ body.rpt-open{overflow:hidden;}
           </div>
         </div>
       </div>
+      <!-- ECX: ponto de montagem da ferramenta (vazio até alguém abrir a aba) -->
+      <div class="ecx-slot" id="ecxSlot" hidden><div class="ecx-host" id="ecxHost"></div></div>
       <div class="ops-tbl">
         <div class="card">
           <div class="tbl-sc">
@@ -2583,6 +2636,23 @@ body.rpt-open{overflow:hidden;}
   <div class="pwa-tx">Instalar o EdgeControl<span>abre como aplicativo, funciona offline</span></div>
   <button class="btn-o xs" onclick="doInstall()">Instalar</button>
   <span class="pwa-x" onclick="dismissInstall()">✕</span>
+</div>
+
+<!-- ECX — ferramentas instaladas (pasta /ferramentas) -->
+<div class="mol" id="ecxMod">
+  <div class="mod" style="max-width:660px;">
+    <div class="mhd">
+      <div class="mtit">🧩 Ferramentas</div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div class="mcls" onclick="ecxRecarregar()" title="Relê a pasta /ferramentas">🔄</div>
+        <div class="mcls" onclick="ecxMod(false)">✕</div>
+      </div>
+    </div>
+    <div class="mbd" style="max-height:66vh;overflow-y:auto;">
+      <div class="upill" id="ecxStatus" style="margin-bottom:10px;display:inline-flex;"></div>
+      <div id="ecxLista"></div>
+    </div>
+  </div>
 </div>
 
 <div class="mol" id="galleryMod">
@@ -8457,10 +8527,636 @@ function cycleFadeChange(el){
 }
 function chartsRefresh(){ if(isChartsActive()) renderCharts(); }
 
+/* ══════════════════════════════════════════════════════════════════
+   ECX — HOSPEDEIRO DE FERRAMENTAS EXTERNAS
+   Uma ferramenta mora numa pasta própria em /ferramentas/<pasta>/ e só
+   é carregada se a pasta existir e se o manifesto (ferramenta.json) for
+   válido. Regras de segurança deste bloco:
+     · nada roda antes do init() terminar (ecxInit é a última linha);
+     · tudo está em try/catch — sem a pasta, o app é exatamente o mesmo;
+     · montagem preguiçosa: o código da ferramenta só executa quando o
+       usuário clica na aba dela, nunca na abertura do app;
+     · kill switch: ?ecx=0 na URL ou localStorage.ecxOff='1' desliga tudo;
+     · iframe só da mesma origem (postMessage validado por origin);
+     · os hooks embrulham funções existentes SEM reescrevê-las: se algo
+       der errado no hook, a função original continua valendo.
+   Ponte para a ferramenta: window.EC.host (+ /ferramentas/ponte.js).
+══════════════════════════════════════════════════════════════════ */
+const EC_HOST_API=1;
+const ECX_ROOT='ferramentas/';
+const ECX_PADRAO=['visual-operacoes'];     /* pasta reservada, tentada mesmo sem registro.json */
+const ECX={tools:[],errors:[],view:'tabela',ready:false,off:false,subs:{},frames:{},hooks:[],rpc:{}};
+
+function ecxOff(){
+  try{
+    if(/[?&]ecx=0(&|$)/.test(location.search)) return true;
+    if(localStorage.getItem('ecxOff')==='1') return true;
+  }catch(e){}
+  return false;
+}
+function ecxErr(msg,det){
+  ECX.errors.push({msg:String(msg||''),det:String((det&&det.message)||det||''),at:new Date().toISOString()});
+  if(ECX.errors.length>60) ECX.errors.shift();
+  try{ console.warn('[ECX] '+msg,det||''); }catch(e){}
+}
+/* no-cache (e não no-store): o service worker do app guarda toda resposta
+   no Cache Storage, e 'no-store' pode ser recusado ali dentro. */
+async function ecxBaixar(url){
+  const r=await fetch(url,{cache:'no-cache'});
+  if(!r.ok) throw new Error('HTTP '+r.status+' em '+url);
+  return r;
+}
+async function ecxJson(url){ return JSON.parse(await (await ecxBaixar(url)).text()); }
+
+/* ── manifesto ───────────────────────────────────────────────────── */
+function ecxValidar(m,pasta){
+  if(!m||typeof m!=='object') return {ok:false,erro:'manifesto vazio ou inválido'};
+  const id=String(m.id||'').trim();
+  if(!/^[A-Za-z0-9][A-Za-z0-9_-]{1,40}$/.test(id)) return {ok:false,erro:'id inválido ("'+id+'") — use letras, números, - ou _'};
+  if(ECX.tools.some(t=>t.id===id)) return {ok:false,erro:'id duplicado: '+id};
+  const modo=String(m.modo||'iframe').toLowerCase();
+  if(modo!=='iframe'&&modo!=='script') return {ok:false,erro:'modo precisa ser "iframe" ou "script"'};
+  if(modo==='iframe'&&!String(m.entrada||'').trim()) return {ok:false,erro:'modo iframe exige "entrada" (ex.: index.html)'};
+  if(modo==='script'&&!String(m.script||'').trim()) return {ok:false,erro:'modo script exige "script" (ex.: index.js)'};
+  const precisa=Number(m['api-host']||EC_HOST_API);
+  if(precisa>EC_HOST_API) return {ok:false,erro:'a ferramenta pede a API '+precisa+' e o app oferece a '+EC_HOST_API};
+  if(String(m.montagem||'operacoes')!=='operacoes') return {ok:false,erro:'montagem suportada hoje: "operacoes"'};
+  const base=ECX_ROOT+pasta+'/';
+  return {ok:true,tool:{
+    id,pasta,modo,base,
+    nome:String(m.nome||id),versao:String(m.versao||'0'),descricao:String(m.descricao||''),
+    icone:String(m.icone||'🧩'),rotulo:String(m.rotulo||m.nome||id),
+    entrada:m.entrada?base+String(m.entrada).replace(/^\/+/,''):'',
+    script:m.script?base+String(m.script).replace(/^\/+/,''):'',
+    estilo:m.estilo?base+String(m.estilo).replace(/^\/+/,''):'',
+    montagem:'operacoes',telaCheia:m['tela-cheia']!==false,ativa:m.ativa!==false,
+    apiHost:precisa,api:null,montado:false,el:null,erro:''
+  }};
+}
+async function ecxCarregar(){
+  let pastas=[];
+  try{
+    const reg=await ecxJson(ECX_ROOT+'registro.json');
+    const lista=(reg&&Array.isArray(reg.ferramentas))?reg.ferramentas:[];
+    pastas=lista.map(f=>typeof f==='string'?f:(f&&f.pasta)).filter(Boolean);
+  }catch(e){ /* sem registro.json → só as pastas padrão */ }
+  pastas=[...new Set([...pastas,...ECX_PADRAO])];
+  for(const pasta of pastas){
+    try{
+      const m=await ecxJson(ECX_ROOT+String(pasta).replace(/^\/+|\/+$/g,'')+'/ferramenta.json');
+      const v=ecxValidar(m,pasta);
+      if(!v.ok){ ecxErr('manifesto de "'+pasta+'" recusado',v.erro); continue; }
+      ECX.tools.push(v.tool);
+    }catch(e){
+      /* pasta que não existe é o caso normal (ferramenta ainda não foi instalada) */
+      const msg=String((e&&e.message)||e||'');
+      if(!/HTTP 404/.test(msg)) ecxErr('não li o manifesto de "'+pasta+'"',msg);
+    }
+  }
+}
+
+/* ── dados: operações → série pronta para gráfico ────────────────── */
+function ecxFiltroAtual(){
+  const g=id=>{ const e=document.getElementById(id); return e?(e.value||''):''; };
+  return {data:g('fDate'),resultado:g('fRes'),ativo:g('fType'),plano:g('fPlan')};
+}
+function ecxOpsCrono(){ try{ return chronoOps(S.operations||[]); }catch(e){ return [...(S.operations||[])]; } }
+function ecxOpsFiltradas(){
+  const f=ecxFiltroAtual();
+  let ops=ecxOpsCrono();
+  if(f.data) ops=ops.filter(o=>o.date===f.data);
+  if(f.resultado) ops=ops.filter(o=>String(o.result||'').toUpperCase()===f.resultado);
+  if(f.ativo) ops=ops.filter(o=>opAsset(o)===f.ativo);
+  if(f.plano) ops=ops.filter(o=>o.plan===f.plano);
+  return ops;
+}
+function ecxTs(op){
+  const t=Date.parse((op.date||'')+'T'+(op.time||'00:00')+':00');
+  if(Number.isFinite(t)) return t;
+  const c=Date.parse(op.createdAt||'');
+  return Number.isFinite(c)?c:0;
+}
+function ecxCapitalInicial(){ return Number(S&&S.settings&&S.settings.initialCapital)||0; }
+function ecxOperacoes(opts){
+  const o=opts||{};
+  const lista=(o.filtradas===false)?ecxOpsCrono():ecxOpsFiltradas();
+  let saldo=ecxCapitalInicial();
+  return lista.map((op,i)=>{
+    const efeito=opCapitalEffect(op);
+    saldo+=efeito;
+    return {i:i,n:i+1,id:String(op.id),data:op.date||'',hora:op.time||'',ts:ecxTs(op),
+      ativo:opAsset(op)||'',direcao:opDirection(op)||'',
+      resultado:String(op.result||'').toUpperCase(),
+      valor:Number(op.value)||0,usd:Number(op.usd)||0,efeito:efeito,saldo:saldo,
+      plano:op.plan||'',motivo:op.reason||'',notas:op.notes||'',
+      emocoes:opEmotions(op),operacionais:opOperationals(op),
+      prints:opShotIds(op),video:op.yt||'',imagem:op.img||'',criadoEm:op.createdAt||''};
+  });
+}
+function ecxPorDia(ops,ini){
+  const mapa=new Map();
+  let saldo=Number.isFinite(ini)?ini:ecxCapitalInicial();
+  (ops||[]).forEach(o=>{
+    const k=o.data||'(sem data)';
+    let d=mapa.get(k);
+    if(!d){ d={data:k,ts:o.ts,n:0,wins:0,losses:0,outros:0,resultado:0,abertura:saldo,max:saldo,min:saldo,saldo:saldo}; mapa.set(k,d); }
+    saldo+=o.efeito;
+    d.n++; d.resultado+=o.efeito; d.saldo=saldo;
+    if(o.resultado==='WIN') d.wins++; else if(o.resultado==='LOSS') d.losses++; else d.outros++;
+    if(saldo>d.max) d.max=saldo;
+    if(saldo<d.min) d.min=saldo;
+  });
+  return [...mapa.values()];
+}
+function ecxVelas(ops,ini){
+  const abertura0=Number.isFinite(ini)?ini:ecxCapitalInicial();
+  let abertura=abertura0;
+  return ecxPorDia(ops,abertura0).map(d=>{
+    const v={t:d.data,ts:d.ts,o:abertura,h:Math.max(abertura,d.max,d.saldo),l:Math.min(abertura,d.min,d.saldo),
+      c:d.saldo,n:d.n,wins:d.wins,losses:d.losses,resultado:d.resultado};
+    abertura=d.saldo;
+    return v;
+  });
+}
+function ecxPorAtivo(ops){
+  const m=new Map();
+  (ops||[]).forEach(o=>{
+    const k=o.ativo||'(sem ativo)';
+    let a=m.get(k);
+    if(!a){ a={ativo:k,n:0,wins:0,losses:0,outros:0,resultado:0,maiorWin:0,maiorLoss:0}; m.set(k,a); }
+    a.n++; a.resultado+=o.efeito;
+    if(o.resultado==='WIN'){ a.wins++; if(o.valor>a.maiorWin) a.maiorWin=o.valor; }
+    else if(o.resultado==='LOSS'){ a.losses++; if(o.valor>a.maiorLoss) a.maiorLoss=o.valor; }
+    else a.outros++;
+  });
+  return [...m.values()].map(a=>Object.assign(a,{taxa:(a.wins+a.losses)?a.wins/(a.wins+a.losses):0}))
+    .sort((x,y)=>y.n-x.n);
+}
+function ecxPorHora(ops){
+  const h=[]; for(let i=0;i<24;i++) h.push({hora:i,n:0,wins:0,losses:0,resultado:0});
+  (ops||[]).forEach(o=>{
+    const n=parseInt(String(o.hora).slice(0,2),10);
+    if(!(n>=0&&n<24)) return;
+    const b=h[n]; b.n++; b.resultado+=o.efeito;
+    if(o.resultado==='WIN') b.wins++; else if(o.resultado==='LOSS') b.losses++;
+  });
+  return h;
+}
+function ecxResumo(ops,ini){
+  const lista=ops||ecxOperacoes();
+  const capital=Number.isFinite(ini)?ini:ecxCapitalInicial();
+  const n=lista.length;
+  const wins=lista.filter(o=>o.resultado==='WIN');
+  const losses=lista.filter(o=>o.resultado==='LOSS');
+  const resultado=lista.reduce((a,o)=>a+o.efeito,0);
+  const brutoWin=wins.reduce((a,o)=>a+o.valor,0);
+  const brutoLoss=losses.reduce((a,o)=>a+o.valor,0);
+  const maiorWin=wins.reduce((a,o)=>Math.max(a,o.valor),0);
+  const maiorLoss=losses.reduce((a,o)=>Math.max(a,o.valor),0);
+  let ant='',corrida=0,melhorWin=0,piorLoss=0;
+  lista.forEach(o=>{
+    const r=o.resultado;
+    if(r!=='WIN'&&r!=='LOSS') return;
+    if(r===ant) corrida++; else { ant=r; corrida=1; }
+    if(r==='WIN'){ if(corrida>melhorWin) melhorWin=corrida; }
+    else if(corrida>piorLoss) piorLoss=corrida;
+  });
+  let pico=capital,dd=0,ddPct=0,saldo=capital;
+  lista.forEach(o=>{
+    saldo+=o.efeito;
+    if(saldo>pico) pico=saldo;
+    const q=pico-saldo;
+    if(q>dd){ dd=q; ddPct=pico>0?q/pico:0; }
+  });
+  const decididos=wins.length+losses.length;
+  return {n:n,wins:wins.length,losses:losses.length,outros:n-decididos,
+    taxa:decididos?wins.length/decididos:0,resultado:resultado,
+    brutoWin:brutoWin,brutoLoss:brutoLoss,
+    fatorLucro:brutoLoss>0?brutoWin/brutoLoss:(brutoWin>0?Infinity:0),
+    mediaWin:wins.length?brutoWin/wins.length:0,
+    mediaLoss:losses.length?brutoLoss/losses.length:0,
+    maiorWin:maiorWin,maiorLoss:maiorLoss,
+    expectativa:n?resultado/n:0,
+    saldoInicial:capital,saldoFinal:saldo,
+    drawdown:dd,drawdownPct:ddPct,
+    sequenciaAtual:corrida,sequenciaTipo:ant,
+    melhorSequenciaWin:melhorWin,piorSequenciaLoss:piorLoss,
+    ativosDistintos:ecxPorAtivo(lista).length,diasDistintos:ecxPorDia(lista,capital).length};
+}
+function ecxSerie(opts){
+  const ops=ecxOperacoes(opts);
+  const ini=ecxCapitalInicial();
+  return {api:EC_HOST_API,build:EC_BUILD,geradoEm:new Date().toISOString(),
+    capitalInicial:ini,filtro:ecxFiltroAtual(),
+    operacoes:ops,
+    equity:[{ts:ops.length?ops[0].ts:Date.now(),i:0,n:0,saldo:ini}].concat(ops.map(o=>({ts:o.ts,i:o.i,n:o.n,saldo:o.saldo}))),
+    velas:ecxVelas(ops,ini),porDia:ecxPorDia(ops,ini),porAtivo:ecxPorAtivo(ops),porHora:ecxPorHora(ops),
+    resumo:ecxResumo(ops,ini)};
+}
+function ecxTema(){
+  const id=(S&&S.theme)||'default';
+  const lista=(typeof THEMES!=='undefined'&&Array.isArray(THEMES))?THEMES:[];
+  const t=lista.find(x=>x.id===id)||{id:id,name:id,dark:false};
+  let css=null;
+  try{ css=getComputedStyle(document.documentElement); }catch(e){}
+  const v=n=>{ try{ return css?(css.getPropertyValue(n)||'').trim():''; }catch(e){ return ''; } };
+  return {id:t.id,nome:t.name||t.id,escuro:!!t.dark,vibrante:!!t.vivid,metal:t.metal||'',amostras:t.sw||[],
+    cores:{fundo:v('--bg'),superficie:v('--surf'),cartao:v('--card'),borda:v('--border'),fio:v('--hair'),
+      texto:v('--white'),suave:v('--lgray'),apagado:v('--dim'),acento:v('--accent'),acento2:v('--accent2'),
+      ciano:v('--cyan'),win:v('--green'),loss:v('--red'),alerta:v('--warn')}};
+}
+function ecxConf(){
+  const s=(S&&S.settings)||{},p=(S&&S.profile)||{};
+  return {capitalInicial:+s.initialCapital||0,capitalAtual:+s.currentCapital||0,cotacaoUsd:+s.usdRate||1,
+    stopLossPct:+s.stopLoss||0,alvoPct:+s.target||0,perdasMaximas:+s.maxLosses||0,maoMaxima:+s.maxHand||0,
+    perfil:String(p.name||'')};
+}
+async function ecxPrintsDaOperacao(opId,maxW){
+  const op=(S.operations||[]).find(o=>String(o.id)===String(opId));
+  if(!op) return [];
+  const out=[];
+  for(const id of opShotIds(op)){
+    try{
+      const rec=await IMGDB.get(id);
+      if(!rec) continue;
+      const url=await psShotURL(id,maxW||1200);
+      out.push({id:id,nome:rec.name||'',nota:rec.note||'',analise:rec.kind==='analise',
+        largura:rec.w||0,altura:rec.h||0,url:url});
+    }catch(e){ /* print sem imagem: segue sem ele */ }
+  }
+  return out;
+}
+async function ecxAbrirPrint(id){
+  try{
+    if(!(await IMGDB.get(id))){ toast('Este print não está no armazenamento deste navegador.','w'); return false; }
+    if(typeof galCache!=='undefined') galCache=[String(id)];
+    await openShotViewer('gal',0);
+    return true;
+  }catch(e){ ecxErr('abrir print',e); return false; }
+}
+
+/* ── eventos ─────────────────────────────────────────────────────── */
+function ecxEmitir(evt,data){
+  const lista=ECX.subs[evt];
+  if(lista&&lista.length){
+    lista.slice().forEach(fn=>{ try{ fn(data); }catch(e){ ecxErr('assinante de "'+evt+'"',e); } });
+  }
+  if(evt==='dados'||evt==='filtro'||evt==='tema') ecxAtualizar(evt);
+}
+function ecxAtualizar(motivo){
+  const t=ECX.tools.find(x=>x.id===ECX.view);
+  if(!t||!t.montado) return;
+  try{
+    if(t.modo==='iframe'){
+      const f=t.el;
+      if(f&&f.contentWindow) f.contentWindow.postMessage({ecx:1,evt:motivo,data:{api:EC_HOST_API,motivo:motivo}},location.origin);
+    }else if(t.api&&typeof t.api.update==='function'){
+      t.api.update(ecxContexto(t),motivo);
+    }
+  }catch(e){ ecxErr('update de '+t.id,e); }
+}
+function ecxContexto(tool){
+  return {api:EC_HOST_API,build:EC_BUILD,
+    ferramenta:{id:tool.id,versao:tool.versao,modo:tool.modo,nome:tool.nome},
+    tema:ecxTema(),config:ecxConf(),filtro:ecxFiltroAtual()};
+}
+
+/* ── ponte (window.EC.host) ──────────────────────────────────────── */
+function ecxPonte(){
+  return {
+    api:EC_HOST_API,build:EC_BUILD,app:'EdgeControl',
+    versao(){ return {api:EC_HOST_API,build:EC_BUILD,app:'EdgeControl',ferramentas:ECX.tools.length,desligado:ECX.off}; },
+    operacoes(args){ return ecxOperacoes(args||{}); },
+    serie(args){ return ecxSerie(args||{}); },
+    resumo(args){ return ecxResumo(ecxOperacoes(args||{}),ecxCapitalInicial()); },
+    velas(args){ return ecxVelas(ecxOperacoes(args||{}),ecxCapitalInicial()); },
+    porDia(args){ return ecxPorDia(ecxOperacoes(args||{}),ecxCapitalInicial()); },
+    porAtivo(args){ return ecxPorAtivo(ecxOperacoes(args||{})); },
+    porHora(args){ return ecxPorHora(ecxOperacoes(args||{})); },
+    ativos(){ return [...new Set((S.operations||[]).map(opAsset).filter(Boolean))]; },
+    filtros(){ return ecxFiltroAtual(); },
+    config(){ return ecxConf(); },
+    tema(){ return ecxTema(); },
+    temas(){ return ((typeof THEMES!=='undefined')?THEMES:[]).map(t=>({id:t.id,nome:t.name,escuro:!!t.dark,vibrante:!!t.vivid})); },
+    prints(args){ return ecxPrintsDaOperacao(args&&args.operacao,args&&args.maxW); },
+    abrirPrint(args){ return ecxAbrirPrint(args&&args.id); },
+    abrirOperacao(args){ try{ openDet(String((args&&args.id)||'')); return true; }catch(e){ ecxErr('abrir operação',e); return false; } },
+    irPara(args){ try{ nav(String((args&&args.pagina)||'dashboard')); return true; }catch(e){ ecxErr('navegar',e); return false; } },
+    toast(args){ try{ toast(String((args&&args.msg)||''),String((args&&args.tipo)||'s')); return true; }catch(e){ return false; } },
+    telaCheia(args){ return ecxTelaCheia(!!(args&&args.on)); },
+    guardar(args){ return ecxGuardar(args&&args.ferramenta,args&&args.chave,args&&args.valor); },
+    ler(args){ return ecxLer(args&&args.ferramenta,args&&args.chave,args&&args.padrao); },
+    on(evt,fn){ return ecxOn(evt,fn); },
+    off(evt,fn){ return ecxOff2(evt,fn); },
+    registrar(id,api){ return ecxRegistrar(id,api); },
+    ferramentas(){ return ECX.tools.map(t=>({id:t.id,nome:t.nome,versao:t.versao,modo:t.modo,ativa:t.ativa,montada:!!t.montado,erro:t.erro||''})); },
+    erros(){ return ECX.errors.slice(-20); }
+  };
+}
+/* RPC usado pelo iframe (mesmos métodos, args sempre em objeto) */
+function ecxRpc(){
+  return {versao:()=>EC.host.versao(),operacoes:a=>EC.host.operacoes(a),serie:a=>EC.host.serie(a),
+    resumo:a=>EC.host.resumo(a),velas:a=>EC.host.velas(a),porDia:a=>EC.host.porDia(a),
+    porAtivo:a=>EC.host.porAtivo(a),porHora:a=>EC.host.porHora(a),ativos:()=>EC.host.ativos(),
+    filtros:()=>EC.host.filtros(),config:()=>EC.host.config(),tema:()=>EC.host.tema(),temas:()=>EC.host.temas(),
+    prints:a=>EC.host.prints(a),abrirPrint:a=>EC.host.abrirPrint(a),abrirOperacao:a=>EC.host.abrirOperacao(a),
+    irPara:a=>EC.host.irPara(a),toast:a=>EC.host.toast(a),telaCheia:a=>EC.host.telaCheia(a),
+    guardar:a=>EC.host.guardar(a),ler:a=>EC.host.ler(a),ferramentas:()=>EC.host.ferramentas(),erros:()=>EC.host.erros()};
+}
+function ecxOn(evt,fn){
+  if(typeof fn!=='function') return false;
+  const k=String(evt||'');
+  (ECX.subs[k]=ECX.subs[k]||[]).push(fn);
+  return true;
+}
+function ecxOff2(evt,fn){
+  const k=String(evt||'');
+  if(!ECX.subs[k]) return false;
+  ECX.subs[k]=fn?ECX.subs[k].filter(f=>f!==fn):[];
+  return true;
+}
+function ecxChaveDe(toolId,chave){ return 'ecx:'+String(toolId||'?')+':'+String(chave||''); }
+function ecxGuardar(toolId,chave,valor){
+  try{ localStorage.setItem(ecxChaveDe(toolId,chave),JSON.stringify(valor===undefined?null:valor)); return true; }
+  catch(e){ ecxErr('guardar "'+chave+'"',e); return false; }
+}
+function ecxLer(toolId,chave,padrao){
+  const d=padrao===undefined?null:padrao;
+  try{
+    const raw=localStorage.getItem(ecxChaveDe(toolId,chave));
+    return raw==null?d:JSON.parse(raw);
+  }catch(e){ return d; }
+}
+function ecxRegistrar(id,api){
+  const t=ECX.tools.find(x=>x.id===String(id));
+  if(!t){ ecxErr('registrar: ferramenta desconhecida',id); return false; }
+  if(!api||typeof api.mount!=='function'){ ecxErr('registrar: api sem mount()',id); return false; }
+  t.api=api;
+  /* registro tardio (a ferramenta se registrou depois da injeção do script):
+     monta agora, se a aba dela estiver aberta */
+  if(!t.esperando&&!t.montado&&t.el&&t.el.nodeType===1&&ECX.view===t.id){
+    try{ t.el.innerHTML=''; api.mount(t.el,ecxContexto(t)); t.montado=true; ecxEmitir('abrir',{ferramenta:t.id}); }
+    catch(e){ ecxErr('mount tardio de '+t.id,e); }
+  }
+  return true;
+}
+
+/* ── montagem ────────────────────────────────────────────────────── */
+function ecxVazioHTML(tool,msg){
+  return '<div class="ecx-vazio"><div class="ecx-vazio-i">🧩</div>'+
+    '<b>'+(tool?escHtml(tool.nome):'Ferramenta')+'</b>'+
+    '<p>'+(msg||'')+'</p>'+
+    '<p class="ecx-dica">Contrato de integração: <code>ferramentas/LEIA-ME.md</code></p></div>';
+}
+function ecxCss(tool){
+  if(!tool.estilo||document.getElementById('ecxCss_'+tool.id)) return;
+  const l=document.createElement('link');
+  l.rel='stylesheet';l.href=tool.estilo;l.id='ecxCss_'+tool.id;
+  l.onerror=()=>ecxErr('CSS não carregou',tool.estilo);
+  document.head.appendChild(l);
+}
+async function ecxMontar(tool){
+  if(!tool||tool.montado) return;
+  const host=document.getElementById('ecxHost');
+  if(!host) return;
+  host.innerHTML='<div class="ecx-carregando">carregando '+escHtml(tool.nome)+'…</div>';
+  tool.erro='';
+  try{
+    if(tool.modo==='iframe'){
+      const f=document.createElement('iframe');
+      f.className='ecx-frame';f.title=tool.nome;
+      f.setAttribute('sandbox','allow-scripts allow-same-origin allow-forms allow-popups allow-downloads allow-pointer-lock');
+      f.addEventListener('load',()=>{ ECX.frames[tool.id]=f; ecxQuadroPronto(tool); });
+      f.src=tool.entrada;
+      host.innerHTML='';host.appendChild(f);
+      /* o quadro já existe (mesmo antes do load): marca como montado para a
+         ponte responder e para os eventos de dados chegarem até ele */
+      tool.el=f;tool.montado=true;
+    }else{
+      ecxCss(tool);
+      const box=document.createElement('div');
+      box.className='ecx-nativo';box.id='ecxNativo_'+tool.id;
+      host.innerHTML='';host.appendChild(box);
+      tool.el=box;
+      const codigo=await (await ecxBaixar(tool.script)).text();
+      const s=document.createElement('script');
+      s.textContent=codigo;s.setAttribute('data-ecx',tool.id);
+      /* durante a injeção o registrar() não monta: quem monta é este fluxo,
+         senão o mount() rodaria duas vezes */
+      tool.esperando=true;
+      (document.body||document.documentElement).appendChild(s);
+      tool.esperando=false;
+      if(tool.api&&typeof tool.api.mount==='function'){
+        await tool.api.mount(box,ecxContexto(tool));
+        tool.montado=true;
+      }else{
+        box.innerHTML=ecxVazioHTML(tool,'O script carregou, mas não se registrou. Ele precisa chamar '+
+          '<code>EC.host.registrar("'+escHtml(tool.id)+'",{mount(el,ctx){…}})</code>.');
+      }
+    }
+    if(tool.montado) ecxEmitir('abrir',{ferramenta:tool.id});
+  }catch(e){
+    tool.montado=false;tool.erro=String((e&&e.message)||e||'');
+    ecxErr('não montei '+tool.id,e);
+    host.innerHTML=ecxVazioHTML(tool,'Não consegui montar esta ferramenta.<br><code>'+escHtml(tool.erro)+'</code>');
+  }
+}
+function ecxDesmontar(tool){
+  if(!tool||!tool.montado) return;
+  try{ if(tool.api&&typeof tool.api.unmount==='function') tool.api.unmount(); }
+  catch(e){ ecxErr('unmount de '+tool.id,e); }
+  try{ if(tool.el&&tool.el.parentNode) tool.el.parentNode.removeChild(tool.el); }catch(e){}
+  delete ECX.frames[tool.id];
+  tool.montado=false;tool.el=null;
+  ecxEmitir('fechar',{ferramenta:tool.id});
+}
+function ecxQuadroPronto(tool){
+  try{
+    const f=tool.el;
+    if(!f||!f.contentWindow) return;
+    f.contentWindow.postMessage({ecx:1,evt:'pronto',data:ecxContexto(tool)},location.origin);
+    f.contentWindow.postMessage({ecx:1,evt:'dados',data:{api:EC_HOST_API,motivo:'abertura'}},location.origin);
+  }catch(e){ ecxErr('aviso de quadro pronto ('+tool.id+')',e); }
+}
+function ecxSetView(id,silencioso){
+  try{
+    const tool=ECX.tools.find(t=>t.id===id&&t.ativa);
+    const tabela=(!id||id==='tabela'||!tool);
+    const anterior=ECX.tools.find(t=>t.id===ECX.view);
+    if(anterior&&anterior.id!==(tabela?'':id)) ecxDesmontar(anterior);
+    ECX.view=tabela?'tabela':(tool?tool.id:'tabela');
+    const slot=document.getElementById('ecxSlot');
+    const tbl=document.querySelector('#page-operations .ops-tbl');
+    if(slot) slot.hidden=ECX.view==='tabela';
+    if(tbl) tbl.style.display=ECX.view==='tabela'?'':'none';
+    ecxRenderTabs();
+    if(ECX.view!=='tabela') ecxMontar(tool);
+    if(!silencioso) ecxEmitir('pagina',{pagina:'operations',visao:ECX.view});
+  }catch(e){ ecxErr('troca de visão',e); }
+}
+function ecxTelaCheia(on){
+  const slot=document.getElementById('ecxSlot');
+  if(!slot) return false;
+  slot.classList.toggle('ecx-fs',!!on);
+  try{ document.body.classList.toggle('ecx-travado',!!on); }catch(e){}
+  ecxEmitir('redimensionar',{telaCheia:!!on});
+  return !!on;
+}
+
+/* ── interface ───────────────────────────────────────────────────── */
+function ecxRenderTabs(){
+  const bar=document.getElementById('ecxTabs');
+  if(!bar) return;
+  const tools=ECX.tools.filter(t=>t.ativa&&t.montagem==='operacoes');
+  if(ECX.off||!tools.length){
+    bar.hidden=true;bar.innerHTML='';
+    if(ECX.view!=='tabela') ecxSetView('tabela',true);
+    return;
+  }
+  bar.hidden=false;
+  bar.innerHTML=
+    '<button class="ecx-tab'+(ECX.view==='tabela'?' on':'')+'" onclick="ecxSetView(\'tabela\')" title="Lista de operações (padrão do app)">📋 Tabela</button>'+
+    tools.map(t=>'<button class="ecx-tab'+(ECX.view===t.id?' on':'')+'" onclick="ecxSetView(\''+t.id+'\')" title="'+
+      escHtml(t.descricao||t.nome)+' · v'+escHtml(t.versao)+' · '+escHtml(t.modo)+'">'+
+      escHtml(t.icone)+' '+escHtml(t.rotulo)+'</button>').join('')+
+    '<button class="ecx-gear" onclick="ecxMod(true)" title="Ferramentas instaladas">⚙</button>'+
+    (tools.some(t=>t.telaCheia)&&ECX.view!=='tabela'
+      ? '<button class="ecx-gear" onclick="ecxTelaCheia(true)" title="Expandir para a tela toda">⛶</button>' : '');
+}
+function ecxMod(show){
+  const m=document.getElementById('ecxMod');
+  if(!m) return;
+  if(show){ ecxRenderMod(); showMod('ecxMod'); } else closeMod('ecxMod');
+}
+function ecxRenderMod(){
+  const b=document.getElementById('ecxLista');
+  if(!b) return;
+  const st=document.getElementById('ecxStatus');
+  if(st) st.textContent='API do hospedeiro v'+EC_HOST_API+' · build '+EC_BUILD+
+    (ECX.off?' · DESLIGADO (kill switch)':' · '+ECX.tools.length+' ferramenta(s)');
+  if(ECX.off){
+    b.innerHTML='<div class="ecx-vazio"><div class="ecx-vazio-i">⛔</div><b>Hospedeiro desligado</b>'+
+      '<p>Remova <code>?ecx=0</code> da URL ou apague <code>localStorage.ecxOff</code> e recarregue.</p></div>';
+    return;
+  }
+  if(!ECX.tools.length){
+    b.innerHTML=ecxVazioHTML(null,'Nenhuma ferramenta instalada. Coloque a pasta dela em <code>ferramentas/</code> '+
+      'com um <code>ferramenta.json</code> válido e liste-a em <code>ferramentas/registro.json</code>.');
+    return;
+  }
+  b.innerHTML=ECX.tools.map(t=>'<div class="ecx-item'+(t.ativa?'':' off')+'">'+
+    '<div class="ecx-item-i">'+escHtml(t.icone)+'</div>'+
+    '<div class="ecx-item-c"><b>'+escHtml(t.nome)+'</b> <span class="ecx-tag">v'+escHtml(t.versao)+'</span>'+
+    ' <span class="ecx-tag">'+escHtml(t.modo)+'</span>'+
+    '<div class="ecx-item-d">'+escHtml(t.descricao||'sem descrição')+'</div>'+
+    '<div class="ecx-item-d">pasta: <code>'+escHtml(t.base)+'</code>'+(t.montado?' · montada':'')+'</div>'+
+    (t.erro?'<div class="ecx-item-e">⚠ '+escHtml(t.erro)+'</div>':'')+'</div>'+
+    '<div class="ecx-item-a">'+
+    '<button class="btn-s xs" onclick="ecxSetView(\''+t.id+'\');ecxMod(false)">Abrir</button>'+
+    '<button class="btn-s xs" onclick="ecxAlternar(\''+t.id+'\')">'+(t.ativa?'Desativar':'Ativar')+'</button>'+
+    '<button class="btn-s xs" onclick="ecxRecarregar()">Recarregar</button>'+
+    '</div></div>').join('')+
+    (ECX.errors.length?'<div class="ecx-erros"><b>Avisos do carregamento ('+ECX.errors.length+')</b><ul>'+
+      ECX.errors.slice(-8).map(e=>'<li>'+escHtml(e.msg)+(e.det?' — <code>'+escHtml(e.det)+'</code>':'')+'</li>').join('')+
+      '</ul></div>':'');
+}
+function ecxAlternar(id){
+  const t=ECX.tools.find(x=>x.id===id);
+  if(!t) return;
+  t.ativa=!t.ativa;
+  if(!t.ativa&&ECX.view===id) ecxSetView('tabela',true);
+  if(!t.ativa) ecxDesmontar(t);
+  ecxRenderTabs();ecxRenderMod();
+  try{ toast(t.ativa?('🧩 '+t.nome+' ativada'):('🧩 '+t.nome+' desativada'),'s'); }catch(e){}
+}
+async function ecxRecarregar(){
+  try{
+    ECX.tools.forEach(t=>ecxDesmontar(t));
+    ECX.tools=[];ECX.errors=[];ECX.view='tabela';
+    await ecxCarregar();
+    ecxRenderTabs();ecxRenderMod();
+    toast('🧩 Ferramentas recarregadas ('+ECX.tools.length+')','s');
+  }catch(e){ ecxErr('recarregar',e); }
+}
+function ecxMensagem(ev){
+  try{
+    if(ev.origin&&ev.origin!==location.origin) return;      /* só a mesma origem */
+    const m=ev.data;
+    if(!m||m.ecx!==1) return;
+    const src=ev.source;
+    const tool=ECX.tools.find(t=>t.montado&&t.el&&t.el.contentWindow===src);
+    if(m.evt==='pronto'&&tool){ ecxQuadroPronto(tool); return; }
+    if(!m.req) return;
+    const nome=String(m.metodo||'');
+    const fn=ECX.rpc[nome];
+    const args=Object.assign({},(m.args&&typeof m.args==='object')?m.args:{});
+    if(tool&&!args.ferramenta) args.ferramenta=tool.id;
+    Promise.resolve().then(()=>{
+      if(typeof fn!=='function') throw new Error('método desconhecido: '+nome);
+      return fn(args);
+    }).then(data=>{
+      if(src) src.postMessage({ecx:1,res:m.req,ok:true,data:data},location.origin);
+    },erro=>{
+      ecxErr('rpc "'+nome+'"',erro);
+      if(src) src.postMessage({ecx:1,res:m.req,ok:false,erro:String((erro&&erro.message)||erro)},location.origin);
+    });
+  }catch(e){ ecxErr('mensagem de ferramenta',e); }
+}
+
+/* ── hooks: embrulha funções existentes sem reescrevê-las ────────── */
+function ecxHooks(){
+  const depois={
+    save:()=>ecxEmitir('dados',{motivo:'save'}),
+    importData:()=>ecxEmitir('dados',{motivo:'import'}),
+    applyFilter:()=>ecxEmitir('filtro',ecxFiltroAtual()),
+    clearFilter:()=>ecxEmitir('filtro',ecxFiltroAtual()),
+    applyTheme:()=>ecxEmitir('tema',ecxTema()),
+    renderOps:()=>{ const tb=document.getElementById('opsTb'); ecxEmitir('tabela',{linhas:tb?tb.childElementCount:0}); },
+    nav:()=>{
+      const pg=document.getElementById('page-operations');
+      if(ECX.view!=='tabela'&&pg&&!pg.classList.contains('active')) ecxSetView('tabela',true);
+      ecxEmitir('pagina',{pagina:(pg&&pg.classList.contains('active'))?'operations':'outra',visao:ECX.view});
+    }
+  };
+  Object.keys(depois).forEach(nome=>{
+    try{
+      const original=window[nome];
+      if(typeof original!=='function'||original.__ecx) return;
+      const gancho=depois[nome];
+      const embrulho=function(){
+        const r=original.apply(this,arguments);
+        const dispara=()=>{ try{ gancho(); }catch(e){ /* hook nunca derruba o app */ } };
+        if(r&&typeof r.then==='function') r.then(dispara,dispara); else dispara();
+        return r;
+      };
+      embrulho.__ecx=true;
+      window[nome]=embrulho;
+      ECX.hooks.push(nome);
+    }catch(e){ ecxErr('hook de '+nome,e); }
+  });
+}
+
+/* ── inicialização (última linha do init()) ──────────────────────── */
+async function ecxInit(){
+  try{
+    window.EC=window.EC||{};
+    window.EC.host=ecxPonte();
+    ECX.rpc=ecxRpc();
+    if(ecxOff()){ ECX.off=true; ecxRenderTabs(); return; }
+    await ecxCarregar();
+    ecxRenderTabs();
+    ecxHooks();
+    window.addEventListener('message',ecxMensagem);
+    window.addEventListener('resize',()=>ecxEmitir('redimensionar',{largura:innerWidth,altura:innerHeight}));
+    ECX.ready=true;
+    if(ECX.tools.length) console.info('[ECX] ferramenta(s) disponível(is): '+ECX.tools.map(t=>t.id+' v'+t.versao+' ('+t.modo+')').join(', '));
+  }catch(e){ ecxErr('falha ao iniciar o hospedeiro',e); }
+}
+
 /* ══════════════════════════════════════
    INIT
 ══════════════════════════════════════ */
-var EC_BUILD='2026-09-29.2-analise-v2';   /* digite EC_BUILD no console p/ ver a versão */
+var EC_BUILD='2026-09-29.3-ecx-hospedeiro-v2';   /* digite EC_BUILD no console p/ ver a versão */
 async function init(){
   console.info('EdgeControl build: '+EC_BUILD);
   load();
@@ -8478,6 +9174,9 @@ async function init(){
   mtApplyAll();
   initPWA();
   maybeLoadDemoData();
+  /* hospedeiro de ferramentas (pasta /ferramentas): não bloqueia o init e,
+     sem a pasta, não faz absolutamente nada */
+  ecxInit();
 }
 /* ?demo=1 — carrega o backup de exemplo que mora na própria pasta (mesma
    origem), só para experimentar o estúdio sem dados próprios. Nunca roda no

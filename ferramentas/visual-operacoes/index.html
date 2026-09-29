@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>📈 Visualização das Operações</title>
+<link rel="stylesheet" href="estilo.css">
+</head>
+<body>
+<div class="vx">
+
+  <div class="vx-topo">
+    <div>
+      <div class="vx-titulo">📈 Visualização das Operações</div>
+      <div class="vx-sub" id="vxSub">conectando ao EdgeControl…</div>
+    </div>
+    <div class="vx-pilula" id="vxPill"><span class="bola"></span><span id="vxModo">—</span></div>
+  </div>
+
+  <div id="vxAviso"></div>
+
+  <div class="vx-kpis" id="vxKpis"></div>
+
+  <div class="vx-corpo">
+    <div class="vx-painel">
+      <div class="vx-acoes">
+        <button class="vx-bt on" id="btLinha" type="button">Linha de capital</button>
+        <button class="vx-bt" id="btVelas" type="button">Velas diárias</button>
+        <button class="vx-bt" id="btFs" type="button">⛶ Tela cheia</button>
+        <button class="vx-bt" id="btReload" type="button">🔄 Recarregar</button>
+        <button class="vx-bt" id="btToast" type="button">🔔 Testar toast</button>
+      </div>
+      <div class="vx-tela" id="vxTela"><canvas id="vxCanvas"></canvas></div>
+      <div class="vx-legenda" id="vxLeg"></div>
+    </div>
+
+    <div class="vx-painel">
+      <div class="vx-acoes"><b style="font-size:11.5px;">Últimas operações</b></div>
+      <div class="vx-lista" id="vxLista"><div class="vx-vazio">carregando…</div></div>
+      <div class="vx-acoes"><b style="font-size:11.5px;">Eventos vindos do app</b></div>
+      <div class="vx-log" id="vxLog">aguardando…</div>
+    </div>
+  </div>
+
+  <div class="vx-rodape">
+    Painel de referência que prova a integração (ponte <code>EC.ponte</code>, série
+    <code>EC.ponte.serie()</code>, eventos <code>dados</code>/<code>tema</code>/<code>filtro</code>).
+    Para colocar o seu sistema aqui: substitua <code>index.html</code> e <code>estilo.css</code> desta pasta
+    e mantenha o <code>ferramenta.json</code>. Contrato completo em <code>ferramentas/LEIA-ME.md</code>.
+  </div>
+
+</div>
+
+<script src="../ponte.js"></script>
+<script>
+(function () {
+  'use strict';
+  var P = window.EC && window.EC.ponte;
+  var estado = { serie: null, tema: null, ver: 'linha', fs: false, carregando: false };
+
+  function $(id) { return document.getElementById(id); }
+  function fmtBRL(v) {
+    try { return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v || 0); }
+    catch (e) { return 'R$ ' + (v || 0); }
+  }
+  function pct(v, d) { return ((v || 0) * 100).toFixed(d == null ? 1 : d) + '%'; }
+  function sinal(v) { return v > 0 ? 'pos' : (v < 0 ? 'neg' : ''); }
+  function log(msg) {
+    var el = $('vxLog'); if (!el) return;
+    var t = new Date().toTimeString().slice(0, 8);
+    el.textContent = (el.textContent === 'aguardando…' ? '' : el.textContent + '\n') + t + '  ' + msg;
+    el.scrollTop = el.scrollHeight;
+  }
+  function aviso(html) { $('vxAviso').innerHTML = html ? '<div class="vx-aviso">' + html + '</div>' : ''; }
+
+  /* ── tema do app → variáveis deste painel ─────────────────────────── */
+  function aplicarTema(t) {
+    var c = (t && t.cores) || {};
+    var r = document.documentElement.style;
+    var mapa = { fundo: 'fundo', superficie: 'cartao', cartao: 'superficie', borda: 'borda',
+      texto: 'texto', suave: 'suave', apagado: 'apagado', acento: 'acento', ciano: 'ciano',
+      win: 'win', loss: 'loss', alerta: 'alerta' };
+    Object.keys(mapa).forEach(function (k) { if (c[k]) r.setProperty('--' + mapa[k], c[k]); });
+  }
+  function corDe(nome, fallback) {
+    var v = getComputedStyle(document.documentElement).getPropertyValue('--' + nome);
+    return (v || '').trim() || fallback;
+  }
+
+  /* ── KPIs ─────────────────────────────────────────────────────────── */
+  function kpis(s) {
+    var r = s.resumo || {};
+    var itens = [
+      ['Operações', r.n || 0, (r.wins || 0) + ' W · ' + (r.losses || 0) + ' L'],
+      ['Taxa de acerto', pct(r.taxa), (r.outros || 0) + ' sem resultado'],
+      ['Resultado', fmtBRL(r.resultado), 'expectativa ' + fmtBRL(r.expectativa) + '/op'],
+      ['Saldo final', fmtBRL(r.saldoFinal), 'inicial ' + fmtBRL(r.saldoInicial)],
+      ['Drawdown máx.', fmtBRL(r.drawdown), pct(r.drawdownPct) + ' do pico'],
+      ['Fator de lucro', (r.fatorLucro === Infinity ? '∞' : (r.fatorLucro || 0).toFixed(2)),
+        'win médio ' + fmtBRL(r.mediaWin)],
+      ['Sequência atual', (r.sequenciaAtual || 0) + ' ' + (r.sequenciaTipo || '—'),
+        'melhor ' + (r.melhorSequenciaWin || 0) + ' W · pior ' + (r.piorSequenciaLoss || 0) + ' L'],
+      ['Ativos / dias', (r.ativosDistintos || 0) + ' / ' + (r.diasDistintos || 0), 'cobertura do período']
+    ];
+    $('vxKpis').innerHTML = itens.map(function (it) {
+      var cls = it[0] === 'Resultado' || it[0] === 'Saldo final' ? sinal(it[1]) : '';
+      return '<div class="vx-kpi"><span>' + it[0] + '</span><b class="' + cls + '">' + it[1] + '</b><i>' + it[2] + '</i></div>';
+    }).join('');
+  }
+
+  /* ── gráfico (canvas 2D puro, sem dependências) ───────────────────── */
+  function prepararCanvas() {
+    var cv = $('vxCanvas'), box = $('vxTela');
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var w = Math.max(120, Math.round(box.clientWidth || 600));
+    var h = Math.max(120, Math.round(box.clientHeight || 300));
+    cv.width = w * dpr; cv.height = h * dpr;
+    var g = cv.getContext('2d');
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return { g: g, w: w, h: h };
+  }
+  function eixos(g, c, pad, min, max) {
+    g.strokeStyle = corDe('borda', '#2a2f3a');
+    g.fillStyle = corDe('apagado', '#6b7280');
+    g.lineWidth = 1; g.font = '10px Inter, sans-serif'; g.textAlign = 'right'; g.textBaseline = 'middle';
+    for (var i = 0; i <= 4; i++) {
+      var y = pad.t + (c.h - pad.t - pad.b) * (i / 4);
+      var v = max - (max - min) * (i / 4);
+      g.beginPath(); g.moveTo(pad.l, y); g.lineTo(c.w - pad.r, y); g.stroke();
+      g.fillText(fmtBRL(v), pad.l - 6, y);
+    }
+  }
+  function desenhar() {
+    var s = estado.serie; if (!s) return;
+    var c = prepararCanvas(), g = c.g;
+    var pad = { l: 62, r: 12, t: 12, b: 22 };
+    g.clearRect(0, 0, c.w, c.h);
+    if (estado.ver === 'velas') velas(g, c, s, pad); else linha(g, c, s, pad);
+  }
+  function linha(g, c, s, pad) {
+    var pts = s.equity || [];
+    if (pts.length < 2) { semDados(g, c); return; }
+    var vals = pts.map(function (p) { return p.saldo; });
+    var min = Math.min.apply(null, vals.concat([s.capitalInicial]));
+    var max = Math.max.apply(null, vals.concat([s.capitalInicial]));
+    if (max === min) { max += 1; min -= 1; }
+    eixos(g, c, pad, min, max);
+    var W = c.w - pad.l - pad.r, H = c.h - pad.t - pad.b;
+    var X = function (i) { return pad.l + W * (i / (pts.length - 1)); };
+    var Y = function (v) { return pad.t + H * (1 - (v - min) / (max - min)); };
+    /* área */
+    var grad = g.createLinearGradient(0, pad.t, 0, c.h - pad.b);
+    var acento = corDe('acento', '#4f46e5');
+    grad.addColorStop(0, acento + '55'); grad.addColorStop(1, acento + '00');
+    g.beginPath(); g.moveTo(X(0), Y(pts[0].saldo));
+    for (var i = 1; i < pts.length; i++) g.lineTo(X(i), Y(pts[i].saldo));
+    g.lineTo(X(pts.length - 1), c.h - pad.b); g.lineTo(X(0), c.h - pad.b); g.closePath();
+    g.fillStyle = grad; g.fill();
+    /* linha */
+    g.beginPath(); g.moveTo(X(0), Y(pts[0].saldo));
+    for (var j = 1; j < pts.length; j++) g.lineTo(X(j), Y(pts[j].saldo));
+    g.strokeStyle = acento; g.lineWidth = 2; g.lineJoin = 'round'; g.stroke();
+    /* capital inicial */
+    g.setLineDash([4, 4]); g.beginPath();
+    g.moveTo(pad.l, Y(s.capitalInicial)); g.lineTo(c.w - pad.r, Y(s.capitalInicial));
+    g.strokeStyle = corDe('suave', '#9aa2b4'); g.lineWidth = 1; g.stroke(); g.setLineDash([]);
+    /* último ponto */
+    var ul = pts[pts.length - 1];
+    g.beginPath(); g.arc(X(pts.length - 1), Y(ul.saldo), 3.5, 0, Math.PI * 2);
+    g.fillStyle = corDe('ciano', '#22d3ee'); g.fill();
+    datas(g, c, pts, pad, X);
+  }
+  function velas(g, c, s, pad) {
+    var v = s.velas || [];
+    if (!v.length) { semDados(g, c); return; }
+    var min = Math.min.apply(null, v.map(function (d) { return d.l; }));
+    var max = Math.max.apply(null, v.map(function (d) { return d.h; }));
+    if (max === min) { max += 1; min -= 1; }
+    eixos(g, c, pad, min, max);
+    var W = c.w - pad.l - pad.r, H = c.h - pad.t - pad.b;
+    var passo = W / v.length, larg = Math.max(2, Math.min(18, passo * 0.62));
+    var Y = function (x) { return pad.t + H * (1 - (x - min) / (max - min)); };
+    v.forEach(function (d, i) {
+      var cx = pad.l + passo * (i + 0.5);
+      var alta = d.c >= d.o;
+      var cor = alta ? corDe('win', '#0ea47a') : corDe('loss', '#e11d48');
+      g.strokeStyle = cor; g.fillStyle = cor; g.lineWidth = 1;
+      g.beginPath(); g.moveTo(cx, Y(d.h)); g.lineTo(cx, Y(d.l)); g.stroke();
+      var topo = Y(Math.max(d.o, d.c)), base = Y(Math.min(d.o, d.c));
+      g.fillRect(cx - larg / 2, topo, larg, Math.max(1.5, base - topo));
+    });
+    g.fillStyle = corDe('apagado', '#6b7280'); g.font = '10px Inter, sans-serif';
+    g.textAlign = 'center'; g.textBaseline = 'top';
+    var rotulo = Math.max(1, Math.round(v.length / 8));
+    v.forEach(function (d, i) {
+      if (i % rotulo) return;
+      g.fillText(String(d.t).slice(5), pad.l + passo * (i + 0.5), c.h - pad.b + 6);
+    });
+  }
+  function datas(g, c, pts, pad, X) {
+    g.fillStyle = corDe('apagado', '#6b7280'); g.font = '10px Inter, sans-serif';
+    g.textAlign = 'center'; g.textBaseline = 'top';
+    var rotulo = Math.max(1, Math.round(pts.length / 8));
+    pts.forEach(function (p, i) {
+      if (i % rotulo || !p.ts) return;
+      var d = new Date(p.ts);
+      g.fillText(('0' + (d.getMonth() + 1)).slice(-2) + '/' + ('0' + d.getDate()).slice(-2), X(i), c.h - pad.b + 6);
+    });
+  }
+  function semDados(g, c) {
+    g.fillStyle = corDe('suave', '#9aa2b4'); g.font = '12px Inter, sans-serif';
+    g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillText('Sem operações para desenhar ainda.', c.w / 2, c.h / 2);
+  }
+
+  /* ── lista de operações ───────────────────────────────────────────── */
+  function lista(s) {
+    var ops = (s.operacoes || []).slice(-14).reverse();
+    if (!ops.length) { $('vxLista').innerHTML = '<div class="vx-vazio">Nenhuma operação catalogada.</div>'; return; }
+    $('vxLista').innerHTML = ops.map(function (o) {
+      var cls = o.resultado === 'WIN' ? 'win' : (o.resultado === 'LOSS' ? 'loss' : 'outro');
+      var rot = o.resultado || '—';
+      return '<div class="vx-op" data-id="' + o.id + '">' +
+        '<span class="r ' + cls + '">' + rot + '</span>' +
+        '<span class="q">' + (o.ativo || 'ativo?') + ' <em>' + (o.data || '') + ' ' + (o.hora || '') + '</em></span>' +
+        '<span class="v ' + sinal(o.efeito) + '">' + fmtBRL(o.efeito) + '</span>' +
+        (o.prints && o.prints.length ? '<button class="m" data-print="' + o.prints[0] + '" title="Abrir o print no estúdio">📸</button>' : '') +
+        '</div>';
+    }).join('');
+  }
+  function legenda(s) {
+    var r = s.resumo || {};
+    $('vxLeg').innerHTML =
+      '<span>— linha: saldo acumulado (começa em ' + fmtBRL(s.capitalInicial) + ')</span>' +
+      '<span>· traço: capital inicial</span>' +
+      '<span>· velas: abertura/máx/mín/fechamento do saldo por dia</span>' +
+      '<span>· ' + (r.diasDistintos || 0) + ' dias, ' + (r.n || 0) + ' ops</span>';
+  }
+
+  /* ── carga ────────────────────────────────────────────────────────── */
+  async function carregar(motivo) {
+    if (!P || estado.carregando) return;
+    estado.carregando = true;
+    try {
+      var s = await P.serie();
+      estado.serie = s;
+      kpis(s); lista(s); legenda(s); desenhar();
+      $('vxSub').textContent = (s.operacoes || []).length + ' operações · gerado ' +
+        new Date(s.geradoEm).toLocaleTimeString('pt-BR') + (motivo ? ' · ' + motivo : '');
+    } catch (e) {
+      aviso('Não consegui ler as operações do app: <b>' + (e && e.message ? e.message : e) + '</b>');
+      log('erro ao carregar: ' + (e && e.message ? e.message : e));
+    } finally { estado.carregando = false; }
+  }
+  function ver(v) {
+    estado.ver = v;
+    $('btLinha').classList.toggle('on', v === 'linha');
+    $('btVelas').classList.toggle('on', v === 'velas');
+    desenhar();
+  }
+
+  /* ── ligações ─────────────────────────────────────────────────────── */
+  function ligar() {
+    $('btLinha').onclick = function () { ver('linha'); };
+    $('btVelas').onclick = function () { ver('velas'); };
+    $('btReload').onclick = function () { log('recarregando a pedido do usuário'); carregar('manual'); };
+    $('btToast').onclick = function () { P.toast('📈 A ferramenta falou com o app!', 's'); };
+    $('btFs').onclick = function () {
+      estado.fs = !estado.fs;
+      P.telaCheia(estado.fs);
+      $('btFs').classList.toggle('on', estado.fs);
+      setTimeout(desenhar, 60);
+    };
+    $('vxLista').addEventListener('click', function (ev) {
+      var bt = ev.target.closest ? ev.target.closest('[data-print]') : null;
+      var op = ev.target.closest ? ev.target.closest('[data-id]') : null;
+      if (bt) { P.abrirPrint(bt.getAttribute('data-print')); return; }
+      if (op) { P.abrirOperacao(op.getAttribute('data-id')); }
+    });
+    window.addEventListener('resize', function () { desenhar(); });
+    if (window.ResizeObserver) { try { new ResizeObserver(function () { desenhar(); }).observe($('vxTela')); } catch (e) { } }
+  }
+
+  function iniciar() {
+    if (!P) {
+      aviso('A ponte <b>../ponte.js</b> não carregou. Confira o caminho do arquivo.');
+      $('vxModo').textContent = 'sem ponte';
+      $('vxPill').classList.add('fora');
+      return;
+    }
+    $('vxModo').textContent = 'modo ' + P.modo + ' · API ' + P.api;
+    if (P.modo === 'isolado') {
+      $('vxPill').classList.add('fora');
+      aviso('Esta página está aberta <b>fora do EdgeControl</b>: não há dados para mostrar. ' +
+        'Abra o app → Operações → aba <b>📈 Análise gráfica</b>.');
+    }
+    ligar();
+    ['dados', 'filtro', 'tema', 'pagina', 'redimensionar', 'abrir', 'fechar'].forEach(function (evt) {
+      P.on(evt, function (d) {
+        log(evt + (d && d.motivo ? ' (' + d.motivo + ')' : ''));
+        if (evt === 'tema') { P.tema().then(function (t) { estado.tema = t; aplicarTema(t); desenhar(); }).catch(function () { }); }
+        if (evt === 'dados' || evt === 'filtro') carregar(evt);
+        if (evt === 'redimensionar') setTimeout(desenhar, 40);
+      });
+    });
+    P.pronto(async function (ctx) {
+      log('conectado · build ' + ((ctx && ctx.build) || '?') + ' · tema ' + ((ctx && ctx.tema && ctx.tema.id) || '?'));
+      try { estado.tema = await P.tema(); aplicarTema(estado.tema); } catch (e) { }
+      await carregar('abertura');
+    });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', iniciar);
+  else iniciar();
+})();
+</script>
+</body>
+</html>

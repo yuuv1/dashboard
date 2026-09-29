@@ -1,0 +1,16 @@
+{
+  "id": "visual-operacoes",
+  "nome": "Visualização das Operações",
+  "rotulo": "Análise gráfica",
+  "descricao": "Sistema de visualização complexa das operações catalogadas (estilo TradingView)",
+  "versao": "0.1.0",
+  "icone": "📈",
+  "modo": "iframe",
+  "entrada": "index.html",
+  "montagem": "operacoes",
+  "tela-cheia": true,
+  "ativa": true,
+  "api-host": 1,
+  "permissao": ["ops", "prints", "tema", "ui", "storage"],
+  "comentario": "Pasta reservada para o sistema externo. Substitua index.html/estilo.css pelos seus arquivos — o manifesto pode continuar igual. Trocar \"modo\" para \"script\" + \"script\": \"index.js\" integra sem iframe."
+}

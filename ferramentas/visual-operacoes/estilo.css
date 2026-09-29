@@ -1,0 +1,67 @@
+/* estilo.css — ferramenta "visual-operacoes"
+   Painel de referência que prova a integração. Pode ser substituído junto
+   com o index.html quando o sistema real (estilo TradingView) chegar.
+   As cores vêm do tema do app (EC.ponte.tema()); os valores abaixo são só
+   o fallback para quando a página abre fora do EdgeControl. */
+:root{
+  --fundo:#0f1116; --superficie:#171a21; --cartao:#1c2029; --borda:#2a2f3a;
+  --texto:#e8eaf0; --suave:#9aa2b4; --apagado:#6b7280;
+  --acento:#4f46e5; --ciano:#22d3ee; --win:#0ea47a; --loss:#e11d48; --alerta:#d97706;
+  --raio:14px;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;height:100%;}
+body{
+  background:var(--fundo);color:var(--texto);
+  font-family:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  font-size:13px;line-height:1.45;-webkit-font-smoothing:antialiased;
+}
+.vx{display:flex;flex-direction:column;gap:10px;padding:12px;min-height:100%;}
+.vx-topo{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+.vx-titulo{font-weight:700;font-size:14px;letter-spacing:.2px;}
+.vx-sub{color:var(--suave);font-size:11px;}
+.vx-pilula{margin-left:auto;display:inline-flex;align-items:center;gap:6px;
+  border:1px solid var(--borda);background:var(--cartao);color:var(--suave);
+  border-radius:999px;padding:4px 10px;font-size:10.5px;font-weight:600;}
+.vx-pilula .bola{width:7px;height:7px;border-radius:50%;background:var(--win);}
+.vx-pilula.fora .bola{background:var(--alerta);}
+.vx-aviso{border:1px solid color-mix(in srgb,var(--alerta) 45%,transparent);
+  background:color-mix(in srgb,var(--alerta) 10%,transparent);color:var(--texto);
+  border-radius:var(--raio);padding:10px 12px;font-size:11.5px;}
+.vx-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(126px,1fr));gap:8px;}
+.vx-kpi{border:1px solid var(--borda);background:var(--cartao);border-radius:var(--raio);padding:9px 11px;}
+.vx-kpi span{display:block;color:var(--suave);font-size:9.5px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;}
+.vx-kpi b{display:block;font-size:16px;margin-top:3px;font-variant-numeric:tabular-nums;}
+.vx-kpi i{display:block;font-style:normal;color:var(--apagado);font-size:10px;margin-top:1px;}
+.pos{color:var(--win);} .neg{color:var(--loss);}
+.vx-corpo{display:grid;grid-template-columns:minmax(0,1fr) 268px;gap:10px;flex:1;}
+@media (max-width:900px){.vx-corpo{grid-template-columns:minmax(0,1fr);}}
+.vx-painel{border:1px solid var(--borda);background:var(--superficie);border-radius:var(--raio);
+  padding:10px;display:flex;flex-direction:column;gap:8px;min-width:0;}
+.vx-acoes{display:flex;gap:6px;flex-wrap:wrap;align-items:center;}
+.vx-bt{border:1px solid var(--borda);background:var(--cartao);color:var(--suave);border-radius:9px;
+  padding:5px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .16s;}
+.vx-bt:hover{color:var(--texto);border-color:color-mix(in srgb,var(--acento) 55%,transparent);}
+.vx-bt.on{background:linear-gradient(135deg,var(--acento),color-mix(in srgb,var(--ciano) 70%,var(--acento)));
+  color:#fff;border-color:transparent;}
+.vx-tela{position:relative;flex:1;min-height:260px;}
+.vx-tela canvas{position:absolute;inset:0;width:100%;height:100%;display:block;}
+.vx-legenda{color:var(--apagado);font-size:10px;display:flex;gap:12px;flex-wrap:wrap;}
+.vx-lista{max-height:290px;overflow-y:auto;display:flex;flex-direction:column;gap:5px;}
+.vx-op{display:flex;gap:7px;align-items:center;border:1px solid var(--borda);background:var(--cartao);
+  border-radius:10px;padding:6px 8px;cursor:pointer;transition:border-color .16s;}
+.vx-op:hover{border-color:color-mix(in srgb,var(--acento) 55%,transparent);}
+.vx-op .r{font-size:9.5px;font-weight:800;letter-spacing:.4px;padding:2px 6px;border-radius:6px;}
+.vx-op .r.win{background:color-mix(in srgb,var(--win) 22%,transparent);color:var(--win);}
+.vx-op .r.loss{background:color-mix(in srgb,var(--loss) 22%,transparent);color:var(--loss);}
+.vx-op .r.outro{background:color-mix(in srgb,var(--suave) 18%,transparent);color:var(--suave);}
+.vx-op .q{flex:1;min-width:0;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.vx-op .q em{font-style:normal;color:var(--apagado);font-size:10px;}
+.vx-op .v{font-size:11px;font-variant-numeric:tabular-nums;font-weight:700;}
+.vx-op .m{border:0;background:transparent;cursor:pointer;font-size:12px;color:var(--suave);padding:2px;}
+.vx-log{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10px;color:var(--suave);
+  background:var(--cartao);border:1px solid var(--borda);border-radius:10px;padding:7px 9px;
+  max-height:120px;overflow-y:auto;white-space:pre-wrap;}
+.vx-rodape{color:var(--apagado);font-size:10px;border-top:1px solid var(--borda);padding-top:8px;}
+.vx-rodape code{background:var(--cartao);border:1px solid var(--borda);border-radius:5px;padding:1px 5px;}
+.vx-vazio{color:var(--suave);font-size:11.5px;text-align:center;padding:22px 10px;}
