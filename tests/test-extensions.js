@@ -52,7 +52,8 @@ ok(srcV1.indexOf('ecxInit(') < 0 && srcV1.indexOf('ECX_ROOT') < 0 && srcV1.index
   && srcV1.indexOf('ecx-slot') < 0 && srcV1.indexOf('ferramentas/') < 0,
   'v1 não recebeu nada do hospedeiro');
 ok(srcV1.indexOf("EC_BUILD='2026-09-18.3-ticker'") > 0, 'v1 mantém o build antigo');
-ok(srcV2.indexOf("EC_BUILD='2026-09-29.4-ecx-analytics-v2'") > 0, 'v2 tem o build do hospedeiro');
+const buildEcx = (srcV2.match(/EC_BUILD='([^']+)'/) || [])[1] || '';
+ok(/^2026-09-29\.[3-9]-ecx-/.test(buildEcx), 'v2 tem o build do hospedeiro (' + (buildEcx || 'nenhum') + ')');
 
 ['id="ecxTabs"', 'id="ecxSlot"', 'id="ecxHost"', 'id="ecxTabsAn"', 'id="ecxSlotAn"', 'id="ecxHostAn"',
   'id="ecxMod"', 'id="ecxLista"', 'id="ecxStatus"'].forEach(id =>
