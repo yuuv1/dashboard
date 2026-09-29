@@ -549,6 +549,139 @@ function mensagem(w, data, origin, source) {
   ok(w.eval('EC.host.ativos()').length > 0, 'ativos() lista os ativos usados');
   ok(w.eval('EC.host.temas()').length >= 10, 'temas() lista os temas do app');
 
+  /* ── J. painel de referência: a ferramenta do outro lado da ponte ── */
+  console.log('\n── 4. painel de referência (ferramentas/visual-operacoes) ──');
+  {
+    const pHtml = fs.readFileSync(path.join(FERR, 'visual-operacoes', 'index.html'), 'utf8');
+    const pJs = fs.readFileSync(path.join(FERR, 'ponte.js'), 'utf8');
+    const ini2 = 1000;
+    const ops2 = [
+      ['WIN', 25, '2026-07-01', '10:00', 'EUR/USD', '1', ['shot_a']],
+      ['LOSS', 20, '2026-07-01', '11:30', 'GBP/JPY', '2', []],
+      ['WIN', 30, '2026-07-02', '09:15', 'EUR/USD', '3', []],
+      ['WIN', 12, '2026-07-03', '14:00', 'AUD/USD', '4', ['shot_b']],
+      ['LOSS', 8, '2026-07-03', '16:45', 'EUR/USD', '5', []]
+    ].map(function (o, i) {
+      return { resultado: o[0], valor: o[1], efeito: o[0] === 'WIN' ? o[1] : -o[1], data: o[2], hora: o[3],
+        ts: Date.parse(o[2] + 'T' + o[3] + ':00'), ativo: o[4], id: o[5], prints: o[6], i: i, n: i + 1,
+        saldo: 0, usd: o[1] / 5, plano: 'yes', motivo: '', notas: '', emocoes: [], operacionais: [],
+        direcao: '', video: '', imagem: '', criadoEm: '' };
+    });
+    let saldo2 = ini2;
+    ops2.forEach(function (o) { saldo2 += o.efeito; o.saldo = saldo2; });
+    const TEMA2 = { id: 'graphite', nome: 'Graphite', escuro: true, vibrante: false, metal: 'chrome', amostras: [],
+      cores: { fundo: '#17181B', superficie: '#55554E', cartao: '#1c1d21', borda: '#333', texto: '#eee',
+        suave: '#aaa', apagado: '#777', acento: '#7C8FA6', acento2: '#8fa2b8', ciano: '#22d3ee',
+        win: '#0ea47a', loss: '#e11d48', alerta: '#d97706' } };
+    const SERIE2 = { api: 1, build: 'teste', geradoEm: new Date().toISOString(), capitalInicial: ini2,
+      filtro: { data: '', resultado: '', ativo: '', plano: '' }, operacoes: ops2,
+      equity: [{ ts: ops2[0].ts, i: 0, n: 0, saldo: ini2 }].concat(ops2.map(function (o) { return { ts: o.ts, i: o.i, n: o.n, saldo: o.saldo }; })),
+      velas: [
+        { t: '2026-07-01', ts: ops2[0].ts, o: 1000, h: 1025, l: 1000, c: 1005, n: 2, wins: 1, losses: 1, resultado: 5 },
+        { t: '2026-07-02', ts: ops2[2].ts, o: 1005, h: 1035, l: 1035, c: 1035, n: 1, wins: 1, losses: 0, resultado: 30 },
+        { t: '2026-07-03', ts: ops2[3].ts, o: 1035, h: 1047, l: 1027, c: 1039, n: 2, wins: 1, losses: 1, resultado: 4 }],
+      porDia: [], porAtivo: [], porHora: [],
+      resumo: { n: 5, wins: 3, losses: 2, outros: 0, taxa: 0.6, resultado: 39, brutoWin: 67, brutoLoss: 28,
+        fatorLucro: 2.39, mediaWin: 22.33, mediaLoss: 14, maiorWin: 30, maiorLoss: 20, expectativa: 7.8,
+        saldoInicial: ini2, saldoFinal: saldo2, drawdown: 20, drawdownPct: 0.0195, sequenciaAtual: 1,
+        sequenciaTipo: 'LOSS', melhorSequenciaWin: 2, piorSequenciaLoss: 1, ativosDistintos: 3, diasDistintos: 3 } };
+
+    const chamadas = [], errosP = [];
+    const vcP = new VirtualConsole();
+    vcP.on('jsdomError', function (e) { errosP.push('jsdomError: ' + (e.message || e)); });
+    vcP.on('error', function () { errosP.push('console.error: ' + Array.prototype.join.call(arguments, ' ')); });
+    const wp = new JSDOM(pHtml, {
+      runScripts: 'dangerously', pretendToBeVisual: true, virtualConsole: vcP,
+      url: 'https://edgecontrol.local/ferramentas/visual-operacoes/index.html',
+      beforeParse(w) {
+        const ctx = function () {
+          const st = { fillStyle: '', strokeStyle: '', lineWidth: 1, font: '', textAlign: '', textBaseline: '', lineJoin: '' };
+          const api = {};
+          ['clearRect', 'beginPath', 'moveTo', 'lineTo', 'stroke', 'fill', 'fillRect', 'arc', 'setLineDash',
+            'fillText', 'save', 'restore', 'closePath', 'setTransform'].forEach(function (k) {
+              api[k] = function () { chamadas.push(k); };
+            });
+          api.createLinearGradient = function () { chamadas.push('gradient'); return { addColorStop: function () { } }; };
+          api.measureText = function (t) { return { width: String(t == null ? '' : t).length * 7 }; };
+          return new Proxy(st, { get: function (t, k) { return (k in api) ? api[k] : t[k]; }, set: function (t, k, v) { t[k] = v; return true; }, has: function () { return true; } });
+        };
+        w.HTMLCanvasElement.prototype.getContext = ctx;
+        function enviar(obj) {
+          w.dispatchEvent(new w.MessageEvent('message', { data: obj, origin: 'https://edgecontrol.local' }));
+        }
+        /* "pai" de mentira: responde o RPC como o hospedeiro responde */
+        Object.defineProperty(w, 'parent', {
+          configurable: true,
+          value: {
+            postMessage: function (msg) {
+              if (!msg || msg.ecx !== 1) return;
+              if (msg.evt === 'pronto') { enviar({ ecx: 1, evt: 'pronto', data: { api: 1, build: 'teste', tema: TEMA2 } }); return; }
+              if (msg.req == null) return;
+              const m = msg.metodo, a = msg.args || {};
+              if (m === 'serie') return enviar({ ecx: 1, res: msg.req, ok: true, data: SERIE2 });
+              if (m === 'tema') return enviar({ ecx: 1, res: msg.req, ok: true, data: TEMA2 });
+              if (['toast', 'telaCheia', 'abrirOperacao', 'abrirPrint'].indexOf(m) >= 0) {
+                chamadas.push(m + ':' + (a.msg || a.on || a.id || ''));
+                return enviar({ ecx: 1, res: msg.req, ok: true, data: true });
+              }
+              enviar({ ecx: 1, res: msg.req, ok: false, erro: 'método desconhecido: ' + m });
+            }
+          }
+        });
+        w.__enviar = enviar;
+      }
+    }).window;
+    /* jsdom não carrega <script src>: injeta a ponte e roda o script do painel */
+    const s1 = wp.document.createElement('script'); s1.textContent = pJs; wp.document.body.appendChild(s1);
+    const s2 = wp.document.createElement('script');
+    s2.textContent = pHtml.split('<script>').pop().split('</script>')[0];
+    wp.document.body.appendChild(s2);
+    await sleep(420);
+    const dp = wp.document;
+    eq(wp.eval('EC.ponte.modo'), 'iframe', 'do lado da ferramenta, a ponte se reconhece em modo iframe');
+    eq(dp.querySelectorAll('#vxKpis .vx-kpi').length, 8, 'os 8 KPIs renderizaram');
+    const txt = dp.getElementById('vxKpis').textContent;
+    ok(/60,0%/.test(txt), 'taxa de acerto em pt-BR', (txt.match(/[\d.,]+%/) || [])[0]);
+    ok(/1\.039/.test(txt), 'o saldo final formatado aparece nos KPIs', (txt.match(/R\$[^A-Za-z]{0,14}/g) || []).slice(0, 3).join(' | '));
+    ok(/R\$/.test(txt), 'valores em BRL');
+    ok(/3/.test(txt) && /2/.test(txt), 'wins e losses nos KPIs');
+    eq(dp.querySelectorAll('#vxLista .vx-op').length, 5, 'as operações aparecem na lista lateral');
+    eq(dp.querySelectorAll('#vxLista .vx-op [data-print]').length, 2, 'com 📸 só onde existe print');
+    ok(chamadas.indexOf('gradient') >= 0 && chamadas.indexOf('stroke') >= 0, 'o canvas desenhou a linha de capital');
+    ok(/conectado/.test(dp.getElementById('vxLog').textContent), 'o aperto de mão foi registrado no log');
+    eq(dp.getElementById('vxAviso').innerHTML, '', 'nenhum aviso de erro na tela');
+    eq(errosP.length, 0, 'nenhum erro de console no painel', errosP.join(' | '));
+    eq(wp.eval("document.documentElement.style.getPropertyValue('--fundo')"), '#17181B', 'o painel seguiu o tema do app');
+    dp.getElementById('btVelas').click();
+    await sleep(140);
+    ok(chamadas.filter(function (c) { return c === 'fillRect'; }).length >= 3, 'as velas diárias desenharam corpos');
+    ok(dp.getElementById('btVelas').classList.contains('on'), 'e o toggle de visão acompanhou');
+    dp.getElementById('btToast').click();
+    dp.getElementById('btFs').click();
+    await sleep(140);
+    ok(chamadas.some(function (c) { return /^toast:/.test(c); }), 'o botão de toast fala com o app');
+    ok(chamadas.some(function (c) { return /^telaCheia:true/.test(c); }), 'o ⛶ pede tela cheia ao hospedeiro');
+    dp.querySelector('#vxLista .vx-op [data-print]').click();
+    await sleep(80);
+    dp.querySelector('#vxLista .vx-op').click();
+    await sleep(140);
+    ok(chamadas.some(function (c) { return c === 'abrirPrint:shot_b'; }), 'clique no 📸 abre o print no estúdio');
+    ok(chamadas.some(function (c) { return /^abrirOperacao:/.test(c); }), 'clique na linha abre a operação no app');
+    const logAntes = dp.getElementById('vxLog').textContent.length;
+    wp.__enviar({ ecx: 1, evt: 'dados', data: { api: 1, motivo: 'save' } });
+    await sleep(220);
+    ok(dp.getElementById('vxLog').textContent.length > logAntes, 'o evento "dados" chegou na ferramenta');
+    ok(/dados \(save\)/.test(dp.getElementById('vxLog').textContent), 'com o motivo no log');
+    wp.close();
+
+    /* aberta fora do app: avisa, não quebra */
+    const wIso = new JSDOM(pHtml, { runScripts: 'dangerously', url: 'https://x.local/i.html', virtualConsole: new VirtualConsole() }).window;
+    await sleep(160);
+    ok(/fora do EdgeControl|ponte/.test(wIso.document.getElementById('vxAviso').textContent),
+      'fora do app o painel avisa em vez de quebrar');
+    wIso.close();
+  }
+
   wA.close(); wR.close();
 
   console.log(fails ? `\n💥 ${fails} FALHA(S) no hospedeiro de ferramentas` : '\n🎉 ECX OK — HOSPEDEIRO DE FERRAMENTAS PRONTO');

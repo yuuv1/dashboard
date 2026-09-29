@@ -63,7 +63,12 @@
     try { return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v || 0); }
     catch (e) { return 'R$ ' + (v || 0); }
   }
-  function pct(v, d) { return ((v || 0) * 100).toFixed(d == null ? 1 : d) + '%'; }
+  function pct(v, d) {
+    var n = d == null ? 1 : d;
+    try {
+      return ((v || 0) * 100).toLocaleString('pt-BR', { minimumFractionDigits: n, maximumFractionDigits: n }) + '%';
+    } catch (e) { return ((v || 0) * 100).toFixed(n) + '%'; }
+  }
   function sinal(v) { return v > 0 ? 'pos' : (v < 0 ? 'neg' : ''); }
   function log(msg) {
     var el = $('vxLog'); if (!el) return;
@@ -289,6 +294,7 @@
       return;
     }
     $('vxModo').textContent = 'modo ' + P.modo + ' · API ' + P.api;
+    aviso('');            /* a ponte respondeu: limpa qualquer aviso anterior */
     if (P.modo === 'isolado') {
       $('vxPill').classList.add('fora');
       aviso('Esta página está aberta <b>fora do EdgeControl</b>: não há dados para mostrar. ' +
