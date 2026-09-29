@@ -216,7 +216,7 @@ ok(srcV1.indexOf('psRoot') < 0 && srcV1.indexOf('STUDIO-CORE-START') < 0, 'v1 N�
 ok(srcV1.indexOf("EC_BUILD='2026-09-18.3-ticker'") > 0, 'v1 mantém o build antigo');
 ok(srcV2.indexOf('id="psRoot"') > 0, 'v2 tem o palco do estúdio (#psRoot)');
 ok(srcV2.indexOf('id="shotViewer"') < 0, 'v2 não tem mais o visor antigo');
-ok(srcV2.indexOf("EC_BUILD='2026-09-29.1-print-studio-v2'") > 0, 'v2 tem build próprio');
+ok(srcV2.indexOf("EC_BUILD='2026-09-29.2-analise-v2'") > 0, 'v2 tem build próprio');
 ['psStage', 'psTools', 'psFilm', 'psSide', 'psCv', 'psCropBar', 'psTextEdit', 'psHelpPanel'].forEach(id =>
   ok(srcV2.indexOf(`id="${id}"`) > 0, `v2 tem #${id}`));
 ['rect', 'ellipse', 'arrow', 'line', 'pencil', 'hl', 'text', 'blur', 'counter', 'crop', 'eraser', 'hand', 'select']
@@ -231,6 +231,21 @@ ok(srcV2.indexOf('psHasLayers(r)') > 0, 'zip dos prints achata os anotados');
 ok(srcV2.indexOf('function shotCardHTML(') > 0, 'cartão único de print (formulário/detalhe/galeria)');
 ok(srcV2.indexOf('psThumbURL(') > 0, 'miniaturas mostram as anotações');
 ok(srcV2.indexOf('openLastShotStudio') > 0, 'atalho do estúdio nas Configurações');
+/* 💾 salvar a imagem editada como análise separada */
+ok(srcV2.indexOf('async function psSaveAnalysis()') > 0, 'existe a ação psSaveAnalysis()');
+ok(srcV2.indexOf("id=\"psDup\" title=\"Salva a imagem editada") > 0, 'botão 💾 Salvar análise na barra do estúdio');
+ok(srcV2.indexOf("E.Dup.addEventListener('click',()=>psSaveAnalysis())") > 0, 'o botão dispara a ação');
+ok(srcV2.indexOf("e.shiftKey&&L==='s'") > 0, 'atalho Ctrl+Shift+S para salvar a análise');
+ok(srcV2.indexOf("kind:'analise',parentId:PS.rec.id") > 0, 'a análise nasce como registro separado ligado ao original');
+ok(srcV2.indexOf("name:psFileBase()+'_analise.jpg'") > 0, 'nome do arquivo da análise');
+ok(srcV2.indexOf("if(PS.rec.kind==='analise'){") > 0, 're-salvar atualiza a própria análise (não empilha cópias)');
+ok(srcV2.indexOf("kind:opts.kind||''") > 0, 'storeShot() guarda a categoria do print');
+ok(srcV2.indexOf("<option value=\"analise\">💾 Análises salvas</option>") > 0, 'filtro de análises na galeria');
+ok(srcV2.indexOf("if(f==='analise') all=all.filter(r=>r.kind==='analise')") > 0, 'filtro aplicado na listagem');
+ok(srcV2.indexOf('sb an" title="imagem editada salva separada') > 0, 'selo ANÁLISE no cartão de print');
+ok(srcV2.indexOf("marksAt:r.marksAt||'',parentId:r.parentId||null,kind:r.kind||''") > 0, 'backup exporta a categoria');
+ok(srcV2.indexOf("marksAt:o.marksAt||'',parentId:o.parentId||null,kind:o.kind||''") > 0, 'backup restaura a categoria');
+ok(srcV2.indexOf('function psSyncSaveBtn()') > 0, 'rótulo do botão acompanha o contexto (salvar/atualizar)');
 {
   const dup = {};
   const appJs = srcV2.split('<script>').pop().split('</script>')[0];
@@ -580,23 +595,82 @@ async function openStudio(w, ctx, idx) {
   eq(w2.eval('PS.marks.length'), antes, 'estúdio reabre com as camadas do backup');
   ok(b2.calls.some(c => c[0] === 'stroke' || c[0] === 'fill'), 'camadas do backup são redesenhadas no palco');
 
-  /* ── "novo print": cópia separada, original intacto ── */
+  /* ── 💾 Salvar análise: registro separado, categorizado, original intacto ── */
   const totalAntes = (await w2.eval('IMGDB.keys()')).length;
-  await w2.eval('(async()=>{ await psDuplicate(); })()');
+  eq(/Salvar análise/.test(w2.document.getElementById('psDup').textContent), true,
+    'o botão do estúdio é o 💾 Salvar análise');
+  await w2.eval('(async()=>{ await psSaveAnalysis(); })()');
   await sleep(400);
   const keys2 = await w2.eval('IMGDB.keys()');
-  eq(keys2.length, totalAntes + 1, '🧩 "Novo print" cria um registro separado');
+  eq(keys2.length, totalAntes + 1, '💾 salvar cria UM registro separado');
   const novoId = keys2.find(k => k !== idAtual && !pack.shots[k]);
   const novo = await w2.eval(`IMGDB.get(${JSON.stringify(novoId)})`);
-  eq(novo.parentId, idAtual, 'a cópia aponta para o print de origem');
-  eq(novo.marks.length, 0, 'a cópia já nasce achatada (sem camadas)');
-  ok(/_anotado/.test(novo.name), 'nome da cópia deixa claro que é a versão anotada', novo.name);
+  eq(novo.kind, 'analise', 'o registro novo é categorizado como ANÁLISE');
+  eq(novo.parentId, idAtual, 'a análise aponta para o print de origem');
+  eq(novo.marks.length, 0, 'a análise já nasce achatada (sem camadas)');
+  eq(novo.crop, null, 'e sem recorte pendente');
+  ok(/_analise\.jpg$/.test(novo.name), 'o nome deixa claro que é a análise', novo.name);
+  ok(!!novo.blob, 'a análise guarda a imagem editada');
+  ok(!!novo.savedAt, 'com data de salvamento');
   const originalDepois = await w2.eval(`IMGDB.get(${JSON.stringify(idAtual)})`);
   eq(originalDepois.marks.length, antes, '🔒 o original continua com as camadas intactas');
   eq(originalDepois.dataUrl, rec2.dataUrl, '🔒 os bytes do original continuam os mesmos');
-  ok(w2.eval('galCache').indexOf(novoId) >= 0, 'a cópia aparece na galeria');
-  ok([...w2.document.querySelectorAll('#psFilm .ps-thumb[data-id]')].some(t => t.dataset.id === novoId),
-    'e entra na tira como um cartão separado');
+  ok(originalDepois.kind !== 'analise', '🔒 o original NÃO virou análise');
+  ok(w2.eval('galCache').indexOf(novoId) >= 0, 'a análise aparece na galeria');
+  const thumbAn = [...w2.document.querySelectorAll('#psFilm .ps-thumb[data-id]')].find(t => t.dataset.id === novoId);
+  ok(!!thumbAn, 'e entra na tira como um cartão separado');
+  ok(thumbAn.classList.contains('analise'), 'cartão da tira com a classe .analise');
+  ok(/ANÁLISE/.test(thumbAn.textContent), 'selo ANÁLISE na tira de prints');
+  eq(/Atualizar análise/.test(w2.document.getElementById('psDup').textContent), true,
+    'aberta a análise, o 💾 vira "Atualizar análise"');
+  eq(/ANÁLISE/.test(w2.document.getElementById('psMeta').textContent), true,
+    'o painel de informações anuncia a categoria');
+
+  /* ── galeria: cartão com selo + filtro exclusivo de análises ── */
+  await w2.eval('closeShotViewer()'); await sleep(220);
+  await w2.eval('renderGallery()'); await sleep(300);
+  const cardsW2 = [...w2.document.querySelectorAll('#galGrid .shot-item')];
+  const cardAn = cardsW2.find(c => c.classList.contains('analise'));
+  ok(!!cardAn, 'a análise vira um cartão separado na galeria');
+  ok(/ANÁLISE/.test(cardAn.textContent), 'com o selo ANÁLISE visível');
+  ok(/Editar análise/.test(cardAn.textContent), 'e o convite "Editar análise"');
+  ok(cardsW2.some(c => c.classList.contains('marked') && !c.classList.contains('analise')),
+    'o original anotado continua listado à parte');
+  w2.document.getElementById('galFilter').value = 'analise';
+  await w2.eval('renderGallery()'); await sleep(250);
+  eq(w2.document.querySelectorAll('#galGrid .shot-item').length, 1,
+    'o filtro "💾 Análises salvas" isola só as análises');
+  w2.document.getElementById('galFilter').value = '';
+  await w2.eval('renderGallery()'); await sleep(200);
+
+  /* ── a categoria viaja no backup ── */
+  await w2.eval('(async()=>{ await exportData(); })()'); await sleep(250);
+  const cap2 = w2.__capturedBlob();
+  ok(!!cap2, 'backup da segunda janela gerado');
+  const pack2 = JSON.parse(await cap2.text());
+  eq(pack2.shots[novoId].kind, 'analise', 'o backup carrega kind=analise');
+
+  /* ── reeditar a análise e salvar de novo: atualiza o MESMO registro ── */
+  await openStudio(w2, 'gal', w2.eval('galCache').indexOf(novoId));
+  await sleep(200);
+  eq(w2.eval('PS.id'), novoId, 'reabre exatamente a análise salva');
+  w2.eval("psSetTool('arrow')");
+  const stAn = w2.document.getElementById('psStage');
+  stAn.dispatchEvent(pointer(w2, 'pointerdown', 300, 200));
+  w2.dispatchEvent(pointer(w2, 'pointermove', 520, 340));
+  w2.dispatchEvent(pointer(w2, 'pointerup', 520, 340));
+  await sleep(120);
+  eq(w2.eval('PS.marks.length'), 1, 'dá para desenhar de novo por cima da análise');
+  await w2.eval('(async()=>{ await psSaveAnalysis(); })()');
+  await sleep(400);
+  eq((await w2.eval('IMGDB.keys()')).length, keys2.length, '🔁 salvar de novo NÃO empilha outra cópia');
+  const anUpd = await w2.eval(`IMGDB.get(${JSON.stringify(novoId)})`);
+  eq(anUpd.kind, 'analise', 'continua sendo a mesma análise');
+  eq(anUpd.marks.length, 0, 'as camadas viraram pixels do arquivo dela');
+  ok(!anUpd.dataUrl, 'o arquivo antigo foi trocado pelo editado');
+  ok(!!anUpd.blob, 'blob da análise regravado');
+  eq(w2.eval('PS.marks.length'), 0, 'o estúdio recarrega limpo depois de atualizar');
+  eq(w2.eval('PS.id'), novoId, 'e continua na mesma análise (sem trocar de print)');
 
   /* ── PDF do relatório usa a imagem anotada ── */
   const urlAnotada = await w2.eval(`psShotURL(${JSON.stringify(idAtual)},1600)`);

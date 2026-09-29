@@ -774,6 +774,15 @@ input[type="file"].h{display:none!important;}
   font-family:'Space Grotesk',sans-serif;font-size:8.5px;font-weight:800;letter-spacing:.4px;color:#fff;
   background:linear-gradient(140deg,var(--accent),var(--cyan));box-shadow:0 2px 8px color-mix(in srgb,var(--accent) 40%,transparent);}
 
+/* análises salvas: cartão e selo próprios (roxo), separados dos originais */
+.shot-item .sb.an{background:linear-gradient(140deg,#c4b5fd,#8b5cf6);color:#221052;}
+.shot-item.analise{border-color:color-mix(in srgb,#8b5cf6 60%,transparent);}
+.shot-item.analise::after{box-shadow:inset 0 0 0 1.5px color-mix(in srgb,#8b5cf6 45%,transparent);}
+.ps-thumb.analise{border-color:color-mix(in srgb,#8b5cf6 62%,transparent);}
+.ps-thumb.analise.on{border-color:var(--cyan,#22d3ee);}
+.ps-thumb .ps-tbadge.an{left:24px;right:auto;color:#221052;
+  background:linear-gradient(140deg,#c4b5fd,#8b5cf6);letter-spacing:.3px;}
+
 /* ── responsivo ── */
 .ps-side-tgl{display:none;}
 @media (max-width:1180px){
@@ -2587,6 +2596,7 @@ body.rpt-open{overflow:hidden;}
           <option value="orphan">Sem operação</option>
           <option value="noted">Com anotação</option>
           <option value="marked">Com desenho/recorte (v2)</option>
+          <option value="analise">💾 Análises salvas</option>
         </select>
         <div class="mcls" onclick="closeMod('galleryMod')">✕</div>
       </div>
@@ -2639,7 +2649,7 @@ body.rpt-open{overflow:hidden;}
       <button class="ps-ic ps-side-tgl" id="psSideTgl" title="Painel de estilo e anotações">🎛</button>
       <span class="ps-sep"></span>
       <button class="ps-bt" id="psCopy" title="Copiar a imagem anotada para a área de transferência">📋 <b>Copiar</b></button>
-      <button class="ps-bt" id="psDup" title="Gera um print NOVO, separado do original, já com as anotações">🧩 <b>Novo print</b></button>
+      <button class="ps-bt" id="psDup" title="Salva a imagem editada (anotações + recorte) como um print SEPARADO, marcado como ANÁLISE">💾 <b>Salvar análise</b></button>
       <div class="ps-menu-w">
         <button class="ps-bt pri" id="psDown" title="Baixar imagem (Ctrl+S)">⬇ <b>Baixar</b> ▾</button>
         <div class="ps-menu" id="psDownMenu">
@@ -3220,8 +3230,10 @@ async function storeShot(file,opts={}){
   const id='shot_'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
   const rec={id,blob,w,h,size:blob.size,name:opts.name||file.name||'print.jpg',
              note:opts.note||'',opId:opts.opId||null,at:new Date().toISOString(),
-             /* v2: camadas de anotação (não-destrutivas), recorte e origem da cópia */
-             marks:[],crop:null,marksAt:'',parentId:opts.parentId||null};
+             /* v2: camadas de anotação (não-destrutivas), recorte, origem da
+                cópia e categoria ('' = print original · 'analise' = imagem
+                editada salva separada pelo 💾 Salvar análise) */
+             marks:[],crop:null,marksAt:'',parentId:opts.parentId||null,kind:opts.kind||''};
   await IMGDB.put(rec);
   const stored=await IMGDB.get(id);
   if(!stored) throw new Error('Print não persistiu no IndexedDB.');
@@ -3982,15 +3994,17 @@ function shotCardHTML(rec,u,ctx,idx,opt){
   opt=opt||{};
   const st=stuStats(stuValidate(rec.marks));
   const cr=!!stuValidCrop(rec.crop);
-  const marked=st.n||cr;
-  const badges=(st.n?`<span class="sb" title="${st.n} anotação(ões) nesta imagem">✎ ${st.n}</span>`:'')+
+  const an=rec.kind==='analise';
+  const marked=st.n||cr||an;
+  const badges=(an?'<span class="sb an" title="imagem editada salva separada (💾 Salvar análise)">ANÁLISE</span>':'')+
+               (st.n?`<span class="sb" title="${st.n} anotação(ões) nesta imagem">✎ ${st.n}</span>`:'')+
                (cr?'<span class="sb crop" title="imagem recortada (recorte reversível)">✂</span>':'');
   const cap=opt.caption!==undefined?opt.caption:(rec.note?`📝 ${escHtml(rec.note)}`:'');
-  return `<div class="shot-item ${rec.note?'has-note':''} ${marked?'marked':''}"${opt.style?` style="${opt.style}"`:''} onclick="openShotViewer('${ctx}',${idx})">
+  return `<div class="shot-item ${rec.note?'has-note':''} ${an?'analise':''} ${marked?'marked':''}"${opt.style?` style="${opt.style}"`:''} onclick="openShotViewer('${ctx}',${idx})">
     ${u?`<img src="${u}" alt="">`:''}
     <span class="sbadge">${badges}</span>
     ${opt.removable?`<span class="sx" onclick="event.stopPropagation();removeShot('${rec.id}')">✕</span>`:''}
-    <span class="sopen">🎨 ${st.n?'Editar anotações':'Zoom + anotar'}</span>
+    <span class="sopen">🎨 ${an?'Editar análise':(st.n?'Editar anotações':'Zoom + anotar')}</span>
     ${cap?`<span class="snote">${cap}</span>`:''}
   </div>`;
 }
@@ -4344,7 +4358,8 @@ const PS_KEYS=[
   ['0','Ajustar à tela'],['1','Tamanho real (100%)'],['2 cliques','Ampliar no ponto'],['← / →','Print anterior / próximo'],
   ['Espaço','Segure e arraste para mover'],['G','Mostrar / esconder anotações'],
   ['h','Editar'],['Ctrl+Z','Desfazer'],['Ctrl+Shift+Z','Refazer'],['Delete','Apagar a anotação selecionada'],
-  ['Ctrl+D','Duplicar a anotação selecionada'],['Ctrl+S','Baixar PNG anotado'],['Ctrl+V','Colar um print novo aqui'],
+  ['Ctrl+D','Duplicar a anotação selecionada'],['Ctrl+S','Baixar PNG anotado'],
+  ['Ctrl+Shift+S','💾 Salvar a edição como análise separada'],['Ctrl+V','Colar um print novo aqui'],
   ['Esc','Fechar o estúdio'],['?','Esta ajuda']
 ];
 
@@ -5273,23 +5288,51 @@ async function psCopyImage(){
     toast('Este navegador não deixou copiar a imagem. Use ⬇ Baixar.','w');
   }
 }
-/* gera um print NOVO (registro separado) com as anotações achatadas:
-   o original permanece intacto, do jeito que veio. */
-async function psDuplicate(){
+/* ── 💾 SALVAR ANÁLISE ────────────────────────────────────────────────
+   Grava a imagem EDITADA (anotações + recorte achatados num JPEG) como um
+   print SEPARADO, categorizado como ANÁLISE (rec.kind='analise') e ligado
+   ao original por parentId. O original nunca é tocado: continua com o seu
+   arquivo e com as suas camadas reversíveis.
+   Se o print aberto JÁ é uma análise, o 💾 regrava o arquivo dela no mesmo
+   registro (as camadas viram pixels) — editar de novo não cria pilha de
+   cópias. Atalho: Ctrl+Shift+S. */
+async function psSaveAnalysis(){
   if(!PS.rec) return;
   await psPersist(true);
-  toast('Criando uma cópia anotada…','w');
+  toast('Salvando a imagem editada…','w');
   try{
     const blob=await psFlattenBlob(PS.rec,PS.img,'image/jpeg',.92);
     if(!blob) throw new Error('sem blob');
     const cv=psFlattenCanvas(PS.rec,PS.img,0);
+    if(PS.rec.kind==='analise'){
+      /* re-salva a própria análise: as camadas viram pixels do arquivo dela */
+      const rec=PS.rec;
+      rec.blob=blob;delete rec.dataUrl;
+      rec.w=cv.width;rec.h=cv.height;rec.size=blob.size;
+      rec.marks=[];rec.crop=null;rec.marksAt='';
+      rec.savedAt=new Date().toISOString();
+      /* zera o estado do estúdio ANTES de recarregar: psPersist() grava no
+         registro o que estiver em PS.marks, e aqui as camadas já viraram
+         pixels do arquivo — sem isso a edição reapareceria por cima */
+      clearTimeout(PS.saveTimer);
+      PS.marks=[];PS.crop=null;PS.sel=null;PS.draft=null;PS.cropDraft=null;
+      PS.undo=[];PS.redo=[];PS.dirty=false;PS.textState=null;
+      await IMGDB.put(rec);
+      revokeImgURL(rec.id);psInvalidate(rec.id);
+      PS.srcDirty=true;
+      await psLoad(rec.id);
+      await psRenderFilm();
+      toast('💾 Análise atualizada com a edição atual.','s');
+      return;
+    }
     const id='shot_'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
     const rec={id,blob,w:cv.width,h:cv.height,size:blob.size,
-      name:psFileBase()+'_anotado.jpg',note:(PS.rec.note||''),
+      name:psFileBase()+'_analise.jpg',note:(PS.rec.note||''),
       opId:PS.rec.opId||null,at:new Date().toISOString(),
-      marks:[],crop:null,parentId:PS.rec.id};
+      marks:[],crop:null,marksAt:'',savedAt:new Date().toISOString(),
+      kind:'analise',parentId:PS.rec.id};
     await IMGDB.put(rec);
-    if(!(await IMGDB.get(id))) throw new Error('cópia não persistiu');
+    if(!(await IMGDB.get(id))) throw new Error('análise não persistiu');
     /* entra no mesmo lugar do original: rascunho, operação ou galeria */
     let where='na Galeria de Prints';
     const op=(S.operations||[]).find(o=>o.id===PS.rec.opId||opShotIds(o).indexOf(PS.rec.id)>=0);
@@ -5306,12 +5349,14 @@ async function psDuplicate(){
     PS.srcDirty=true;
     await psRenderFilm();
     if(at>=0){PS.idx=at;await psLoad(id);}
-    toast('🧩 Novo print criado '+where+' — o original continua intacto.','s');
+    toast('💾 Análise salva como print separado '+where+' — o original continua intacto.','s');
   }catch(err){
-    console.warn('duplicar print',err);
-    toast('Não consegui criar a cópia.','e');
+    console.warn('salvar análise',err);
+    toast('Não consegui salvar a análise.','e');
   }
 }
+/* compatibilidade interna/testes: "novo print" é a análise separada */
+function psDuplicate(){ return psSaveAnalysis(); }
 async function psDelete(){
   const id=PS.id;
   if(!id) return;
@@ -5364,8 +5409,11 @@ function psFillMeta(){
   else if(rec.at) bits.push('🕓 anexado em '+new Date(rec.at).toLocaleString('pt-BR'));
   bits.push(op?('🔗 '+escHtml(op.date||'—')+' · '+escHtml(rpResultLabel(op.result)||'—')+' · '+escHtml(rpAsset(op)||'—'))
                :'🔗 print avulso (sem operação)');
-  if(rec.parentId) bits.push('🧩 cópia achatada de outro print');
+  if(rec.kind==='analise') bits.push('💾 <b>ANÁLISE</b> — imagem editada salva separada'+
+    (rec.savedAt?' em '+new Date(rec.savedAt).toLocaleString('pt-BR'):''));
+  else if(rec.parentId) bits.push('🧩 cópia achatada de outro print');
   PS.E.Meta.innerHTML=bits.join('<br>');
+  psSyncSaveBtn();
   PS.E.Sub.innerHTML='<b>'+(PS.idx+1)+' de '+PS.list.length+'</b> · '+
     (op?escHtml(rpAsset(op)||'operação'):'avulso')+
     (st.n?' · ✎ '+st.n+' anotação(ões)':' · sem anotações');
@@ -5392,11 +5440,13 @@ async function psRenderFilm(){
     const cropped=!!(rec&&stuValidCrop(rec.crop));
     let u=null;try{ u=await imgURL(id); }catch(err){}
     const foot=(rec&&rec.note)||(rec&&rec.name)||('print '+(i+1));
-    cards.push('<div class="ps-thumb'+(i===PS.idx?' on':'')+'" data-i="'+i+'" data-id="'+escHtml(id)+'" title="'+escHtml(foot)+'">'+
+    const an=!!(rec&&rec.kind==='analise');
+    cards.push('<div class="ps-thumb'+(i===PS.idx?' on':'')+(an?' analise':'')+'" data-i="'+i+'" data-id="'+escHtml(id)+'" title="'+escHtml(foot)+(an?' · ANÁLISE (imagem editada salva separada)':'')+'">'+
       (u?'<img src="'+u+'" alt="">':'')+
       '<span class="ps-tnum">'+(i+1)+'</span>'+
+      (an?'<span class="ps-tbadge an">ANÁLISE</span>':'')+
       (st.n?'<span class="ps-tbadge" data-badge="'+escHtml(id)+'">✎ '+st.n+'</span>':
-        (cropped?'<span class="ps-tbadge crop" data-badge="'+escHtml(id)+'">✂</span>':''))+
+        (!an&&cropped?'<span class="ps-tbadge crop" data-badge="'+escHtml(id)+'">✂</span>':''))+
       '<span class="ps-tfoot">'+escHtml(foot)+'</span></div>');
   }
   if(PS.ctx==='modal'){
@@ -5430,12 +5480,16 @@ function psUpdateThumb(id){
   if(PS.id!==id||!PS.E.Film) return;
   const el=[...PS.E.Film.querySelectorAll('.ps-thumb[data-id]')].find(x=>x.dataset.id===id);
   if(!el) return;
-  const st=stuStats(PS.marks),cropped=!!PS.crop;
+  const st=stuStats(PS.marks),cropped=!!PS.crop,an=!!(PS.rec&&PS.rec.kind==='analise');
+  el.classList.toggle('analise',an);
+  let ab=el.querySelector('.ps-tbadge.an');
+  if(an&&!ab){ab=document.createElement('span');ab.className='ps-tbadge an';ab.textContent='ANÁLISE';el.appendChild(ab);}
+  if(!an&&ab) ab.remove();
   let b=el.querySelector('[data-badge]');
   if(st.n){
     if(!b){b=document.createElement('span');b.setAttribute('data-badge',id);el.appendChild(b);}
     b.className='ps-tbadge';b.textContent='✎ '+st.n;
-  }else if(cropped){
+  }else if(cropped&&!an){
     if(!b){b=document.createElement('span');b.setAttribute('data-badge',id);el.appendChild(b);}
     b.className='ps-tbadge crop';b.textContent='✂';
   }else if(b) b.remove();
@@ -5595,6 +5649,15 @@ function psSyncStyleUI(){
     PS.E.OpacityVal.textContent=Math.round(PS.opacity*100)+'%';
   }
 }
+/* o 💾 muda de sentido: cria a análise no original, regrava na análise */
+function psSyncSaveBtn(){
+  const b=PS.E.Dup;
+  if(!b) return;
+  const an=!!(PS.rec&&PS.rec.kind==='analise');
+  b.innerHTML=an?'💾 <b>Atualizar análise</b>':'💾 <b>Salvar análise</b>';
+  b.title=an?'Regrava o arquivo desta análise com a edição atual (as camadas viram pixels)'
+            :'Salva a imagem editada (anotações + recorte) como um print SEPARADO, marcado como ANÁLISE (Ctrl+Shift+S)';
+}
 function psHelp(show){if(PS.E.HelpPanel)PS.E.HelpPanel.classList.toggle('show',show!==false);}
 function psHideMenu(){if(PS.E.DownMenu)PS.E.DownMenu.classList.remove('show');}
 
@@ -5626,7 +5689,7 @@ function psWire(){
   });
   E.SideTgl.addEventListener('click',()=>E.root.classList.toggle('ps-side-open'));
   E.Copy.addEventListener('click',()=>psCopyImage());
-  E.Dup.addEventListener('click',()=>psDuplicate());
+  E.Dup.addEventListener('click',()=>psSaveAnalysis());
   E.Del.addEventListener('click',()=>psDelete());
   E.Help.addEventListener('click',()=>psHelp(true));
   E.HelpClose.addEventListener('click',()=>psHelp(false));
@@ -5742,6 +5805,7 @@ function psKey(e){
     if(psTyping(e)){try{e.target.blur();}catch(err){}return;}
     psClose();return;
   }
+  if(mod&&e.shiftKey&&L==='s'){e.preventDefault();e.stopPropagation();psSaveAnalysis();return;}
   if(mod&&L==='s'){e.preventDefault();e.stopPropagation();psDownload('png');return;}
   if(mod&&L==='p'){e.preventDefault();e.stopPropagation();psTip('Use ⬇ Baixar para salvar este print');return;}
   if(mod&&L==='z'){e.preventDefault();e.stopPropagation();if(e.shiftKey)psRedo();else psUndo();return;}
@@ -5878,6 +5942,7 @@ async function renderGallery(){
   if(f==='orphan') all=all.filter(r=>!linked.has(r.id));
   if(f==='noted')  all=all.filter(r=>r.note);
   if(f==='marked') all=all.filter(r=>stuValidate(r.marks).length||stuValidCrop(r.crop));
+  if(f==='analise') all=all.filter(r=>r.kind==='analise');
   galCache=all.map(r=>r.id);
   const g=document.getElementById('galGrid'),em=document.getElementById('galEmpty');
   if(!all.length){
@@ -5941,6 +6006,7 @@ async function exportShotsZip(){
       return `${String(i+1).padStart(3,'0')} | ${op?`${op.date||'—'} ${op.time||'—'} · ${op.result} ${opAsset(op)||'—'} · ${fmtBRL(op.value)}`:'sem operação'}`
            + (r.note?`\n     nota: ${r.note}`:'')
            + (st.n||stuValidCrop(r.crop)?`\n     anotações: ${st.n} camada(s)${stuValidCrop(r.crop)?' + recorte':''} (aplicadas na imagem exportada)`:'')
+           + (r.kind==='analise'?`\n     tipo: ANÁLISE — imagem editada salva separada${r.parentId?' (derivada de '+r.parentId+')':''}`:'')
            + (op&&op.reason?`\n     motivo: ${op.reason}`:'');
     }).join('\n');
     files.push({name:'_indice.txt',data:new TextEncoder().encode('EdgeControl — prints\n\n'+idx+'\n')});
@@ -6150,7 +6216,7 @@ async function exportData(){
           /* v2: as anotações viajam junto — o backup continua abrindo na v1,
              que simplesmente ignora estes campos */
           marks:Array.isArray(r.marks)?r.marks:[],crop:r.crop||null,
-          marksAt:r.marksAt||'',parentId:r.parentId||null};
+          marksAt:r.marksAt||'',parentId:r.parentId||null,kind:r.kind||''};
       }catch(err){
         failed.push(r.id);
         console.warn('Print não incluído no backup',r.id,err);
@@ -6324,7 +6390,7 @@ async function migrateLegacyShots(persist=true){
         if(!blob.size||!blob.type.startsWith('image/')) throw new Error('Conteúdo não é uma imagem.');
         await IMGDB.put({id,dataUrl:img,note:'',name:'print-legado.jpg',opId:op.id,
           at:op.createdAt||new Date().toISOString(),size:blob.size,w:0,h:0,
-          marks:[],crop:null,marksAt:'',parentId:null});
+          marks:[],crop:null,marksAt:'',parentId:null,kind:''});
         rec=await IMGDB.get(id);
       }
       const shots=Array.isArray(op.shots)?op.shots:[];
@@ -6418,7 +6484,7 @@ async function importData(ev){
                          at:o.at||new Date().toISOString(),size:blob.size,w:0,h:0,
                          /* v2: restaura as camadas de anotação do backup */
                          marks:stuValidate(o.marks),crop:stuValidCrop(o.crop),
-                         marksAt:o.marksAt||'',parentId:o.parentId||null});
+                         marksAt:o.marksAt||'',parentId:o.parentId||null,kind:o.kind||''});
         const restored=await IMGDB.get(id);
         if(!restored||restored.dataUrl!==dataUrl) throw new Error('Imagem não persistiu no navegador.');
         ok++; okIds.push(String(id));
@@ -8394,7 +8460,7 @@ function chartsRefresh(){ if(isChartsActive()) renderCharts(); }
 /* ══════════════════════════════════════
    INIT
 ══════════════════════════════════════ */
-var EC_BUILD='2026-09-29.1-print-studio-v2';   /* digite EC_BUILD no console p/ ver a versão */
+var EC_BUILD='2026-09-29.2-analise-v2';   /* digite EC_BUILD no console p/ ver a versão */
 async function init(){
   console.info('EdgeControl build: '+EC_BUILD);
   load();

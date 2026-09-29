@@ -39,12 +39,14 @@ tamanho/negrito/contorno do texto, **lista de anotações** (clique para selecio
 centralizar; ✕ apaga) e a **nota do print**.
 
 Edição: `Ctrl+Z` desfaz, `Ctrl+Shift+Z` refaz, `Delete` apaga a seleção,
-`Ctrl+D` duplica, `Ctrl+S` baixa o PNG anotado, `?` abre a lista completa de atalhos.
+`Ctrl+D` duplica, `Ctrl+S` baixa o PNG anotado, `Ctrl+Shift+S` **salva a análise**,
+`?` abre a lista completa de atalhos.
 
 ### Prints separados, um cartão cada
 Embaixo do palco fica a **tira de prints**: cada print é um cartão próprio, numerado,
-com a nota e os selos `✎ n` (anotações) e `✂` (recorte). As miniaturas já mostram o
-desenho aplicado. Clicar num cartão troca de print sem perder o que foi feito no outro.
+com a nota e os selos `✎ n` (anotações), `✂` (recorte) e `ANÁLISE` (imagem editada
+salva). As miniaturas já mostram o desenho aplicado. Clicar num cartão troca de print
+sem perder o que foi feito no outro.
 
 ---
 
@@ -56,15 +58,49 @@ As anotações e o recorte ficam como **camadas** no registro do print
 - `👁` mostra a imagem limpa a qualquer momento; `↺ Limpar` remove tudo (e `Ctrl+Z` volta).
 - `⬇ Baixar` oferece PNG anotado, JPG anotado ou o **original sem anotações**.
 - ` Copiar` põe a imagem anotada na área de transferência.
-- `🧩 Novo print` cria **um registro separado**, já achatado, ligado ao original por
-  `parentId` — entra no mesmo lugar do original (formulário, operação ou galeria).
+- `💾 Salvar análise` cria **um registro separado** com a imagem editada
+  (detalhes na seção abaixo) — o original fica como está.
 
 Backups (`⬆ Exportar` / `⬇ Importar`) carregam as camadas junto. Um backup da v2
 aberto na v1 continua funcionando (a v1 simplesmente ignora `marks`/`crop`).
 
+## 💾 Salvar análise (a imagem editada vira um print separado)
+
+Quando você termina de desenhar/recortar e quer guardar aquele resultado como imagem
+de verdade, clique em **💾 Salvar análise** (ou `Ctrl+Shift+S`). O que acontece:
+
+1. As camadas são **achatadas** num JPEG novo (qualidade 0,92), já com o recorte aplicado.
+2. Esse JPEG é gravado como **outro print**, com `kind:'analise'`, nome
+   `…_analise.jpg` e `parentId` apontando para o print de origem.
+3. A análise entra **no mesmo lugar do original**: se o print veio do formulário,
+   vai para o rascunho aberto; se veio de uma operação, é anexada a ela; se veio da
+   galeria, aparece no topo da galeria. O estúdio já abre a análise salva.
+4. **O original não é tocado** — continua com o arquivo dele e com as camadas
+   reversíveis (`👁` mostra limpo, `↺ Limpar` desfaz tudo).
+
+Como saber qual é qual:
+
+| Onde | Original | Análise |
+|---|---|---|
+| Tira de prints | selo `✎ n` / `✂` | selo roxo **ANÁLISE** + contorno roxo |
+| Cartão na galeria / formulário | contorno âmbar | selo roxo **ANÁLISE** + contorno roxo, convite “Editar análise” |
+| Filtro da galeria | “Com desenho/recorte (v2)” | **“💾 Análises salvas”** |
+| Painel de informações | — | “💾 **ANÁLISE** — imagem editada salva separada em <data>” |
+| Botão do estúdio | 💾 Salvar análise | 💾 **Atualizar análise** |
+
+Editou de novo uma análise? O botão passa a **Atualizar análise**: ele **regrava o
+mesmo registro** (as camadas viram pixels do arquivo dela), então você não acumula
+uma pilha de cópias a cada ajuste. Se quiser uma cópia nova em vez de atualizar,
+abra o print original e salve de novo — cada análise é um registro independente.
+
+A categoria viaja no **backup** (`kind` no JSON dos prints) e o **zip** de
+“Baixar todos” marca no `_indice.txt` quais arquivos são análises e de qual print
+elas vieram.
+
 ## Onde as anotações aparecem
 - Miniaturas do formulário, do detalhe da operação e da **Galeria de Prints**
-  (com selo e contorno âmbar); filtro novo “Com desenho/recorte (v2)”.
+  (com selo e contorno âmbar); filtros novos “Com desenho/recorte (v2)” e
+  “💾 Análises salvas”.
 - **PDF do relatório**: prints anotados entram já com o desenho aplicado.
 - **⬇ Baixar todos** (zip): cada print anotado sai como `_anotado.jpg`, e o
   `_indice.txt` lista quantas camadas cada um tem.
@@ -75,4 +111,5 @@ aberto na v1 continua funcionando (a v1 simplesmente ignora `marks`/`crop`).
 `npm run test:studio` (ou `npm test`, que roda tudo) cobre:
 geometria/validação/zoom do núcleo puro, a garantia de que a v1 ficou intacta,
 e uma integração em jsdom que abre o estúdio, desenha, desfaz, recorta, salva,
-exporta, reimporta e duplica prints.
+exporta, reimporta, **salva a análise como print separado** (categoria, selo, filtro,
+backup e atualização no lugar sem criar cópia extra) e exclui prints.
