@@ -49,6 +49,8 @@
 
   if (!direto && noQuadro) {
     window.addEventListener('message', function (ev) {
+      /* Respostas/eventos só podem vir do pai, na mesma origem. */
+      if (ev.origin !== window.location.origin || ev.source !== window.parent) return;
       var m = ev.data;
       if (!m || m.ecx !== 1) return;
       /* resposta de um RPC */
@@ -136,6 +138,14 @@
     config: function () { return chamar('config'); },
     tema: function () { return chamar('tema'); },
     temas: function () { return chamar('temas'); },
+
+    /* Replay v1: dados/ajustes, sem velas de mercado no hospedeiro. */
+    replay: function (id) { return chamar('replay', { id: id }); },
+    replayAtual: function () { return chamar('replayAtual'); },
+    salvarReplay: function (id, alteracoes, requestId) {
+      return chamar('salvarReplay', { id: id, alteracoes: alteracoes, requestId: requestId });
+    },
+    abrirReplay: function (id, ferramenta) { return chamar('abrirReplay', { id: id, ferramenta: ferramenta }); },
 
     /* mídia e navegação */
     prints: function (operacao, maxW) { return chamar('prints', { operacao: operacao, maxW: maxW }); },

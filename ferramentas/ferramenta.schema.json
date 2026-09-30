@@ -34,6 +34,13 @@
     "tela-cheia": { "type": "boolean", "description": "Oferece o botão ⛶ de expandir (padrão: true)." },
     "ativa": { "type": "boolean", "description": "false = registrada mas escondida (dá para reativar no modal 🧩). Padrão: true." },
     "api-host": { "type": "number", "description": "Versão da API do hospedeiro que a ferramenta exige. Se for maior que a do app, ela é recusada." },
+    "recursos": {
+      "type": "object",
+      "properties": {
+        "replay": { "type": "integer", "enum": [1], "description": "Anuncia suporte real ao contrato de replay v1. Não marcar no painel de capital de referência." }
+      },
+      "additionalProperties": true
+    },
     "permissao": {
       "type": "array",
       "items": { "type": "string" },

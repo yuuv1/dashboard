@@ -53,7 +53,7 @@ ok(srcV1.indexOf('ecxInit(') < 0 && srcV1.indexOf('ECX_ROOT') < 0 && srcV1.index
   'v1 não recebeu nada do hospedeiro');
 ok(srcV1.indexOf("EC_BUILD='2026-09-18.3-ticker'") > 0, 'v1 mantém o build antigo');
 const buildEcx = (srcV2.match(/EC_BUILD='([^']+)'/) || [])[1] || '';
-ok(/^2026-09-29\.[3-9]-ecx-/.test(buildEcx), 'v2 tem o build do hospedeiro (' + (buildEcx || 'nenhum') + ')');
+ok(/^\d{4}-\d{2}-\d{2}\.\d+-ecx-/.test(buildEcx), 'v2 tem o build do hospedeiro (' + (buildEcx || 'nenhum') + ')');
 
 ['id="ecxTabs"', 'id="ecxSlot"', 'id="ecxHost"', 'id="ecxTabsAn"', 'id="ecxSlotAn"', 'id="ecxHostAn"',
   'id="ecxMod"', 'id="ecxLista"', 'id="ecxStatus"'].forEach(id =>
@@ -718,7 +718,7 @@ function mensagem(w, data, origin, source) {
         };
         w.HTMLCanvasElement.prototype.getContext = ctx;
         function enviar(obj) {
-          w.dispatchEvent(new w.MessageEvent('message', { data: obj, origin: 'https://edgecontrol.local' }));
+          w.dispatchEvent(new w.MessageEvent('message', { data: obj, origin: 'https://edgecontrol.local', source: w.parent }));
         }
         /* "pai" de mentira: responde o RPC como o hospedeiro responde */
         Object.defineProperty(w, 'parent', {

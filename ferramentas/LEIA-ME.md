@@ -240,7 +240,7 @@ Analytics**, **Desativar/Ativar** e **Recarregar** (relê a pasta sem recarregar
 
 ```bash
 npm run test:ecx        # só o hospedeiro de ferramentas
-npm test                # as 7 suítes (inclui a do estúdio e as antigas)
+npm test                # as 8 suítes (inclui replay, estúdio e as antigas)
 ```
 
 A suíte `tests/test-extensions.js` cobre: app íntegro sem a pasta, manifesto
@@ -269,3 +269,16 @@ No navegador: `ECX` no console mostra `{tools, errors, view, hooks, …}`;
 3. `npm test` verde antes de commitar.
 4. Backup do último estado estável em `_backup/2026-09-29_v2.0.0-estavel/`
    (tag git `v2.0.0-estavel`).
+
+## 10. Replay da entrada (base preparada, motor ainda não conectado)
+
+A v2 agora registra o instante UTC da operação com offset explícito e oferece
+**▶ Preparar / ajustar replay** na catalogação. O painel de referência continua
+sendo uma visualização de saldo, não um histórico de preços.
+
+O futuro motor deve anunciar `"recursos": {"replay": 1}` no manifesto somente
+quando implementar o contrato. A ponte oferece `replay`, `replayAtual`,
+`abrirReplay` e `salvarReplay`; o adaptador opcional é `replay-adapter.js`.
+
+Contrato, timestamps, limites, responsabilidades da fonte e exemplo completo:
+[REPLAY-OPERACOES.md](../REPLAY-OPERACOES.md). Teste: `npm run test:replay`.

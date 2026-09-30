@@ -98,3 +98,13 @@ Detalhes completos, formato dos objetos e regras de segurança: `ferramentas/LEI
 | `index.html` | painel de referência — **substituir pelo sistema real** |
 | `estilo.css` | estilos do painel — **substituir junto** |
 | `LEIA-ME.md` | este arquivo (pode manter ou apagar) |
+
+## Futuro replay de operações
+
+A catalogação já está preparada para enviar o instante UTC da entrada, ativo,
+fonte, timeframe e ajustes ao novo sistema. Este painel de referência **não**
+implementa replay de preços e por isso ainda **não** anuncia `recursos.replay`.
+
+Ao substituir o painel pelo seu motor, siga o contrato em
+[REPLAY-OPERACOES.md](../../REPLAY-OPERACOES.md). A ponte e o adaptador opcionais
+ficam um nível acima desta pasta: `../ponte.js` e `../replay-adapter.js`.

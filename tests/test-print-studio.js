@@ -220,7 +220,7 @@ ok(srcV2.indexOf('id="shotViewer"') < 0, 'v2 não tem mais o visor antigo');
    SEU build (diferente do da v1), senão o teste quebra em todo bump */
 const buildV2 = (srcV2.match(/EC_BUILD='([^']+)'/) || [])[1] || '';
 ok(buildV2 && buildV2 !== '2026-09-18.3-ticker', 'v2 tem build próprio (' + (buildV2 || 'nenhum') + ')');
-ok(/^2026-09-29\./.test(buildV2), 'build da v2 é da linhagem atual (2026-09-29.x)');
+ok(/^\d{4}-\d{2}-\d{2}\.\d+-.*-v2$/.test(buildV2), 'build da v2 tem data, revisão e linhagem v2');
 ['psStage', 'psTools', 'psFilm', 'psSide', 'psCv', 'psCropBar', 'psTextEdit', 'psHelpPanel'].forEach(id =>
   ok(srcV2.indexOf(`id="${id}"`) > 0, `v2 tem #${id}`));
 ['rect', 'ellipse', 'arrow', 'line', 'pencil', 'hl', 'text', 'blur', 'counter', 'crop', 'eraser', 'hand', 'select']
