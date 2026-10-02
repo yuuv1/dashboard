@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>EdgeControl v2 — Gestão de Capital</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -1824,6 +1824,11 @@ body.rpt-open{overflow:hidden;}
   .rdonut{height:150px;}
   .rcov{padding:14px 14px 13px;}
   .rsec-t{font-size:14px;}
+  /* toque no telefone — não altera o layout de desktop */
+  #hdr .btn-o{display:none;}
+  .nav-item{padding:9px 11px;}
+  input.fi,select.fi,textarea{font-size:16px;}
+  #fab{width:52px;height:52px;}
 }
 @media (max-width:520px){
   #rbarThemes .rth-n{display:none;}     /* no telefone fica só o quadradinho de cor */
@@ -2345,6 +2350,49 @@ body.rpt-open{overflow:hidden;}
               <span class="speed-val" id="cycleFadeVal">0.8 s</span>
             </div>
             <div style="font-size:10px;color:var(--dim);line-height:1.55;margin-top:9px;">No Dashboard, cada bloco de gráfico alterna sozinho entre os seus gráficos, com fade-in. As bolinhas escolhem um na hora e o 📌 fixa o gráfico do bloco. O 7d/Tudo do topo vale para todos eles.</div>
+          </div>
+
+          <div class="set-card">
+            <div class="set-tit">☁️ Nuvem GitHub (PC ↔ celular)</div>
+            <div style="font-size:11px;color:var(--lgray);line-height:1.6;margin-bottom:11px;">
+              O painel continua no seu navegador. Esta nuvem grava o <strong>mesmo JSON de backup</strong>
+              num arquivo do seu repositório. PC e celular usam o mesmo token e ficam iguais.
+              Token fica só neste aparelho (não entra no JSON exportado).
+            </div>
+            <div class="fg"><label class="fl">Dono / repositório</label>
+              <div class="s2">
+                <input class="fi" id="cloudOwner" placeholder="yuuv1" autocomplete="off">
+                <input class="fi" id="cloudRepo" placeholder="dashboard" autocomplete="off">
+              </div>
+            </div>
+            <div class="fg"><label class="fl">Arquivo no repo</label>
+              <input class="fi" id="cloudPath" placeholder="cloud/edgecontrol-sync.json" autocomplete="off">
+            </div>
+            <div class="fg"><label class="fl">Token GitHub (classic, permissão repo)</label>
+              <input class="fi" id="cloudToken" type="password" placeholder="ghp_…" autocomplete="off">
+            </div>
+            <div class="toggle-row">
+              <label class="tgl">
+                <input type="checkbox" id="cloudAuto" onchange="cloudSaveCfgFromForm()">
+                <div class="tgl-track"></div>
+                <div class="tgl-thumb"></div>
+              </label>
+              <span style="font-size:12px;font-weight:600;color:var(--white);">Sincronizar sozinho ao salvar</span>
+            </div>
+            <div class="toggle-row" style="margin-top:0;">
+              <label class="tgl">
+                <input type="checkbox" id="cloudShots" onchange="cloudSaveCfgFromForm()">
+                <div class="tgl-track"></div>
+                <div class="tgl-thumb"></div>
+              </label>
+              <span style="font-size:12px;font-weight:600;color:var(--white);">Incluir prints (arquivo fica grande)</span>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
+              <button class="btn-o xs" onclick="cloudPush({manual:true})">⬆ Enviar agora</button>
+              <button class="btn-s xs" onclick="cloudPull({manual:true})">⬇ Trazer da nuvem</button>
+              <button class="btn-s xs" onclick="cloudSaveCfgFromForm();toast('Nuvem salva neste aparelho.','s')">💾 Guardar token</button>
+            </div>
+            <div style="font-size:10.5px;color:var(--dim);line-height:1.55;margin-top:10px;" id="cloudStatus">Nuvem desligada.</div>
           </div>
 
           <div class="set-card">
@@ -3297,6 +3345,7 @@ function save(){
     _saveFailWarned=false;
     const e=document.getElementById('sumSync');
     if(e) e.textContent=new Date().toLocaleString('pt-BR');
+    try{ if(typeof cloudOnLocalSave==='function') cloudOnLocalSave(); }catch(err){}
   }catch(e){
     /* QuotaExceededError: o armazenamento encheu (ex.: avatar muito grande).
        Antes o erro era engolido em silêncio e o usuário perdia dados sem saber. */
@@ -3415,6 +3464,7 @@ function loadSetForm(){
   document.getElementById('sMaxLoss').value=S.settings.maxLosses||3;
   document.getElementById('sMaxHand').value=S.settings.maxHand||0;
   prevSAv();prevSLogo();updSetPrev();updSum();renderOperationalSettings();renderEmotionSettings();syncTickerUI();
+  try{ cloudFillForm(); }catch(e){}
 }
 function updSetPrev(){
   const c=parseFloat(document.getElementById('sCurC').value)||0;
@@ -8460,7 +8510,160 @@ function chartsRefresh(){ if(isChartsActive()) renderCharts(); }
 /* ══════════════════════════════════════
    INIT
 ══════════════════════════════════════ */
-var EC_BUILD='2026-09-29.2-analise-v2';   /* digite EC_BUILD no console p/ ver a versão */
+var EC_BUILD='2026-10-02.1-nuvem';   /* digite EC_BUILD no console p/ ver a versão */
+
+/* ══════════════════════════════════════
+   NUVEM GITHUB — mesmo backup no PC e no celular
+   Token e repo ficam em localStorage `ecCloud` (não no JSON das ops).
+══════════════════════════════════════ */
+const CLOUD_LS='ecCloud';
+let _cloudTimer=null,_cloudBusy=false;
+function cloudCfg(){
+  try{ return Object.assign({owner:'yuuv1',repo:'dashboard',path:'cloud/edgecontrol-sync.json',token:'',auto:false,shots:true,sha:'',rev:''}, JSON.parse(localStorage.getItem(CLOUD_LS)||'{}')); }
+  catch(e){ return {owner:'yuuv1',repo:'dashboard',path:'cloud/edgecontrol-sync.json',token:'',auto:false,shots:true,sha:'',rev:''}; }
+}
+function cloudSet(p){ localStorage.setItem(CLOUD_LS, JSON.stringify(Object.assign(cloudCfg(),p||{}))); }
+function cloudFillForm(){
+  const c=cloudCfg();
+  const set=(id,v)=>{ const e=document.getElementById(id); if(!e) return; if(e.type==='checkbox') e.checked=!!v; else if(e.type!=='password'||!e.value) e.value=v||''; };
+  set('cloudOwner',c.owner); set('cloudRepo',c.repo); set('cloudPath',c.path);
+  if(c.token){ const t=document.getElementById('cloudToken'); if(t&&!t.value) t.value=c.token; }
+  const a=document.getElementById('cloudAuto'); if(a) a.checked=!!c.auto;
+  const s=document.getElementById('cloudShots'); if(s) s.checked=c.shots!==false;
+  cloudPaintStatus();
+}
+function cloudSaveCfgFromForm(){
+  const g=id=>(document.getElementById(id)||{}).value||'';
+  const auto=!!(document.getElementById('cloudAuto')||{}).checked;
+  const shots=(document.getElementById('cloudShots')||{}).checked!==false;
+  cloudSet({owner:g('cloudOwner').trim()||'yuuv1',repo:g('cloudRepo').trim()||'dashboard',path:g('cloudPath').trim()||'cloud/edgecontrol-sync.json',token:g('cloudToken').trim(),auto,shots});
+  cloudPaintStatus();
+}
+function cloudPaintStatus(extra){
+  const el=document.getElementById('cloudStatus'); if(!el) return;
+  const c=cloudCfg();
+  const on=c.token&&c.owner&&c.repo;
+  el.textContent=(extra?extra+' · ':'')+(on?(c.auto?'Nuvem ligada — envia sozinho ao salvar.':'Nuvem pronta — use Enviar / Trazer.'):'Cole o token GitHub neste celular e no PC (mesmo repo).')+(c.rev?' Último envio: '+c.rev:'');
+}
+function cloudOnLocalSave(){
+  const c=cloudCfg(); if(!c.auto||!c.token) return;
+  clearTimeout(_cloudTimer);
+  _cloudTimer=setTimeout(()=>cloudPush({manual:false}),2200);
+}
+function utf8ToB64(str){
+  const bytes=new TextEncoder().encode(str);
+  let bin='',i=0; const chunk=0x8000;
+  for(;i<bytes.length;i+=chunk) bin+=String.fromCharCode.apply(null, bytes.subarray(i,i+chunk));
+  return btoa(bin);
+}
+function b64ToUtf8(b64){
+  const bin=atob(b64.replace(/\n/g,''));
+  const bytes=new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i);
+  return new TextDecoder().decode(bytes);
+}
+async function cloudBuildPack(includeShots){
+  const imgs={};
+  if(includeShots){
+    const shots=await IMGDB.all();
+    const shotOwners=new Map();
+    (S.operations||[]).forEach(op=>opShotIds(op).forEach(id=>shotOwners.set(String(id),op.id)));
+    for(const r of shots){
+      try{
+        const data=await shotDataURL(r);
+        if(!data||!data.startsWith('data:image/')) continue;
+        imgs[r.id]={d:data,note:r.note||'',name:r.name||'',at:r.at||'',opId:shotOwners.get(String(r.id))||r.opId||null,marks:Array.isArray(r.marks)?r.marks:[],crop:r.crop||null,marksAt:r.marksAt||'',parentId:r.parentId||null,kind:r.kind||''};
+      }catch(e){}
+    }
+  }
+  return {__ec:3,exportedAt:new Date().toISOString(),state:S,shots:imgs,via:'github-cloud'};
+}
+async function cloudApi(method,url,body){
+  const c=cloudCfg();
+  const r=await fetch(url,{method,headers:{'Accept':'application/vnd.github+json','Authorization':'Bearer '+c.token,'X-GitHub-Api-Version':'2022-11-28'},body:body?JSON.stringify(body):undefined});
+  const txt=await r.text();
+  let j=null; try{ j=JSON.parse(txt); }catch(e){}
+  if(!r.ok) throw new Error((j&&j.message)||('HTTP '+r.status));
+  return j;
+}
+async function cloudPush(opts){
+  cloudSaveCfgFromForm();
+  const c=cloudCfg(); const manual=!!(opts&&opts.manual);
+  if(!c.token||!c.owner||!c.repo){ if(manual) toast('Preencha token, dono e repositório.','w'); return; }
+  if(_cloudBusy){ if(manual) toast('Nuvem ocupada…','w'); return; }
+  _cloudBusy=true; cloudPaintStatus('Enviando…');
+  try{
+    const pack=await cloudBuildPack(c.shots!==false);
+    const json=JSON.stringify(pack);
+    if(json.length>90000000) throw new Error('Backup grande demais para o GitHub. Desligue “Incluir prints” ou limpe a galeria.');
+    const content=utf8ToB64(json);
+    const api=`https://api.github.com/repos/${encodeURIComponent(c.owner)}/${encodeURIComponent(c.repo)}/contents/${c.path.split('/').map(encodeURIComponent).join('/')}`;
+    let sha=c.sha;
+    try{ const cur=await cloudApi('GET',api+'?t='+Date.now()); sha=cur&&cur.sha; }catch(e){ sha=undefined; }
+    const put=await cloudApi('PUT',api,{message:'chore(sync): EdgeControl '+pack.exportedAt,content,sha,branch:'main'});
+    cloudSet({sha:(put.content&&put.content.sha)||sha,rev:pack.exportedAt});
+    cloudPaintStatus('Enviado '+new Date().toLocaleString('pt-BR'));
+    if(manual) toast('Nuvem atualizada. Abra o celular e toque em Trazer, ou ligue o auto-sync.','s');
+  }catch(e){
+    cloudPaintStatus('Falha: '+(e.message||e));
+    if(manual) toast('Nuvem: '+(e.message||e),'e');
+  }
+  _cloudBusy=false;
+}
+async function cloudApplyPack(pack,silent){
+  const st=pack.state, pics=pack.shots||{};
+  if(!st||!st.settings||!Array.isArray(st.operations)) throw new Error('arquivo da nuvem inválido');
+  if(!silent && !confirm('Trazer '+st.operations.length+' operações da nuvem?\nOs dados deste aparelho serão substituídos.')) return false;
+  S=migrateState(st); ensureChartState();
+  if(!THEMES.some(t=>t.id===S.theme)) S.theme='default';
+  await migrateLegacyShots(false);
+  associateImportedShots(pics);
+  for(const [id,value] of Object.entries(pics)){
+    try{
+      const d=(value&&value.d)||(typeof value==='string'?value:'');
+      if(!d) continue;
+      const blob=await dataURLtoBlob(d);
+      await IMGDB.put({id,blob,dataUrl:d,w:0,h:0,size:blob.size,name:(value&&value.name)||'',note:(value&&value.note)||'',opId:(value&&value.opId)||null,at:(value&&value.at)||'',marks:(value&&value.marks)||[],crop:(value&&value.crop)||null,marksAt:(value&&value.marksAt)||'',parentId:(value&&value.parentId)||null,kind:(value&&value.kind)||''});
+    }catch(e){}
+  }
+  save();
+  applyTheme(S.theme||'default',{silent:true}); applyProfUI(); refreshAssetUI(); updateDash(); badge(); mtApplyAll();
+  return true;
+}
+async function cloudPull(opts){
+  cloudSaveCfgFromForm();
+  const c=cloudCfg(); const manual=!!(opts&&opts.manual);
+  if(!c.token||!c.owner||!c.repo){ if(manual) toast('Preencha token, dono e repositório.','w'); return; }
+  if(_cloudBusy) return;
+  _cloudBusy=true; cloudPaintStatus('Buscando…');
+  try{
+    const api=`https://api.github.com/repos/${encodeURIComponent(c.owner)}/${encodeURIComponent(c.repo)}/contents/${c.path.split('/').map(encodeURIComponent).join('/')}`;
+    const cur=await cloudApi('GET',api+'?t='+Date.now());
+    const txt=b64ToUtf8(cur.content||'');
+    const pack=JSON.parse(txt);
+    const remoteAt=pack.exportedAt||'';
+    if(!manual && c.rev && remoteAt && remoteAt<=c.rev){ cloudPaintStatus('Já está em dia.'); _cloudBusy=false; return; }
+    /* auto: nunca esmaga um painel local na primeira vez — só atualiza se já
+       conhecemos a nuvem (rev) e o arquivo remoto é mais novo. */
+    if(!manual && (S.operations||[]).length && !c.rev){ cloudPaintStatus('Há dados locais. Use “Trazer da nuvem” se quiser substituir.'); _cloudBusy=false; return; }
+    const ok=await cloudApplyPack(pack, !manual);
+    if(ok){
+      cloudSet({sha:cur.sha,rev:remoteAt||new Date().toISOString()});
+      cloudPaintStatus('Recebido '+new Date().toLocaleString('pt-BR'));
+      if(manual) toast('Dados da nuvem aplicados neste aparelho.','s');
+    }else cloudPaintStatus('Cancelado.');
+  }catch(e){
+    cloudPaintStatus('Falha: '+(e.message||e));
+    if(manual) toast('Nuvem: '+(e.message||e),'e');
+  }
+  _cloudBusy=false;
+}
+async function cloudBoot(){
+  cloudFillForm();
+  const c=cloudCfg();
+  if(c.auto&&c.token){ try{ await cloudPull({manual:false}); }catch(e){} }
+}
+
 async function init(){
   console.info('EdgeControl build: '+EC_BUILD);
   load();
@@ -8478,6 +8681,7 @@ async function init(){
   mtApplyAll();
   initPWA();
   maybeLoadDemoData();
+  try{ await cloudBoot(); }catch(e){ console.warn('nuvem:',e); }
 }
 /* ?demo=1 — carrega o backup de exemplo que mora na própria pasta (mesma
    origem), só para experimentar o estúdio sem dados próprios. Nunca roda no
