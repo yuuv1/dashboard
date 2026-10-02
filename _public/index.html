@@ -2353,46 +2353,64 @@ body.rpt-open{overflow:hidden;}
           </div>
 
           <div class="set-card">
-            <div class="set-tit">☁️ Nuvem GitHub (PC ↔ celular)</div>
+            <div class="set-tit">☁️ Nuvem fácil (PC ↔ celular)</div>
             <div style="font-size:11px;color:var(--lgray);line-height:1.6;margin-bottom:11px;">
-              O painel continua no seu navegador. Esta nuvem grava o <strong>mesmo JSON de backup</strong>
-              num arquivo do seu repositório. PC e celular usam o mesmo token e ficam iguais.
-              Token fica só neste aparelho (não entra no JSON exportado).
+              Sem token. No PC clique <strong>Criar nuvem</strong>, copie o código, cole no celular e
+              <strong>Entrar</strong>. Use o mesmo PIN nos dois. Os dados sobem sozinhos ao salvar.
             </div>
-            <div class="fg"><label class="fl">Dono / repositório</label>
-              <div class="s2">
-                <input class="fi" id="cloudOwner" placeholder="yuuv1" autocomplete="off">
-                <input class="fi" id="cloudRepo" placeholder="dashboard" autocomplete="off">
+            <div class="fg"><label class="fl">PIN (mesmo nos dois aparelhos)</label>
+              <input class="fi" id="easyPin" type="password" inputmode="numeric" placeholder="ex: 4821" autocomplete="off">
+            </div>
+            <div class="fg"><label class="fl">Código da nuvem</label>
+              <div style="display:flex;gap:7px;">
+                <input class="fi" id="easyCode" placeholder="aparece depois de criar" autocomplete="off" style="flex:1;">
+                <button class="btn-s xs" onclick="easyCopyCode()">Copiar</button>
               </div>
-            </div>
-            <div class="fg"><label class="fl">Arquivo no repo</label>
-              <input class="fi" id="cloudPath" placeholder="cloud/edgecontrol-sync.json" autocomplete="off">
-            </div>
-            <div class="fg"><label class="fl">Token GitHub (classic, permissão repo)</label>
-              <input class="fi" id="cloudToken" type="password" placeholder="ghp_…" autocomplete="off">
             </div>
             <div class="toggle-row">
               <label class="tgl">
-                <input type="checkbox" id="cloudAuto" onchange="cloudSaveCfgFromForm()">
+                <input type="checkbox" id="easyAuto" checked onchange="easySaveForm()">
                 <div class="tgl-track"></div>
                 <div class="tgl-thumb"></div>
               </label>
-              <span style="font-size:12px;font-weight:600;color:var(--white);">Sincronizar sozinho ao salvar</span>
-            </div>
-            <div class="toggle-row" style="margin-top:0;">
-              <label class="tgl">
-                <input type="checkbox" id="cloudShots" onchange="cloudSaveCfgFromForm()">
-                <div class="tgl-track"></div>
-                <div class="tgl-thumb"></div>
-              </label>
-              <span style="font-size:12px;font-weight:600;color:var(--white);">Incluir prints (arquivo fica grande)</span>
+              <span style="font-size:12px;font-weight:600;color:var(--white);">Enviar sozinho quando eu salvar</span>
             </div>
             <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
-              <button class="btn-o xs" onclick="cloudPush({manual:true})">⬆ Enviar agora</button>
-              <button class="btn-s xs" onclick="cloudPull({manual:true})">⬇ Trazer da nuvem</button>
-              <button class="btn-s xs" onclick="cloudSaveCfgFromForm();toast('Nuvem salva neste aparelho.','s')">💾 Guardar token</button>
+              <button class="btn-o xs" onclick="easyCreate()">✨ Criar nuvem (PC)</button>
+              <button class="btn-s xs" onclick="easyJoin()">📲 Entrar (celular)</button>
+              <button class="btn-s xs" onclick="easyPush(true)">⬆ Enviar</button>
+              <button class="btn-s xs" onclick="easyPull(true)">⬇ Trazer</button>
             </div>
-            <div style="font-size:10.5px;color:var(--dim);line-height:1.55;margin-top:10px;" id="cloudStatus">Nuvem desligada.</div>
+            <div style="font-size:10.5px;color:var(--dim);line-height:1.55;margin-top:10px;" id="easyStatus">Ainda sem nuvem neste aparelho.</div>
+            <details style="margin-top:12px;">
+              <summary style="cursor:pointer;font-size:11px;color:var(--lgray);">Opção avançada: GitHub</summary>
+              <div style="font-size:10.5px;color:var(--dim);margin:8px 0;">Só se a nuvem fácil falhar. Precisa de token.</div>
+              <div class="fg"><label class="fl">Dono / repositório</label>
+                <div class="s2">
+                  <input class="fi" id="cloudOwner" placeholder="yuuv1" autocomplete="off">
+                  <input class="fi" id="cloudRepo" placeholder="dashboard" autocomplete="off">
+                </div>
+              </div>
+              <div class="fg"><label class="fl">Arquivo no repo</label>
+                <input class="fi" id="cloudPath" placeholder="cloud/edgecontrol-sync.json" autocomplete="off">
+              </div>
+              <div class="fg"><label class="fl">Token GitHub</label>
+                <input class="fi" id="cloudToken" type="password" placeholder="ghp_…" autocomplete="off">
+              </div>
+              <div class="toggle-row">
+                <label class="tgl"><input type="checkbox" id="cloudAuto" onchange="cloudSaveCfgFromForm()"><div class="tgl-track"></div><div class="tgl-thumb"></div></label>
+                <span style="font-size:12px;font-weight:600;">Auto GitHub</span>
+              </div>
+              <div class="toggle-row" style="margin-top:0;">
+                <label class="tgl"><input type="checkbox" id="cloudShots" onchange="cloudSaveCfgFromForm()"><div class="tgl-track"></div><div class="tgl-thumb"></div></label>
+                <span style="font-size:12px;font-weight:600;">Incluir prints no GitHub</span>
+              </div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
+                <button class="btn-s xs" onclick="cloudPush({manual:true})">Enviar GitHub</button>
+                <button class="btn-s xs" onclick="cloudPull({manual:true})">Trazer GitHub</button>
+              </div>
+              <div style="font-size:10px;color:var(--dim);margin-top:8px;" id="cloudStatus"></div>
+            </details>
           </div>
 
           <div class="set-card">
@@ -3464,7 +3482,7 @@ function loadSetForm(){
   document.getElementById('sMaxLoss').value=S.settings.maxLosses||3;
   document.getElementById('sMaxHand').value=S.settings.maxHand||0;
   prevSAv();prevSLogo();updSetPrev();updSum();renderOperationalSettings();renderEmotionSettings();syncTickerUI();
-  try{ cloudFillForm(); }catch(e){}
+  try{ cloudFillForm(); easyFillForm(); }catch(e){}
 }
 function updSetPrev(){
   const c=parseFloat(document.getElementById('sCurC').value)||0;
@@ -8546,6 +8564,7 @@ function cloudPaintStatus(extra){
   el.textContent=(extra?extra+' · ':'')+(on?(c.auto?'Nuvem ligada — envia sozinho ao salvar.':'Nuvem pronta — use Enviar / Trazer.'):'Cole o token GitHub neste celular e no PC (mesmo repo).')+(c.rev?' Último envio: '+c.rev:'');
 }
 function cloudOnLocalSave(){
+  try{ easyOnLocalSave(); }catch(e){}
   const c=cloudCfg(); if(!c.auto||!c.token) return;
   clearTimeout(_cloudTimer);
   _cloudTimer=setTimeout(()=>cloudPush({manual:false}),2200);
@@ -8662,6 +8681,145 @@ async function cloudBoot(){
   cloudFillForm();
   const c=cloudCfg();
   if(c.auto&&c.token){ try{ await cloudPull({manual:false}); }catch(e){} }
+  try{ await easyBoot(); }catch(e){}
+}
+
+const EASY_LS='ecEasy';
+const EASY_API='https://jsonblob.com/api/jsonBlob';
+let _easyTimer=null,_easyBusy=false;
+function easyCfg(){
+  try{ return Object.assign({id:'',pin:'',auto:true,rev:''}, JSON.parse(localStorage.getItem(EASY_LS)||'{}')); }
+  catch(e){ return {id:'',pin:'',auto:true,rev:''}; }
+}
+function easySet(p){ localStorage.setItem(EASY_LS, JSON.stringify(Object.assign(easyCfg(),p||{}))); }
+function easyFillForm(){
+  const c=easyCfg();
+  const pin=document.getElementById('easyPin'); if(pin&&!pin.value) pin.value=c.pin||'';
+  const code=document.getElementById('easyCode'); if(code&&!code.value) code.value=c.id||'';
+  const a=document.getElementById('easyAuto'); if(a) a.checked=c.auto!==false;
+  easyPaint();
+}
+function easySaveForm(){
+  const pin=(document.getElementById('easyPin')||{}).value||'';
+  const id=((document.getElementById('easyCode')||{}).value||'').trim();
+  const auto=(document.getElementById('easyAuto')||{}).checked!==false;
+  easySet({pin,id,auto}); easyPaint();
+}
+function easyPaint(extra){
+  const el=document.getElementById('easyStatus'); if(!el) return;
+  const c=easyCfg();
+  el.textContent=(extra?extra+' · ':'')+(c.id?(c.auto?'Nuvem ligada. Código já salvo neste aparelho.':'Código salvo. Use Enviar / Trazer.'):'No PC: Criar nuvem. No celular: colar o código e Entrar.');
+}
+function easyCopyCode(){
+  easySaveForm();
+  const v=((document.getElementById('easyCode')||{}).value||easyCfg().id||'').trim();
+  if(!v){ toast('Ainda não há código. Clique em Criar nuvem.','w'); return; }
+  if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(v).then(()=>toast('Código copiado. Cole no celular.','s')).catch(()=>toast(v,'s'));
+  else toast(v,'s');
+}
+function easyOnLocalSave(){
+  const c=easyCfg(); if(!c.id||c.auto===false) return;
+  clearTimeout(_easyTimer);
+  _easyTimer=setTimeout(()=>easyPush(false),1800);
+}
+async function easyKey(pin){
+  const enc=new TextEncoder();
+  const base=await crypto.subtle.importKey('raw', enc.encode(String(pin||'edgecontrol')), 'PBKDF2', false, ['deriveKey']);
+  return crypto.subtle.deriveKey({name:'PBKDF2',salt:enc.encode('edgecontrol-easy-v1'),iterations:60000,hash:'SHA-256'}, base, {name:'AES-GCM',length:256}, false, ['encrypt','decrypt']);
+}
+function easyB64(buf){ const b=new Uint8Array(buf); let s=''; for(let i=0;i<b.length;i++) s+=String.fromCharCode(b[i]); return btoa(s); }
+function easyFromB64(s){ const bin=atob(s); const b=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) b[i]=bin.charCodeAt(i); return b; }
+async function easyWrap(pack,pin){
+  const iv=crypto.getRandomValues(new Uint8Array(12));
+  const key=await easyKey(pin);
+  const ct=await crypto.subtle.encrypt({name:'AES-GCM',iv}, key, new TextEncoder().encode(JSON.stringify(pack)));
+  return {ecEasy:1,iv:easyB64(iv),ct:easyB64(ct)};
+}
+async function easyUnwrap(body,pin){
+  if(!body||body.ecEasy!==1) return body;
+  const key=await easyKey(pin);
+  const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:easyFromB64(body.iv)}, key, easyFromB64(body.ct));
+  return JSON.parse(new TextDecoder().decode(pt));
+}
+function easyIdFromResponse(r){
+  const loc=r.headers.get('Location')||r.headers.get('location')||'';
+  const m=String(loc).match(/jsonBlob\/([^/?#]+)/i);
+  if(m) return m[1];
+  const x=r.headers.get('X-jsonblob')||r.headers.get('x-jsonblob');
+  return x||'';
+}
+async function easyCreate(){
+  easySaveForm();
+  const pin=((document.getElementById('easyPin')||{}).value||'').trim();
+  if(pin.length<4){ toast('Escolha um PIN de pelo menos 4 dígitos.','w'); return; }
+  if(_easyBusy) return;
+  _easyBusy=true; easyPaint('Criando…');
+  try{
+    const pack=await cloudBuildPack(false);
+    const body=await easyWrap(pack,pin);
+    const r=await fetch(EASY_API,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify(body)});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    let id=easyIdFromResponse(r);
+    if(!id){ const j=await r.clone().json().catch(()=>null); id=(j&& (j.id||j.blobId))||''; }
+    if(!id) throw new Error('O serviço não devolveu o código. Tente de novo.');
+    easySet({id,pin,auto:true,rev:pack.exportedAt});
+    const inp=document.getElementById('easyCode'); if(inp) inp.value=id;
+    easyPaint('Criada');
+    toast('Nuvem criada. Copie o código e cole no celular.','s');
+    easyCopyCode();
+  }catch(e){ easyPaint('Falha: '+(e.message||e)); toast('Não deu para criar a nuvem. '+ (e.message||e),'e'); }
+  _easyBusy=false;
+}
+async function easyJoin(){
+  easySaveForm();
+  const pin=((document.getElementById('easyPin')||{}).value||'').trim();
+  const id=((document.getElementById('easyCode')||{}).value||'').trim();
+  if(pin.length<4||!id){ toast('PIN e código são obrigatórios.','w'); return; }
+  easySet({id,pin,auto:true});
+  await easyPull(true);
+}
+async function easyPush(manual){
+  easySaveForm();
+  const c=easyCfg();
+  if(!c.id||!c.pin){ if(manual) toast('Crie a nuvem no PC ou entre com o código.','w'); return; }
+  if(_easyBusy) return;
+  _easyBusy=true; easyPaint('Enviando…');
+  try{
+    const pack=await cloudBuildPack(false);
+    const body=await easyWrap(pack,c.pin);
+    const r=await fetch(EASY_API+'/'+encodeURIComponent(c.id),{method:'PUT',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify(body)});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    easySet({rev:pack.exportedAt});
+    easyPaint('Enviado '+new Date().toLocaleString('pt-BR'));
+    if(manual) toast('Enviado. Abra o celular (ou Trazer).','s');
+  }catch(e){ easyPaint('Falha: '+(e.message||e)); if(manual) toast('Nuvem: '+(e.message||e),'e'); }
+  _easyBusy=false;
+}
+async function easyPull(manual){
+  easySaveForm();
+  const c=easyCfg();
+  if(!c.id||!c.pin){ if(manual) toast('Cole o código e o PIN.','w'); return; }
+  if(_easyBusy) return;
+  _easyBusy=true; easyPaint('Buscando…');
+  try{
+    const r=await fetch(EASY_API+'/'+encodeURIComponent(c.id)+'?t='+Date.now(),{headers:{'Accept':'application/json'}});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const body=await r.json();
+    const pack=await easyUnwrap(body,c.pin);
+    if(!pack||!pack.state) throw new Error('PIN errado ou código inválido.');
+    const remoteAt=pack.exportedAt||'';
+    if(!manual && (S.operations||[]).length && !c.rev){ easyPaint('Há dados locais. Use Trazer se quiser substituir.'); _easyBusy=false; return; }
+    if(!manual && c.rev && remoteAt && remoteAt<=c.rev){ easyPaint('Já está em dia.'); _easyBusy=false; return; }
+    const ok=await cloudApplyPack(pack, !manual);
+    if(ok){ easySet({rev:remoteAt||new Date().toISOString()}); easyPaint('Recebido '+new Date().toLocaleString('pt-BR')); if(manual) toast('Dados da nuvem neste aparelho.','s'); }
+    else easyPaint('Cancelado.');
+  }catch(e){ easyPaint('Falha: '+(e.message||e)); if(manual) toast('Nuvem: '+(e.message||e),'e'); }
+  _easyBusy=false;
+}
+async function easyBoot(){
+  easyFillForm();
+  const c=easyCfg();
+  if(c.id&&c.pin&&c.auto!==false){ try{ await easyPull(false); }catch(e){} }
 }
 
 async function init(){

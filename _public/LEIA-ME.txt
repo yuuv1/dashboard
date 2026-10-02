@@ -1,69 +1,18 @@
 ═══════════════════════════════════════════════════════════
-  COMO COLOCAR O APP NO AR (grátis) + DADOS NA NUVEM
+  1) SITE   2) NUVEM FÁCIL (código + PIN)
 ═══════════════════════════════════════════════════════════
 
-Esta pasta tem SÓ o que o site precisa:
-  index.html   ← o EdgeControl
-  sw.js        ← funciona offline no celular
+SITE
+1. Abra https://app.netlify.com/drop
+2. Arraste ESTA PASTA (_public)
+3. Copie o link ….netlify.app
+4. Abra no PC e no celular
 
-NÃO coloque JSON de operações, token, nem prints aqui.
+NUVEM (mesmos dados, sem token GitHub)
+1. No PC, no app: Configurações → Nuvem fácil
+   Escolha um PIN (ex: 4821) → Criar nuvem → Copiar o código
+2. No celular, o mesmo PIN, cole o código → Entrar
+3. Pronto. O que você salvar no PC sobe sozinho.
 
-
-─────────────────────────────────────────────────────────
-PASSO 1 — Site no ar (PC e celular abrem o mesmo link)
-─────────────────────────────────────────────────────────
-
-1. Abra no computador:  https://app.netlify.com/drop
-   (cria conta grátis se pedir)
-
-2. Arraste ESTA PASTA INTEIRA (_public) para a página.
-
-3. Copie o link que aparecer, tipo:
-   https://algo-aleatorio.netlify.app
-
-4. Esse link:
-   • no Chrome do PC
-   • no Chrome do celular (Android) ou Safari (iPhone)
-     → menu → Instalar / Adicionar à Tela de Início
-
-Pronto: o programa está online. Ainda NÃO são os mesmos dados.
-
-
-─────────────────────────────────────────────────────────
-PASSO 2 — Os mesmos dados nos dois aparelhos
-─────────────────────────────────────────────────────────
-
-O Netlify NÃO guarda o seu diário. Quem guarda é um arquivo
-no GitHub:  cloud/edgecontrol-sync.json
-
-1. No GitHub: foto → Settings → Developer settings
-   → Personal access tokens → Tokens (classic) → Generate
-   Marque a caixinha  repo
-   Copie o token (começa com ghp_) — ele some da tela.
-
-2. Abra o app pelo LINK do Netlify no COMPUTADOR
-   Configurações → ☁️ Nuvem GitHub
-     Dono:          yuuv1
-     Repositório:   dashboard
-     Arquivo:       cloud/edgecontrol-sync.json
-     Token:         cole o ghp_...
-     Ligar:         Sincronizar sozinho ao salvar
-   → Guardar token  →  Enviar agora
-
-3. Abra o MESMO link do Netlify no CELULAR
-   Mesmos campos, o MESMO token
-   → Guardar token  →  Trazer da nuvem
-
-A partir daí: o que você lança no PC sobe sozinho;
-quando abre no celular, baixa. E o contrário também.
-
-Não use os dois ao mesmo tempo sem enviar.
-Se o envio falhar por arquivo grande, desligue “Incluir prints”.
-
-
-─────────────────────────────────────────────────────────
-Se o Netlify pedir login
-─────────────────────────────────────────────────────────
-Conta grátis. Pode entrar com GitHub.
-Depois você pode “arrastar de novo” esta pasta para atualizar
-o programa (não apaga os dados da nuvem).
+Não compartilhe PIN nem código. Prints não vão nesta nuvem
+(arquivo ficaria grande); use Exportar JSON se precisar dos prints.
