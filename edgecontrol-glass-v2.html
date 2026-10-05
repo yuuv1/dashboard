@@ -2421,6 +2421,11 @@ body.rpt-open{overflow:hidden;}
               Quem entrega é um relay que você mesmo publica — a chave do provedor de e-mail nunca fica aqui.
               Montagem em 15 minutos: <strong>ferramentas/email-backup/LEIA-ME.md</strong>.
             </div>
+            <div style="font-size:11px;color:var(--dim);line-height:1.6;margin-bottom:11px;">
+              <strong>Semanal automático (opcional):</strong> o repositório traz um job do GitHub Actions
+              que envia sozinho toda segunda de manhã, sem precisar abrir o app —
+              <strong>.github/workflows/backup-semanal.yml</strong> (passo a passo no LEIA-ME).
+            </div>
             <div class="fg"><label class="fl">URL do relay (Worker)</label>
               <input class="fi" id="emailWorker" placeholder="https://ec-email.seu-usuario.workers.dev" autocomplete="off" onchange="emailSaveForm()">
             </div>

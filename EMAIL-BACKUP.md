@@ -121,3 +121,50 @@ no primeiro — **a parte nunca corta o `.json` no meio**.
 - **Períodos diferentes do “completo”**: o envio é sempre do começo ao fim. Se
   quiser “só a semana” ou “só o mês passado”, é uma evolução pequena no
   `emailModel()` (os presets do relatório já existem).
+
+---
+
+## Semanal automático (fase 2 — implementada)
+
+O pedido depois do envio manual foi: “se tiver como deixar semanal automático,
+sem eu precisar fazer coisas externas”. A resposta implementada:
+
+```
+GitHub Actions (toda segunda, 09:00 de São Paulo)
+   └─ lê a Nuvem fácil (JSONBlob) ──▶ decifra com código + PIN (AES-GCM/PBKDF2)
+      └─ núcleo puro do relatório do app (RPT-CORE) ──▶ números da semana anterior
+         └─ Brevo ──▶ e-mail com resumo + .json completo em anexo
+```
+
+| Peça | Onde |
+|---|---|
+| Job semanal | `.github/workflows/backup-semanal.yml` |
+| Programa (Node puro, sem dependências) | `ferramentas/email-backup/semanal.mjs` |
+| Segredos (uma vez) | `EC_NUVEM_CODIGO`, `EC_NUVEM_PIN`, `EC_EMAIL`, `EC_REMETENTE`, `BREVO_API_KEY` |
+| Testes | `tests/test-semanal.js` |
+
+**Como o “sem fazer nada” funciona:** a Nuvem fácil já publica o estado a cada
+salvamento, sozinha, sem token — é a única peça que precisa estar viva para o
+job ler. O agendador é do próprio GitHub (o repositório já existe), o envio é
+pela Brevo, e a chave fica em *secret*. Depois da configuração inicial de 5
+minutos, não há nenhuma tarefa recorrente: não precisa abrir o app, ligar o PC
+nem clicar em nada.
+
+**Por que não usar o Worker para o cron:** funcionaria (Cloudflare tem *cron
+triggers*), mas exigiria levar a matemática do relatório para dentro do Worker —
+duplicando o que o app já faz. Rodando dentro do GitHub Actions, o job importa o
+**núcleo puro do próprio app** (`RPT-CORE-START/END`), então os números da
+semana são, por construção, os mesmos que o relatório mostra. `tests/test-semanal.js`
+compara os dois lado a lado (e o workflow roda esse teste antes de enviar).
+
+**Limites honestos:**
+
+- **Prints**: a Nuvem fácil não carrega imagens, então o anexo semanal sai sem
+  prints por padrão. Alternativa pronta: a variável `EC_COM_PRINTS` aponta para
+  um backup `.json` que esteja no repositório (ex.: o arquivo da Nuvem GitHub
+  com “Incluir prints” ligado) e as imagens entram no anexo.
+- **Cron do GitHub é “melhor esforço”** (atrasos de 5–30 min são comuns) e só
+  roda a partir da branch padrão — logo, este job só começa a valer depois que
+  o PR for mergeado no `main`.
+- **Semana anterior = segunda a domingo** (fuso `America/Sao_Paulo`).
+- **Repositório privado**: 2.000 minutos/mês grátis; o job gasta ~1 min/semana.

@@ -89,3 +89,64 @@ No EdgeControl (v2): **Configurações → 📧 Backup por e-mail**
 - **Gmail + ponte local** (sem terceiros): dá para trocar a chamada da Brevo por
   SMTP do Gmail usando uma senha de app, rodando junto com o `EdgeControl.bat`.
   Só funciona com o PC ligado — por isso não é o caminho padrão.
+
+---
+
+# Semanal automático (sem abrir o app)
+
+O que já existe neste repositório: **`.github/workflows/backup-semanal.yml`**, que
+toda segunda-feira às 09:00 (São Paulo) roda
+`ferramentas/email-backup/semanal.mjs`: lê a **Nuvem fácil**, decifra com o
+código + PIN, monta os números da semana anterior com o **mesmo núcleo do
+relatório que mora no app** e envia o e-mail pela Brevo com o `.json` em anexo.
+
+Não precisa de Worker, nem de PC ligado, nem de app aberto — só de 3 segredos
+uma única vez.
+
+## Passo a passo (5 minutos, uma vez só)
+
+1. No GitHub: **Settings → Secrets and variables → Actions → New repository secret**:
+
+| Secret | Valor |
+|---|---|
+| `EC_NUVEM_CODIGO` | o **código da nuvem** (o mesmo que você cola no celular) |
+| `EC_NUVEM_PIN` | o **PIN** da nuvem fácil |
+| `EC_EMAIL` | seu e-mail de destino |
+| `EC_REMETENTE` | o remetente confirmado na Brevo (passo 1 da montagem acima) |
+| `BREVO_API_KEY` | a chave `xkeysib-…` da Brevo |
+
+   (Opcional: em **Variables**, crie `EC_COM_PRINTS` com o caminho de um backup
+   `.json` do próprio repositório — ex.: `cloud/edgecontrol-sync.json` — para o
+   anexo da semana levar também os prints daquele arquivo.)
+
+2. Confirme que o workflow está na branch principal (`main`). O agendador do
+   GitHub só olha para o arquivo da branch padrão.
+3. **Rode uma vez na mão** para conferir: aba **Actions → backup-semanal → Run
+   workflow**, marque **dry_run** (não envia nada) e, quando o job terminar,
+   baixe o artifact **email-payload** para ver exatamente o e-mail montado.
+   Sem o dry-run, o botão “Run workflow” envia de verdade.
+4. Pronto. Toda segunda-feira o e-mail chega sozinho. Se quiser conferir uma
+   semana específica, use o campo **semana** (`AAAA-MM-DD`, qualquer dia dela).
+
+## O que chega toda segunda
+
+- **Assunto**: `EdgeControl — semana 28/09/2026 a 04/10/2026 · 12 ops · +R$ 340,00`
+- **Corpo**: resumo da semana (com a comparação com a semana anterior),
+  **dia a dia**, destaques por ativo/operacional e a leitura automática.
+- **Anexo**: `edgecontrol_backup_AAAA-MM-DD.json` — o backup completo e
+  importável (Configurações → Backup de Dados → Importar).
+
+## O que saber antes
+
+- **Sem prints por padrão**: a Nuvem fácil não carrega imagens (é ela que o job
+  lê, com código + PIN). Os prints continuam no aparelho e no envio manual
+  “📧 Enviar backup agora”. Para o semanal levar prints, use `EC_COM_PRINTS`
+  apontando para um backup `.json` que esteja no repositório.
+- **Cron é “melhor esforço”**: o GitHub pode atrasar 5–30 minutos em horários
+  de pico; o e-mail chega no mesmo dia.
+- **Semana anterior seg→dom**: na segunda 05/10 o job envia 28/09 a 04/10.
+- **Custo**: repositório privado tem 2.000 minutos/mês grátis; este job usa
+  cerca de 1 minuto por semana (~5 no mês).
+- O workflow também roda `node tests/test-semanal.js` antes de enviar: se o
+  núcleo do relatório do app mudar de forma incompatível, o job falha em vez de
+  mandar número errado.
