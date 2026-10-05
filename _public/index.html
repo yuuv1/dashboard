@@ -2414,6 +2414,64 @@ body.rpt-open{overflow:hidden;}
           </div>
 
           <div class="set-card">
+            <div class="set-tit">📧 Backup por e-mail</div>
+            <div style="font-size:11px;color:var(--lgray);line-height:1.6;margin-bottom:11px;">
+              Envio manual do <strong>período completo</strong> (da 1ª operação até hoje): chega o backup
+              <strong>.json</strong> em anexo (com os prints) e um resumo do período no corpo do e-mail.
+              Quem entrega é um relay que você mesmo publica — a chave do provedor de e-mail nunca fica aqui.
+              Montagem em 15 minutos: <strong>ferramentas/email-backup/LEIA-ME.md</strong>.
+            </div>
+            <div style="font-size:11px;color:var(--dim);line-height:1.6;margin-bottom:11px;padding:9px 10px;border:1px solid var(--line,#2a3345);border-radius:9px;">
+              ✅ <strong>Semanal automático — nada para configurar aqui.</strong>
+              O GitHub já envia sozinho toda segunda de manhã (passo a passo em
+              <strong>ferramentas/email-backup/LEIA-ME.md</strong>). Só precisa das 5 chaves no GitHub,
+              uma vez; e pode avisar também no <strong>WhatsApp</strong> (grátis, com o CallMeBot —
+              mesma seção do LEIA-ME). Esta tela é apenas para o envio <strong>na hora, pelo app</strong>.
+            </div>
+            <div class="fg"><label class="fl">URL do Worker (opcional — só para o botão “Enviar agora”)</label>
+              <input class="fi" id="emailWorker" placeholder="https://ec-email.seu-usuario.workers.dev" autocomplete="off" onchange="emailSaveForm()">
+              <div style="font-size:10px;color:var(--dim);margin-top:5px;line-height:1.5;">
+                Não sabe o que é isso? <strong>Deixe em branco</strong> e use o botão
+                “🔗 Enviar pelo GitHub” abaixo (ou o semanal automático).
+                O Worker é só um endereço de um programinha que você cria na Cloudflare (grátis) para o app
+                poder enviar sem guardar a senha do e-mail — assim o site continua sem senha nenhuma.
+              </div>
+            </div>
+            <div class="fg"><label class="fl">E-mail de destino</label>
+              <input class="fi" id="emailTo" type="email" placeholder="voce@email.com" autocomplete="off" onchange="emailSaveForm()">
+            </div>
+            <div class="fg"><label class="fl">Repositório no GitHub (usado pelo botão “Enviar pelo GitHub”)</label>
+              <input class="fi" id="emailRepo" placeholder="usuario/repositorio" autocomplete="off" onchange="emailSaveForm()">
+            </div>
+            <div class="fg"><label class="fl">Chave do app (opcional — só se você definiu APP_KEY no Worker)</label>
+              <input class="fi" id="emailKey" type="password" placeholder="deixe vazio se não usou" autocomplete="off" onchange="emailSaveForm()">
+            </div>
+            <div class="toggle-row">
+              <label class="tgl">
+                <input type="checkbox" id="emailZip" onchange="emailSaveForm()">
+                <div class="tgl-track"></div>
+                <div class="tgl-thumb"></div>
+              </label>
+              <span style="font-size:12px;font-weight:600;color:var(--white);">Anexar também as imagens soltas (.zip)</span>
+            </div>
+            <div class="toggle-row" style="margin-top:0;">
+              <label class="tgl">
+                <input type="checkbox" id="emailAviso" checked onchange="emailSaveForm()">
+                <div class="tgl-track"></div>
+                <div class="tgl-thumb"></div>
+              </label>
+              <span style="font-size:12px;font-weight:600;color:var(--white);">Lembrar quando passar 7 dias sem envio</span>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
+              <button class="btn-o xs" onclick="emailPreview()">🔍 Conferir pacote</button>
+              <button class="btn-s xs" onclick="emailTest()">🧪 Testar canal</button>
+              <button class="btn-s xs" onclick="emailSend({manual:true})">📧 Enviar backup agora</button>
+              <button class="btn-o xs" onclick="emailAbrirGitHub()">🔗 Enviar pelo GitHub</button>
+            </div>
+            <div style="font-size:10.5px;color:var(--dim);line-height:1.55;margin-top:10px;" id="emailStatus">—</div>
+          </div>
+
+          <div class="set-card">
             <div class="set-tit">🔒 Backup de Dados</div>
             <div class="bkp-box">
               <div style="font-size:13px;font-weight:700;margin-bottom:5px;">Proteja seus dados</div>
@@ -8528,7 +8586,7 @@ function chartsRefresh(){ if(isChartsActive()) renderCharts(); }
 /* ══════════════════════════════════════
    INIT
 ══════════════════════════════════════ */
-var EC_BUILD='2026-10-02.1-nuvem';   /* digite EC_BUILD no console p/ ver a versão */
+var EC_BUILD='2026-10-05.1-email';   /* digite EC_BUILD no console p/ ver a versão */
 
 /* ══════════════════════════════════════
    NUVEM GITHUB — mesmo backup no PC e no celular
@@ -8822,6 +8880,469 @@ async function easyBoot(){
   if(c.id&&c.pin&&c.auto!==false){ try{ await easyPull(false); }catch(e){} }
 }
 
+/* ══════════════════════════════════════════════════════════
+   📧 BACKUP POR E-MAIL (envio manual, período completo)
+
+   O app monta o e-mail e o pacote; quem entrega é um relay
+   (Cloudflare Worker) que guarda a chave da Brevo. Aqui NÃO existe
+   chave de e-mail: só a URL do Worker, o destino e (opcional) a
+   chave do app. O Worker é OPCIONAL: sem ele, o envio semanal
+   automático (GitHub Actions) continua funcionando, e o envio na
+   hora sai pelo botão “Enviar pelo GitHub”.
+   Montagem: ferramentas/email-backup/LEIA-ME.md · docs/EMAIL-BACKUP.md.
+══════════════════════════════════════════════════════════ */
+const EMAIL_LS='ecEmail';
+let EMAIL_MAX_JSON=15.5*1024*1024;   /* JSON por e-mail (≈20,7 MB em base64) */
+let EMAIL_ZIP_RAW=15*1024*1024;      /* cada .zip de imagens, antes do base64 */
+let EMAIL_BUDGET_B64=22000000;       /* teto de anexos por e-mail, já em base64 */
+let EMAIL_BUSY=false;
+
+function emailCfg(){
+  const base={worker:'',to:'',repo:'yuuv1/dashboard',key:'',zip:false,aviso:true,lastAt:'',lastRev:'',lastParts:0,lastBytes:0,lastOps:0,lastShots:0,lastId:''};
+  try{ return Object.assign(base, JSON.parse(localStorage.getItem(EMAIL_LS)||'{}')); }
+  catch(e){ return base; }
+}
+function emailSet(p){ localStorage.setItem(EMAIL_LS, JSON.stringify(Object.assign(emailCfg(),p||{}))); }
+function emailFillForm(){
+  const c=emailCfg();
+  const w=document.getElementById('emailWorker'); if(w&&!w.value) w.value=c.worker||'';
+  const t=document.getElementById('emailTo'); if(t&&!t.value) t.value=c.to||'';
+  const rp=document.getElementById('emailRepo'); if(rp&&!rp.value) rp.value=c.repo||'yuuv1/dashboard';
+  const k=document.getElementById('emailKey'); if(k&&!k.value) k.value=c.key||'';
+  const z=document.getElementById('emailZip'); if(z) z.checked=!!c.zip;
+  const a=document.getElementById('emailAviso'); if(a) a.checked=c.aviso!==false;
+  emailPaintStatus();
+}
+function emailSaveForm(){
+  const g=id=>{const el=document.getElementById(id);return el?el.value.trim():'';};
+  const z=document.getElementById('emailZip'),a=document.getElementById('emailAviso');
+  emailSet({worker:g('emailWorker'),to:g('emailTo'),repo:g('emailRepo')||'yuuv1/dashboard',key:g('emailKey'),
+    zip:!!(z&&z.checked),aviso:!(a&&!a.checked)});
+  emailPaintStatus('Configuração salva.');
+  return emailCfg();
+}
+function emailBytes(n){
+  n=Number(n)||0;
+  if(n<1024) return n+' B';
+  if(n<1048576) return (n/1024).toFixed(1).replace('.',',')+' KB';
+  return (n/1048576).toFixed(1).replace('.',',')+' MB';
+}
+function emailDaysSince(iso){
+  if(!iso) return null;
+  const d=new Date(iso); if(isNaN(d)) return null;
+  return Math.floor((Date.now()-d.getTime())/86400000);
+}
+function emailPaintStatus(extra){
+  const el=document.getElementById('emailStatus'); if(!el) return;
+  const c=emailCfg(); const linhas=[];
+  if(extra) linhas.push(extra);
+  if(!c.worker) linhas.push('Sem Worker configurado — o app não envia sozinho. Use “🔗 Enviar pelo GitHub” ou configure o semanal automático (LEIA-ME). Filling a URL do Worker habilita os botões de envio daqui.');
+  else if(!c.to) linhas.push('Falta o e-mail de destino.');
+  else if(!c.lastAt) linhas.push('Pronto para o primeiro envio — use “Conferir pacote” para ver o que vai.');
+  else{
+    const d=emailDaysSince(c.lastAt);
+    linhas.push('Último envio: '+new Date(c.lastAt).toLocaleString('pt-BR')+
+      ' · '+c.lastOps+' ops · '+c.lastShots+' print(s)'+
+      (c.lastParts>1?' · '+c.lastParts+' e-mails':'')+
+      (c.lastBytes?' · '+emailBytes(c.lastBytes):''));
+  }
+  if(c.aviso&&c.lastAt){
+    const d=emailDaysSince(c.lastAt);
+    if(d!==null&&d>=7) linhas.push('⏰ Já faz '+d+' dias — bom momento para fechar a semana.');
+  }
+  if(c.aviso&&!c.lastAt&&c.worker&&c.to) linhas.push('Sugestão: enviar toda segunda-feira, fechando a semana anterior.');
+  el.innerHTML=linhas.map(l=>escHtml(l)).join('<br>');
+}
+
+/* período completo: da 1ª operação até a última (o que o usuário pediu),
+   sem depender dos filtros da página do relatório */
+function emailRange(){
+  const ds=(S.operations||[]).map(o=>o.date).filter(Boolean).sort();
+  return {from:ds[0]||rpToday(),to:ds[ds.length-1]||rpToday()};
+}
+function emailModel(){
+  const rng=emailRange();
+  const ops=rpSort(S.operations||[]);
+  const M=rpMetrics(ops,S.settings.initialCapital||0);
+  const shotsCount=ops.reduce((a,o)=>a+opShotIds(o).length,0);
+  const label=rpBR(rng.from)+' a '+rpBR(rng.to);
+  return {rng,ops,M,shotsCount,label,fileRange:label.replace(/\//g,'-')};
+}
+
+/* ── utilidades de bytes (ZIP + base64) ─────────────────────────────── */
+let EMAIL_CRC_TAB=null;
+function emailCrc32(u8){
+  if(!EMAIL_CRC_TAB){
+    EMAIL_CRC_TAB=new Uint32Array(256);
+    for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1);EMAIL_CRC_TAB[n]=c>>>0;}
+  }
+  let c=0xFFFFFFFF;
+  for(let i=0;i<u8.length;i++) c=EMAIL_CRC_TAB[(c^u8[i])&0xFF]^(c>>>8);
+  return (c^0xFFFFFFFF)>>>0;
+}
+function emailU8FromB64(b64){
+  const bin=atob(String(b64).replace(/^data:[^,]*,/,'').replace(/\s+/g,''));
+  const u8=new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) u8[i]=bin.charCodeAt(i);
+  return u8;
+}
+function emailB64FromU8(u8){
+  let bin='';const chunk=0x8000;
+  for(let i=0;i<u8.length;i+=chunk) bin+=String.fromCharCode.apply(null,u8.subarray(i,i+chunk));
+  return btoa(bin);
+}
+function emailU8FromDataURL(url){ return emailU8FromB64(url); }
+function emailConcat(list){
+  const total=list.reduce((a,u)=>a+u.length,0);
+  const out=new Uint8Array(total); let off=0;
+  list.forEach(u=>{out.set(u,off);off+=u.length;});
+  return out;
+}
+function emailDosStamp(d){
+  const time=((d.getHours()&31)<<11)|((d.getMinutes()&63)<<5)|((Math.floor(d.getSeconds()/2))&31);
+  const date=((((d.getFullYear()-1980)&127)<<9)|(((d.getMonth()+1)&15)<<5)|(d.getDate()&31));
+  return {time,date};
+}
+/* ZIP mínimo (método 0 = sem compressão; imagens já vêm comprimidas) */
+function emailZip(files,stamp){
+  const enc=new TextEncoder(); const now=stamp?new Date(stamp):new Date();
+  const {time,date}=emailDosStamp(now);
+  const chunks=[],central=[]; let offset=0;
+  files.forEach(f=>{
+    const name=enc.encode(f.name), data=f.data, len=data.length, crc=emailCrc32(data);
+    const lh=new Uint8Array(30+name.length), dv=new DataView(lh.buffer);
+    dv.setUint32(0,0x04034b50,true); dv.setUint16(4,20,true); dv.setUint16(6,0x0800,true);
+    dv.setUint16(8,0,true); dv.setUint16(10,time,true); dv.setUint16(12,date,true);
+    dv.setUint32(14,crc,true); dv.setUint32(18,len,true); dv.setUint32(22,len,true);
+    dv.setUint16(26,name.length,true); dv.setUint16(28,0,true); lh.set(name,30);
+    chunks.push(lh,data);
+    const cd=new Uint8Array(46+name.length), cv=new DataView(cd.buffer);
+    cv.setUint32(0,0x02014b50,true); cv.setUint16(4,20,true); cv.setUint16(6,20,true);
+    cv.setUint16(8,0x0800,true); cv.setUint16(10,0,true); cv.setUint16(12,time,true); cv.setUint16(14,date,true);
+    cv.setUint32(16,crc,true); cv.setUint32(20,len,true); cv.setUint32(24,len,true);
+    cv.setUint16(28,name.length,true); cv.setUint16(30,0,true); cv.setUint16(32,0,true);
+    cv.setUint16(34,0,true); cv.setUint16(36,0,true); cv.setUint32(38,0,true);
+    cv.setUint32(42,offset,true); cd.set(name,46);
+    central.push(cd); offset+=lh.length+len;
+  });
+  const cdSize=central.reduce((a,c)=>a+c.length,0);
+  const eocd=new Uint8Array(22), ed=new DataView(eocd.buffer);
+  ed.setUint32(0,0x06054b50,true); ed.setUint16(8,files.length,true); ed.setUint16(10,files.length,true);
+  ed.setUint32(12,cdSize,true); ed.setUint32(16,offset,true);
+  return emailConcat([...chunks,...central,eocd]);
+}
+function emailZipGroups(entries,limitRaw){
+  const groups=[]; let cur=[],size=0;
+  entries.forEach(e=>{
+    if(cur.length&&size+e.data.length>limitRaw){ groups.push(cur);cur=[];size=0; }
+    cur.push(e); size+=e.data.length;
+  });
+  if(cur.length) groups.push(cur);
+  return groups;
+}
+/* distribui anexos em e-mails respeitando o teto em base64 */
+function emailPackParts(atts,budgetB64){
+  const parts=[]; let cur=[],size=0;
+  atts.forEach(a=>{
+    if(cur.length&&size+a.b64.length>budgetB64){ parts.push(cur);cur=[];size=0; }
+    cur.push(a); size+=a.b64.length;
+  });
+  if(cur.length) parts.push(cur);
+  return parts;
+}
+
+/* ── coleta de prints (mesma forma do backup completo) ──────────────── */
+async function emailShotList(){
+  let recs=[];
+  try{ recs=await IMGDB.all(); }catch(e){ recs=[]; }
+  const out=[],failed=[];
+  for(const r of recs){
+    try{
+      const d=await shotDataURL(r);
+      if(!d||!String(d).startsWith('data:image/')) throw new Error('sem imagem');
+      const mime=(/^data:([^;,]+)/.exec(d)||[])[1]||'image/png';
+      const ext=/jpe?g/.test(mime)?'jpg':(/webp/.test(mime)?'webp':(/gif/.test(mime)?'gif':'png'));
+      out.push({rec:r,dataURL:d,mime,ext});
+    }catch(e){ failed.push(r&&r.id); }
+  }
+  return {list:out,failed};
+}
+
+/* ── monta o plano de envio (1..N e-mails) ──────────────────────────── */
+async function emailBuildParts(opts){
+  opts=opts||{};
+  const m=emailModel();
+  const {list,failed}=await emailShotList();
+  const cfg=emailCfg();
+  const owners=new Map();
+  (S.operations||[]).forEach(op=>opShotIds(op).forEach(id=>owners.set(String(id),op.id)));
+  const imgs={};
+  list.forEach(s=>{
+    const r=s.rec;
+    imgs[r.id]={d:s.dataURL,note:r.note||'',name:r.name||'',at:r.at||'',
+      opId:owners.get(String(r.id))||r.opId||null,
+      marks:Array.isArray(r.marks)?r.marks:[],crop:r.crop||null,
+      marksAt:r.marksAt||'',parentId:r.parentId||null,kind:r.kind||''};
+  });
+  const exportedAt=new Date().toISOString();
+  const fullJson=JSON.stringify({__ec:3,exportedAt,state:S,shots:imgs,via:'email'});
+  const cleanJson=JSON.stringify({__ec:3,exportedAt,state:S,shots:{},via:'email'});
+  const stamp=localInputDate(new Date());
+  const jsonName='edgecontrol_backup_'+stamp+'.json';
+  const atts=[]; let semPrints=false;
+
+  if(fullJson.length<=EMAIL_MAX_JSON){
+    atts.push({name:jsonName,mime:'application/json',b64:utf8ToB64(fullJson),bytes:fullJson.length,kind:'json'});
+  }else{
+    if(cleanJson.length>EMAIL_MAX_JSON)
+      throw new Error('histórico grande demais para um envio ('+emailBytes(cleanJson.length)+' só dos dados)');
+    semPrints=true;
+    atts.push({name:jsonName,mime:'application/json',b64:utf8ToB64(cleanJson),bytes:cleanJson.length,kind:'json'});
+  }
+
+  const querZip=(semPrints||cfg.zip)&&list.length>0;
+  let zipParts=0;
+  if(querZip){
+    const entries=list.map(s=>({name:'prints/'+String(s.rec.id).replace(/[^\w.\-]/g,'_')+'.'+s.ext,data:emailU8FromDataURL(s.dataURL)}));
+    const grupos=emailZipGroups(entries,EMAIL_ZIP_RAW);
+    zipParts=grupos.length;
+    grupos.forEach((g,i)=>{
+      const leia='EdgeControl — prints ('+(i+1)+'/'+grupos.length+')\n'+
+        g.length+' arquivo(s) nesta parte.\n'+
+        'Estas mesmas imagens vão dentro do backup .json: importe-o pelo app\n'+
+        '(Configurações → Backup de Dados → Importar) para restaurar tudo.\n'+
+        (semPrints?'Neste envio o .json foi sem prints por tamanho — esta pasta é a cópia das imagens.\n':'');
+      const u8=emailZip([{name:'LEIA-ME.txt',data:new TextEncoder().encode(leia)},...g],exportedAt);
+      atts.push({name:'prints_p'+(i+1)+'de'+grupos.length+'.zip',mime:'application/zip',
+        b64:emailB64FromU8(u8),bytes:u8.length,kind:'zip'});
+    });
+  }
+
+  const parts=emailPackParts(atts,EMAIL_BUDGET_B64).map((grupo,i,arr)=>({
+    attachments:grupo,
+    json:grupo.some(a=>a.kind==='json'),
+    bytes:grupo.reduce((a,x)=>a+x.bytes,0),
+    b64:grupo.reduce((a,x)=>a+x.b64.length,0),
+    i:i+1,total:arr.length
+  }));
+  const resumo={
+    m,parts,exportedAt,semPrints,zipParts,
+    shotsTotal:list.length,failed,jsonBytes:semPrints?cleanJson.length:fullJson.length,
+    ops:m.M.n,bytesTotal:atts.reduce((a,x)=>a+x.bytes,0),
+    b64Total:atts.reduce((a,x)=>a+x.b64.length,0)
+  };
+  if(opts.plainOnly) return resumo;
+  return resumo;
+}
+
+/* ── corpo do e-mail ────────────────────────────────────────────────── */
+function emailRow(l,v,cor){
+  return '<tr><td style="padding:6px 10px;border-bottom:1px solid #ececf3;color:#5a6076;font:13px Arial,sans-serif;">'+escHtml(l)+'</td>'+
+    '<td style="padding:6px 10px;border-bottom:1px solid #ececf3;text-align:right;font:bold 13px Arial,sans-serif;color:'+(cor||'#17203d')+';">'+escHtml(v)+'</td></tr>';
+}
+function emailTopTable(titulo,rows,chave,valor){
+  if(!rows||!rows.length) return '';
+  const top=[...rows].sort((a,b)=>b.net-a.net).slice(0,5);
+  return '<h3 style="font:bold 14px Arial,sans-serif;color:#17203d;margin:18px 0 6px;">'+escHtml(titulo)+'</h3>'+
+    '<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse:collapse;border:1px solid #ececf3;border-radius:8px;">'+
+    top.map(r=>emailRow(String(r[chave])||'—',(r.n?r.n+' op':'')+' · '+(r.w||0)+'W/'+(r.l||0)+'L · '+rpMoney(r.net),r.net>=0?'#0b8f6a':'#d81b4a')).join('')+
+    '</table>';
+}
+function emailHtml(m,info){
+  const M=m.M,c=emailCfg();
+  const linha=(l,v,cor)=>emailRow(l,v,cor);
+  const dst=(info&&info.failed&&info.failed.length)?' ⚠️ '+info.failed.length+' print(s) não puderam ser lidos':'';
+  const anexos=(info.parts[info.i-1].attachments)||[];
+  const html=[
+    '<div style="max-width:640px;margin:0 auto;background:#ffffff;padding:22px 20px;font:14px Arial,sans-serif;color:#17203d;">',
+    '<div style="font:bold 20px Arial,sans-serif;color:#17203d;">EdgeControl</div>',
+    '<div style="color:#5a6076;margin:4px 0 16px;">Backup do período completo · <strong>'+escHtml(m.label)+'</strong>'+
+      (info.total>1?' · <strong>parte '+info.i+' de '+info.total+'</strong>':'')+'</div>',
+    '<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse:collapse;border:1px solid #ececf3;">',
+    linha('Operações',String(M.n)),
+    linha('Vitórias / derrotas',M.wins+' / '+M.losses),
+    linha('Taxa de acerto',M.wins+M.losses?rpPct(M.winRate):'—'),
+    linha('Resultado do período',rpMoney(M.net),M.net>=0?'#0b8f6a':'#d81b4a'),
+    linha('Retorno sobre o capital',rpPct(M.returnPct),M.returnPct>=0?'#0b8f6a':'#d81b4a'),
+    linha('Capital no início → fim',rpMoney(M.capitalStart)+' → '+rpMoney(M.capitalEnd)),
+    linha('Profit factor / payoff',(M.pf?M.pf.toFixed(2).replace('.',','):'—')+' / '+(M.payoff?M.payoff.toFixed(2).replace('.',','):'—')),
+    linha('Ganho médio / perda média',rpMoney(M.avgWin)+' / '+rpMoney(M.avgLoss)),
+    linha('Melhor / pior operação',M.best?rpMoney(M.best.value):'—',M.best?'#0b8f6a':'#5a6076'),
+    linha('Drawdown máximo',rpMoney(M.maxDD)+' ('+rpPct(M.maxDDpct)+')','#d81b4a'),
+    linha('Dias operados',String(M.tradedDays)+(M.positiveDays||M.negativeDays?' ('+M.positiveDays+' positivos · '+M.negativeDays+' negativos)':'')),
+    '</table>',
+    emailTopTable('Destaques por ativo',M.byType,'type'),
+    emailTopTable('Destaques por operacional',M.byOperational,'operational'),
+    (()=>{ try{
+      const ins=rpInsights(M,{}).slice(0,3);
+      if(!ins.length) return '';
+      return '<h3 style="font:bold 14px Arial,sans-serif;color:#17203d;margin:18px 0 6px;">Leitura automática</h3>'+
+        ins.map(x=>'<div style="border-left:3px solid #4f46e5;padding:2px 0 2px 10px;margin:8px 0;">'+
+          '<div style="font:bold 13px Arial,sans-serif;">'+escHtml(x.ic+' '+x.t)+'</div>'+
+          '<div style="color:#5a6076;font:12px Arial,sans-serif;line-height:1.5;">'+escHtml(x.d)+'</div></div>').join('');
+    }catch(e){ return ''; } })(),
+    '<h3 style="font:bold 14px Arial,sans-serif;color:#17203d;margin:18px 0 6px;">Anexos deste e-mail</h3>',
+    '<ul style="margin:0;padding-left:18px;color:#5a6076;font:13px Arial,sans-serif;line-height:1.7;">'+
+      anexos.map(a=>'<li><strong style="color:#17203d;">'+escHtml(a.name)+'</strong> — '+emailBytes(a.bytes)+
+        (a.kind==='json'?' (backup completo, importável no app)':' (imagens soltas)')+'</li>').join('')+'</ul>',
+    (info.semPrints?'<p style="color:#b45309;font:12px Arial,sans-serif;margin:10px 0 0;">O backup deste e-mail foi <strong>sem prints</strong> (tamanho); as imagens vão nos .zip das próximas partes.</p>':'')+
+      (dst?'<p style="color:#b45309;font:12px Arial,sans-serif;margin:6px 0 0;">Atenção:'+escHtml(dst)+'</p>':''),
+    '<h3 style="font:bold 14px Arial,sans-serif;color:#17203d;margin:18px 0 6px;">Como restaurar</h3>',
+    '<p style="color:#5a6076;font:12px Arial,sans-serif;line-height:1.6;margin:0;">No EdgeControl: <strong>Configurações → 🔒 Backup de Dados → Importar</strong> e escolha o .json deste e-mail (ele substitui os dados do aparelho). Para só sincronizar PC e celular, use a <strong>Nuvem fácil</strong> (código + PIN).</p>',
+    '<hr style="border:none;border-top:1px solid #ececf3;margin:18px 0 10px;">',
+    '<div style="color:#9aa0b4;font:11px Arial,sans-serif;line-height:1.6;">Gerado por EdgeControl build '+escHtml(EC_BUILD)+
+      ' em '+escHtml(new Date().toLocaleString('pt-BR'))+'. Período: '+escHtml(m.label)+
+      ' · '+M.n+' operação(ões) · '+info.shotsTotal+' print(s) no total'+
+      (info.zipParts>1?' em '+info.zipParts+' partes':'')+' · '+emailBytes(info.bytesTotal)+'.</div>',
+    '</div>'
+  ].join('');
+  return html;
+}
+function emailText(m,info){
+  const M=m.M;
+  const anexos=(info.parts[info.i-1].attachments)||[];
+  return ['EdgeControl — backup do período completo',
+    'Período: '+m.label+(info.total>1?' (parte '+info.i+'/'+info.total+')':''),
+    '',
+    'Operações: '+M.n+'  ('+M.wins+'W / '+M.losses+'L)',
+    'Taxa de acerto: '+(M.wins+M.losses?rpPct(M.winRate):'—'),
+    'Resultado: '+rpMoney(M.net)+'   Retorno: '+rpPct(M.returnPct),
+    'Capital: '+rpMoney(M.capitalStart)+' → '+rpMoney(M.capitalEnd),
+    'Profit factor: '+(M.pf?M.pf.toFixed(2):'—')+'   Drawdown máx.: '+rpMoney(M.maxDD)+' ('+rpPct(M.maxDDpct)+')',
+    'Dias operados: '+M.tradedDays,
+    '',
+    'Anexos:',
+    ...anexos.map(a=>' - '+a.name+' ('+emailBytes(a.bytes)+')'),
+    '',
+    'Restaurar: Configurações → Backup de Dados → Importar (o .json substitui os dados do aparelho).',
+    'Gerado por EdgeControl '+EC_BUILD+' em '+new Date().toLocaleString('pt-BR')+'.'
+  ].join('\n');
+}
+function emailSubject(m,info){
+  const sinal=m.M.net>=0?'+':'−';
+  return 'EdgeControl — backup '+m.label+' · '+m.M.n+' ops · '+sinal+rpMoney(Math.abs(m.M.net))+
+    (info&&info.total>1?' — parte '+info.i+'/'+info.total:'');
+}
+
+async function emailPost(url,payload,timeoutMs){
+  const ctl=typeof AbortController==='function'?new AbortController():null;
+  const t=ctl?setTimeout(()=>ctl.abort(),timeoutMs||240000):null;
+  try{
+    const c=emailCfg();
+    const r=await fetch(url,{method:'POST',headers:Object.assign({'Content-Type':'application/json'},
+      c.key?{'X-EC-Key':c.key}:{}),body:JSON.stringify(payload),signal:ctl?ctl.signal:undefined});
+    const txt=await r.text();
+    let j=null; try{ j=JSON.parse(txt); }catch(e){}
+    if(!r.ok||!j||!j.ok) throw new Error((j&&j.error)||('relay HTTP '+r.status));
+    return j;
+  }finally{ if(t) clearTimeout(t); }
+}
+
+/* ── expedição ──────────────────────────────────────────────────────── */
+async function emailSend(opts){
+  opts=opts||{}; const manual=opts.manual!==false;
+  const c=emailCfg();
+  if(!/^https:\/\/.+/.test(c.worker||'')){ toast('Sem Worker: use “🔗 Enviar pelo GitHub” para disparar o envio.','w'); return; }
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(c.to||'')){ toast('Informe um e-mail de destino válido.','w'); return; }
+  if(EMAIL_BUSY){ if(manual) toast('Envio em andamento…','w'); return; }
+  EMAIL_BUSY=true;
+  try{
+    emailPaintStatus('Montando o pacote do período completo…');
+    const b=await emailBuildParts();
+    let enviados=0,ultimo='';
+    for(let i=0;i<b.parts.length;i++){
+      const info={i:i+1,total:b.parts.length,parts:b.parts,failed:b.failed,semPrints:b.semPrints,
+        zipParts:b.zipParts,shotsTotal:b.shotsTotal,bytesTotal:b.bytesTotal};
+      emailPaintStatus('Enviando '+(i+1)+' de '+b.parts.length+'… ('+emailBytes(b.parts[i].b64)+' de anexos)');
+      const r=await emailPost(c.worker.replace(/\/+$/,'')+'/send',{
+        to:c.to,subject:emailSubject(b.m,info),html:emailHtml(b.m,info),text:emailText(b.m,info),
+        attachments:b.parts[i].attachments.map(a=>({name:a.name,mime:a.mime,b64:a.b64})),
+        meta:{periodo:{from:b.m.rng.from,to:b.m.rng.to},ops:b.m.M.n,shots:b.shotsTotal,
+          parte:{i:i+1,total:b.parts.length}}
+      });
+      enviados++; ultimo=(r&&r.id)||'';
+      if(i<b.parts.length-1) await new Promise(res=>setTimeout(res,1500));
+    }
+    emailSet({lastAt:new Date().toISOString(),lastRev:b.exportedAt,lastParts:enviados,
+      lastBytes:b.bytesTotal,lastOps:b.m.M.n,lastShots:b.shotsTotal,lastId:ultimo});
+    emailPaintStatus('✅ Enviado para '+c.to+' em '+new Date().toLocaleString('pt-BR')+
+      (enviados>1?' ('+enviados+' e-mails)':'')+'.');
+    if(manual) toast('Backup enviado para '+c.to+(enviados>1?' em '+enviados+' e-mails':'')+'.','s');
+  }catch(e){
+    emailPaintStatus('❌ Falha: '+((e&&e.message)||e));
+    if(manual) toast('E-mail: '+((e&&e.message)||e),'e');
+  }
+  EMAIL_BUSY=false;
+}
+/* conferência sem enviar: mostra exatamente o que sairia */
+async function emailPreview(){
+  if(EMAIL_BUSY){ toast('Envio em andamento…','w'); return; }
+  EMAIL_BUSY=true;
+  try{
+    emailPaintStatus('Montando o pacote…');
+    const b=await emailBuildParts();
+    const c=emailCfg();
+    const linhas=['📦 '+b.m.label+' · '+b.m.M.n+' ops · '+b.shotsTotal+' print(s)'+
+      (b.failed.length?' ('+b.failed.length+' sem leitura)':'')];
+    b.parts.forEach((p,i)=>{
+      linhas.push('E-mail '+(i+1)+'/'+b.parts.length+': '+p.attachments.map(a=>a.name+' ('+emailBytes(a.bytes)+')').join(', ')+
+        ' — '+emailBytes(p.b64)+' no total');
+    });
+    linhas.push('Assunto: '+emailSubject(b.m,{i:1,total:b.parts.length}));
+    if(b.semPrints) linhas.push('⚠️ O .json vai sem prints neste envio (tamanho); as imagens vão nos .zip.');
+    if(!c.worker||!c.to) linhas.push('Falta configurar relay/destino para enviar.');
+    const el=document.getElementById('emailStatus');
+    if(el) el.innerHTML=linhas.map(l=>escHtml(l)).join('<br>');
+    toast('Pacote conferido — nada foi enviado.','s');
+  }catch(e){
+    emailPaintStatus('❌ '+((e&&e.message)||e));
+    toast('Conferência: '+((e&&e.message)||e),'e');
+  }
+  EMAIL_BUSY=false;
+}
+/* Sem Worker, o envio na hora acontece pelo próprio repositório: o botão abre
+   o job semanal no GitHub, onde “Run workflow” envia a semana escolhida. */
+function emailAbrirGitHub(){
+  const c=emailCfg();
+  const repo=String(c.repo||'yuuv1/dashboard').replace(/^https?:\/\/github\.com\//,'').replace(/\/+$/,'');
+  const url='https://github.com/'+repo+'/actions/workflows/backup-semanal.yml';
+  try{ window.open(url,'_blank','noopener'); }catch(e){}
+  toast('No GitHub: “Run workflow” → escolha a semana (vazio = semana passada) → Run.','w');
+  const el=document.getElementById('emailStatus');
+  if(el) el.innerHTML=escHtml('Abrindo '+url+' — clique em “Run workflow”. Sem o Worker, este é o caminho do envio na hora.');
+}
+async function emailTest(){
+  const c=emailCfg();
+  if(!/^https:\/\/.+/.test(c.worker||'')){ toast('Sem Worker configurado — o teste de canal precisa dele.','w'); return; }
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(c.to||'')){ toast('Informe o e-mail de destino.','w'); return; }
+  if(EMAIL_BUSY){ toast('Ocupado…','w'); return; }
+  EMAIL_BUSY=true;
+  try{
+    emailPaintStatus('Falando com o relay…');
+    const base=c.worker.replace(/\/+$/,'');
+    const hr=await fetch(base+'/health',{headers:c.key?{'X-EC-Key':c.key}:{}});
+    const hj=await hr.json().catch(()=>null);
+    if(!hr.ok||!hj||hj.ok===false) throw new Error((hj&&hj.error)||('relay HTTP '+hr.status));
+    if(!hj.configured) throw new Error('relay sem configuração completa (chave/remetente/destino)');
+    if(hj.needsKey&&!c.key) throw new Error('o relay exige a chave do app');
+    emailPaintStatus('Relay ok — enviando teste…');
+    const r=await emailPost(base+'/send',{
+      to:c.to,subject:'EdgeControl — teste do canal de e-mail ✅',
+      text:'Canal de e-mail do EdgeControl funcionando.\n\nO backup do período completo vai chegar com o .json (e os prints) em anexo.\nGerado em '+(new Date().toLocaleString('pt-BR'))+'.',
+      html:'<div style="font:14px Arial,sans-serif;color:#17203d;"><strong>EdgeControl</strong> — canal de e-mail funcionando ✅<br><br>O backup do período completo vai chegar com o <strong>.json</strong> (e os prints) em anexo.<br><br><span style="color:#5a6076;font-size:12px;">Gerado em '+escHtml(new Date().toLocaleString('pt-BR'))+'.</span></div>',
+      attachments:[]});
+    emailPaintStatus('✅ Teste enviado para '+c.to+' às '+new Date().toLocaleTimeString('pt-BR')+'.');
+    toast('Teste enviado — confira a caixa de entrada.','s');
+  }catch(e){
+    emailPaintStatus('❌ '+((e&&e.message)||e));
+    toast('Canal: '+((e&&e.message)||e),'e');
+  }
+  EMAIL_BUSY=false;
+}
+async function emailBoot(){
+  try{ emailFillForm(); }catch(e){}
+}
+
 async function init(){
   console.info('EdgeControl build: '+EC_BUILD);
   load();
@@ -8840,6 +9361,7 @@ async function init(){
   initPWA();
   maybeLoadDemoData();
   try{ await cloudBoot(); }catch(e){ console.warn('nuvem:',e); }
+  try{ await emailBoot(); }catch(e){ console.warn('email:',e); }
 }
 /* ?demo=1 — carrega o backup de exemplo que mora na própria pasta (mesma
    origem), só para experimentar o estúdio sem dados próprios. Nunca roda no
@@ -8848,7 +9370,7 @@ async function maybeLoadDemoData(){
   try{
     if(!/[?&]demo=1(&|$)/.test(location.search)) return;
     if((S.operations||[]).length||(await IMGDB.keys()).length) return;
-    const r=await fetch(encodeURI('edgecontrol_2026-09-17 (1).json'));
+    const r=await fetch(encodeURI('dados/backups/edgecontrol_2026-09-17 (1).json'));
     if(!r.ok) return;
     const txt=await r.text();
     const oc=window.confirm;

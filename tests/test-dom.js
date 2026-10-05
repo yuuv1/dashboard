@@ -2,6 +2,9 @@
    Teste de integração do app inteiro em jsdom: navegação, relatório,
    tabelas (com os invólucros .rtbl-wrap), temas, impressão e estado.
 
+   O relógio do jsdom é fixo (18/09/2026), para que os presets relativos
+   do relatório não dependam do dia em que a suíte roda.
+
    Rodar:  npm run test:dom       (ou: node tests/test-dom.js)
    Requer: npm install  (jsdom + fake-indexeddb)
 ------------------------------------------------------------------ */
@@ -11,9 +14,9 @@ const { JSDOM } = require('jsdom');
 const { IDBFactory } = require('fake-indexeddb');
 
 const HTML = path.join(__dirname, '..', 'edgecontrol-glass.html');
-const FIXTURE = path.join(__dirname, '..', 'edgecontrol_2026-09-03.json');
-const CORRECTED_AI_BACKUP = path.join(__dirname, '..', 'edgecontrol_2026-09-16_corrigido.json');
-const BACKUP_WITH_IMAGES = path.join(__dirname, '..', 'edgecontrol_2026-09-16_com_imagens.json');
+const FIXTURE = path.join(__dirname, '..', 'dados', 'backups', 'edgecontrol_2026-09-03.json');
+const CORRECTED_AI_BACKUP = path.join(__dirname, '..', 'dados', 'backups', 'edgecontrol_2026-09-16_corrigido.json');
+const BACKUP_WITH_IMAGES = path.join(__dirname, '..', 'dados', 'backups', 'edgecontrol_2026-09-16_com_imagens.json');
 const html = fs.readFileSync(HTML, 'utf8');
 const backup = JSON.parse(fs.readFileSync(FIXTURE, 'utf8'));
 const correctedAiBackupText = fs.readFileSync(CORRECTED_AI_BACKUP, 'utf8');
@@ -35,6 +38,20 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
       w.__printed = 0;
       w.indexedDB = new IDBFactory();
       w.print = () => { w.__printed++; };
+      /* Relógio fixo: o relatório tem presets relativos ("Este mês", "Mês passado"),
+         então a suíte só é determinística se "hoje" for sempre a mesma data — a do
+         fixture (24/07 a 03/09/2026), e não a data em que o teste roda.
+         18/09/2026 12:00 UTC é setembro em qualquer fuso (UTC-12 … UTC+14):
+         setembro tem 5 operações, agosto (mês passado) tem 24.
+         Só o Date.now() avança 1 ms a cada chamada, porque o app deriva o id das
+         operações dele — ids repetidos quebrariam edição/exclusão. */
+      const FIXED_NOW = Date.parse('2026-09-18T12:00:00Z');
+      const RealDate = w.Date;
+      let relogio = 0;
+      w.Date = class extends RealDate {
+        constructor(...args) { if (args.length === 0) super(FIXED_NOW); else super(...args); }
+        static now() { return FIXED_NOW + relogio++; }
+      };
       w.matchMedia = () => ({ matches: false, addEventListener() {}, removeEventListener() {}, addListener() {}, removeListener() {} });
       // canvas: o app desenha gráficos; em jsdom basta um contexto falso
       const ctx = new Proxy({}, {
@@ -513,7 +530,8 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   ev(`S.settings.initialCapital=500;S.settings.currentCapital=500;S.settings.stopLoss=8;
       S.settings.target=12;S.operations=[];`);
   w.updateDash();
-  const tHoje = new Date().toISOString().slice(0, 10);
+  // como o relógio está fixo, "hoje" é a data local do app (e não a do Node)
+  const tHoje = ev("(()=>{const x=new Date();return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0');})()");
   ok(d.getElementById('dashTgt').textContent.includes('60,00'), 'meta do dia = 12% do capital inicial do dia (R$ 60)',
      d.getElementById('dashTgt').textContent);
   ok(d.getElementById('dashStop').textContent.includes('40,00'), 'stop do dia = 8% do capital inicial do dia (R$ 40)',

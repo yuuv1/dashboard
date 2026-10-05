@@ -10,7 +10,7 @@ const fs = require('fs');
 const path = require('path');
 
 const HTML = path.join(__dirname, '..', 'edgecontrol-glass.html');
-const FIXTURE = path.join(__dirname, '..', 'edgecontrol_2026-09-03.json');
+const FIXTURE = path.join(__dirname, '..', 'dados', 'backups', 'edgecontrol_2026-09-03.json');
 
 const src = fs.readFileSync(HTML, 'utf8');
 const core = src.split('/*RPT-CORE-START*/')[1].split('/*RPT-CORE-END*/')[0];

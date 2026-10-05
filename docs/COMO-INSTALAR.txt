@@ -2,11 +2,14 @@
   EDGECONTROL — INSTALAÇÃO EM 1 CLIQUE
 ═══════════════════════════════════════════════════════════
 
-ARQUIVOS (mantenha os três na MESMA PASTA):
+ARQUIVOS (na RAIZ do projeto, a pasta de cima desta):
 
    EdgeControl.bat            ← dê dois cliques neste
-   edgecontrol-glass.html     ← o aplicativo
+   edgecontrol-glass.html     ← o aplicativo (a v1)
+   edgecontrol-glass-v2.html  ← o aplicativo (a v2 — a que você usa)
    sw.js                      ← modo offline
+
+   Este guia mora em  docs/COMO-INSTALAR.txt .
 
 
 COMO USAR

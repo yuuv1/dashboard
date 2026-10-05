@@ -1,0 +1,76 @@
+name: backup-semanal
+
+# O que este workflow faz, toda segunda de manhã, sem abrir o app:
+#   1. lê a Nuvem fácil (código + PIN) e decifra o pacote;
+#   2. monta os números da semana anterior com o mesmo núcleo do relatório
+#      que mora no app (ferramentas/email-backup/semanal.mjs);
+#   3. manda o e-mail pela Brevo, com o backup .json em anexo;
+#   4. se você configurou, manda também o resumo no WhatsApp
+#      (EC_WA_*; um erro no zap não derruba o e-mail).
+# Configuração (uma vez): veja ferramentas/email-backup/LEIA-ME.md.
+
+on:
+  schedule:
+    # segunda-feira 12:00 UTC = 09:00 em São Paulo (o Brasil não usa mais
+    # horário de verão). O cron do GitHub é UTC e pode atrasar alguns minutos.
+    - cron: '0 12 * * 1'
+  workflow_dispatch:
+    inputs:
+      semana:
+        description: 'Semana de referência (AAAA-MM-DD, qualquer dia dela) — vazio usa hoje'
+        required: false
+      dry_run:
+        description: 'Só montar o e-mail (não envia); o resultado vira artifact'
+        type: boolean
+        default: false
+
+concurrency:
+  group: backup-semanal
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  enviar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Conferir o núcleo do relatório
+        run: node tests/test-semanal.js
+
+      - name: Enviar o backup da semana por e-mail
+        env:
+          EC_NUVEM_CODIGO: ${{ secrets.EC_NUVEM_CODIGO }}
+          EC_NUVEM_PIN: ${{ secrets.EC_NUVEM_PIN }}
+          EC_EMAIL: ${{ secrets.EC_EMAIL }}
+          EC_REMETENTE: ${{ secrets.EC_REMETENTE }}
+          EC_REMETENTE_NOME: EdgeControl
+          BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
+          EC_SEMANA: ${{ inputs.semana }}
+          EC_DRY_RUN: ${{ inputs.dry_run }}
+          EC_COM_PRINTS: ${{ vars.EC_COM_PRINTS }}
+          # WhatsApp (opcional): callmebot (grátis) ou cloudapi/ultramsg/zapi
+          EC_WA_PROVIDER: ${{ vars.EC_WA_PROVIDER }}
+          EC_WA_PHONE: ${{ secrets.EC_WA_PHONE }}
+          EC_WA_KEY: ${{ secrets.EC_WA_KEY }}
+          EC_WA_TO: ${{ secrets.EC_WA_TO }}
+          EC_WA_TOKEN: ${{ secrets.EC_WA_TOKEN }}
+          EC_WA_PHONE_ID: ${{ secrets.EC_WA_PHONE_ID }}
+          EC_WA_INSTANCE: ${{ secrets.EC_WA_INSTANCE }}
+          EC_WA_CLIENT_TOKEN: ${{ secrets.EC_WA_CLIENT_TOKEN }}
+        run: node ferramentas/email-backup/semanal.mjs
+
+      - name: Guardar o e-mail montado (somente no dry-run)
+        if: ${{ inputs.dry_run }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: email-payload
+          path: email-payload.json
+          if-no-files-found: warn

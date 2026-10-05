@@ -1,2 +1,9 @@
 node_modules/
 package-lock.json
+
+# artefatos do sistema (não fazem parte do projeto)
+.local/
+.sudo_as_admin_successful
+
+# build local do GitHub Pages
+_site/

@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /* ════════════════════════════════════════════════════════════════════════════
-   .preview-serve.js — servidor estático do EdgeControl (dev / preview)
+   preview-serve.js — servidor estático do EdgeControl (dev / preview)
 
-   node .preview-serve.js            → http://0.0.0.0:8080  (abre a v2 em demo)
-   PORTA=9000 node .preview-serve.js
+   node ferramentas/preview-serve.js  → http://0.0.0.0:8080  (abre a v2 em demo)
+   PORTA=9000 node ferramentas/preview-serve.js
 
    Por que existe: o app precisa ser servido por HTTP — com file:// o navegador
    bloqueia o fetch de /ferramentas (e o hospedeiro ECX não acha as ferramentas).
@@ -15,7 +15,7 @@ const fs = require('fs');
 const path = require('path');
 const url = require('url');
 
-const ROOT = __dirname;
+const ROOT = path.join(__dirname, '..');   /* a raiz do repositório é a pasta de cima */
 const PORTA = Number(process.env.PORTA || 8080);
 const HOME = '/edgecontrol-glass-v2.html?demo=1';
 

@@ -16,3 +16,8 @@ NUVEM (mesmos dados, sem token GitHub)
 
 Não compartilhe PIN nem código. Prints não vão nesta nuvem
 (arquivo ficaria grande); use Exportar JSON se precisar dos prints.
+
+BÔNUS: backup por e-mail (opcional)
+Configurações → Backup por e-mail → cole a URL do relay e o destino.
+Como montar o relay (15 min, grátis): ferramentas/email-backup/LEIA-ME.md
+(e o mapa do repositório: README.md · guias em docs/)

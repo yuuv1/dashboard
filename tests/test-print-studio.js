@@ -19,7 +19,7 @@ const vm = require('vm');
 
 const V2 = path.join(__dirname, '..', 'edgecontrol-glass-v2.html');
 const V1 = path.join(__dirname, '..', 'edgecontrol-glass.html');
-const FIXTURE = path.join(__dirname, '..', 'edgecontrol_2026-09-17 (1).json');
+const FIXTURE = path.join(__dirname, '..', 'dados', 'backups', 'edgecontrol_2026-09-17 (1).json');
 
 const srcV2 = fs.readFileSync(V2, 'utf8');
 const srcV1 = fs.readFileSync(V1, 'utf8');
@@ -214,9 +214,14 @@ console.log('\n── 2. v1 intacta / v2 completa ──');
 ok(srcV1.indexOf('id="shotViewer"') > 0, 'v1 continua com o visor simples (#shotViewer)');
 ok(srcV1.indexOf('psRoot') < 0 && srcV1.indexOf('STUDIO-CORE-START') < 0, 'v1 NÃO recebeu nada do estúdio');
 ok(srcV1.indexOf("EC_BUILD='2026-09-18.3-ticker'") > 0, 'v1 mantém o build antigo');
+// o build da v2 muda a cada entrega: em vez de congelar um número, conferimos
+// que ele existe, segue o padrão AAAA-MM-DD.n-slug e não é o build da v1
+const buildV1 = (srcV1.match(/EC_BUILD='([^']+)'/) || [])[1] || '';
+const buildV2 = (srcV2.match(/EC_BUILD='([^']+)'/) || [])[1] || '';
+ok(!!buildV2 && buildV2 !== buildV1, 'v2 tem build próprio (diferente da v1)', buildV2 || 'ausente');
+ok(/^\d{4}-\d{2}-\d{2}\.\d+(-[A-Za-z0-9._-]+)?$/.test(buildV2), 'build da v2 no padrão AAAA-MM-DD.n-slug', buildV2);
 ok(srcV2.indexOf('id="psRoot"') > 0, 'v2 tem o palco do estúdio (#psRoot)');
 ok(srcV2.indexOf('id="shotViewer"') < 0, 'v2 não tem mais o visor antigo');
-ok(srcV2.indexOf("EC_BUILD='2026-09-29.2-analise-v2'") > 0, 'v2 tem build próprio');
 ['psStage', 'psTools', 'psFilm', 'psSide', 'psCv', 'psCropBar', 'psTextEdit', 'psHelpPanel'].forEach(id =>
   ok(srcV2.indexOf(`id="${id}"`) > 0, `v2 tem #${id}`));
 ['rect', 'ellipse', 'arrow', 'line', 'pencil', 'hl', 'text', 'blur', 'counter', 'crop', 'eraser', 'hand', 'select']
