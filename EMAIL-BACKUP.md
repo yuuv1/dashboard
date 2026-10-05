@@ -172,3 +172,25 @@ compara os dois lado a lado (e o workflow roda esse teste antes de enviar).
   o PR for mergeado no `main`.
 - **Semana anterior = segunda a domingo** (fuso `America/Sao_Paulo`).
 - **Repositório privado**: 2.000 minutos/mês grátis; o job gasta ~1 min/semana.
+
+### Aviso no WhatsApp
+
+Pedido: “e se eu quiser que envie via WhatsApp também?”
+
+Implementado como **complemento opcional do semanal**, nunca como substituto:
+
+- **CallMeBot (padrão, grátis)**: um GET com o texto; configuração de 2 minutos
+  (salvar o bot, mandar uma mensagem, receber a apikey). Só texto, só para o seu
+  número; serviço comunitário — pode falhar.
+- **Cloud API (oficial)**: POST para `graph.facebook.com`; exige Meta Business,
+  número verificado e template de utilidade aprovado (~US$ 0,007/msg no Brasil).
+- **UltraMsg / Z-API (não oficiais)**: conectam o número por QR; enviam texto e
+  documento, mas o WhatsApp pode bloquear o número e há mensalidade.
+
+Decisões de projeto: vai só o **resumo em texto** (o arquivo continua no e-mail,
+porque `.json` em anexo de zap é ruim de guardar); o texto usa `*negrito*` do
+WhatsApp, sem HTML; e **falha no zap não derruba o e-mail** — o job registra o
+aviso no log, no `dry-run` e no resultado da execução, mas não falha.
+Código: `ferramentas/email-backup/whatsapp.mjs`. Testes: seção 8 de
+`tests/test-semanal.js` (formato do texto, detecção de provedor, corpo/URL de
+cada provedor e o caso “WhatsApp fora do ar”).

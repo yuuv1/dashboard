@@ -9,7 +9,9 @@
         relatório que mora no próprio app (marcadores RPT-CORE-START … RPT-CORE-END);
      3. escreve o e-mail da semana (resumo + dia a dia + destaques);
      4. anexa o backup completo .json (__ec:3, importável no app) e envia
-        pela Brevo.
+        pela Brevo;
+     5. se você configurou, manda também o resumo no WhatsApp
+        (ferramentas/email-backup/whatsapp.mjs; falha no zap não derruba o e-mail).
 
    Não depende de nada do navegador: sem jsdom, sem npm install, sem
    chave dentro do app. A chave da Brevo fica num secret do repositório.
@@ -32,10 +34,17 @@
      EC_COM_PRINTS    caminho de um backup .json (no repo) para juntar os
                       prints ao anexo; sem isso o anexo sai sem imagens
      EC_SEMPRE_ENVIAR "false" para pular a semana sem operações
+
+   WhatsApp (opcional — veja o cabeçalho de whatsapp.mjs):
+     EC_WA_PROVIDER   callmebot | cloudapi | ultramsg | zapi
+     EC_WA_PHONE/EC_WA_KEY                      (callmebot, grátis)
+     EC_WA_TOKEN/EC_WA_PHONE_ID/EC_WA_TO        (cloudapi, oficial)
+     EC_WA_INSTANCE/EC_WA_TOKEN/EC_WA_TO[/EC_WA_CLIENT_TOKEN]
 ══════════════════════════════════════════════════════════════════════ */
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { waConfigurado, enviarWhatsApp, textoWhatsApp } from './whatsapp.mjs';
 
 const AQUI = path.dirname(fileURLToPath(import.meta.url));
 const APP = path.join(AQUI, '..', '..', 'edgecontrol-glass-v2.html');
@@ -336,22 +345,40 @@ export async function main(env = process.env, argv = process.argv, deps = {}) {
   /* 4. enviar (ou só montar) */
   if (!m.M.n && !cfg.sempreEnviar) { log('· semana sem operações — envio pulado (EC_SEMPRE_ENVIAR=false)'); return { pulado: true, semana: m.label }; }
   if (cfg.dryRun) {
+    const waCfg = waConfigurado(env);
     const bruto = {
       dryRun: true, quando: exportedAt, semana: { from: m.from, to: m.to, label: m.label },
       subject: email.subject, to: cfg.destino || '(destino não configurado)',
       anexo: { nome: anexo.nome, bytes: anexo.json.length, prints: Object.keys(shots).length },
-      html: email.html, text: email.text
+      html: email.html, text: email.text,
+      whatsapp: waCfg ? { provider: waCfg.provider, to: waCfg.to, texto: textoWhatsApp(m, core, info) } : null
     };
     fs.writeFileSync(cfg.saida, JSON.stringify(bruto, null, 2));
     log('· dry-run: e-mail montado em ' + cfg.saida + ' (nada enviado)');
     log('  assunto: ' + email.subject);
     log('  anexo:   ' + anexo.nome + ' (' + (anexo.json.length / 1024).toFixed(1) + ' KB, ' + Object.keys(shots).length + ' print(s))');
+    if (waCfg) log('  whatsapp: ' + waCfg.provider + ' → ' + waCfg.to + ' (texto no arquivo)');
     return { dryRun: true, arquivo: cfg.saida, semana: m.label, assume: email.subject, anexo: anexo.nome };
   }
   if (!cfg.destino || !cfg.remetente || !cfg.chave) throw new Error('faltam EC_EMAIL, EC_REMETENTE ou BREVO_API_KEY');
   const envio = await enviarBrevo(cfg, email, anexo, deps.fetch);
-  log('✅ enviado para ' + cfg.destino + ' (' + (anexo.json.length / 1024).toFixed(1) + ' KB)' + (envio.id ? ' · id ' + envio.id : ''));
-  return { enviado: true, semana: m.label, id: envio.id, bytes: anexo.json.length };
+  log('✅ e-mail enviado para ' + cfg.destino + ' (' + (anexo.json.length / 1024).toFixed(1) + ' KB)' + (envio.id ? ' · id ' + envio.id : ''));
+
+  /* WhatsApp é complemento: se falhar, o e-mail (que já saiu) continua valendo */
+  const waCfg = waConfigurado(env);
+  let whats = null;
+  if (waCfg) {
+    const texto = textoWhatsApp(m, core, info);
+    try {
+      const r = await enviarWhatsApp(waCfg, texto, deps.fetch);
+      whats = { ok: true, provider: waCfg.provider, to: waCfg.to, id: r.id || '' };
+      log('✅ WhatsApp avisado (' + waCfg.provider + ' → ' + waCfg.to + ')');
+    } catch (e) {
+      whats = { ok: false, provider: waCfg.provider, to: waCfg.to, erro: (e && e.message) || String(e) };
+      log('⚠️ WhatsApp não saiu: ' + whats.erro + ' (o e-mail já foi enviado)');
+    }
+  }
+  return { enviado: true, semana: m.label, id: envio.id, bytes: anexo.json.length, whatsapp: whats };
 }
 
 const executadoDireto = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);

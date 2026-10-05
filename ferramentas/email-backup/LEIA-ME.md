@@ -173,3 +173,78 @@ uma única vez.
 - O workflow também roda `node tests/test-semanal.js` antes de enviar: se o
   núcleo do relatório do app mudar de forma incompatível, o job falha em vez de
   mandar número errado.
+
+---
+
+# Aviso no WhatsApp (opcional, 2 minutos)
+
+O e-mail continua sendo o canal principal — é ele que leva o `.json`. O WhatsApp
+recebe só o **resumo da semana** (umas 8 linhas), para o celular apitar.
+
+## Jeito grátis e sem burocracia: CallMeBot
+
+1. Salve nos contatos do seu celular o número do bot: **+34 644 51 95 23**.
+2. Mande para esse contato, pelo WhatsApp, exatamente:
+   `I allow callmebot to send me messages`
+3. Em até 2 minutos o bot responde com a sua **APIKEY** (ex.: `123456`).
+4. Cadastre no GitHub (Settings → Secrets and variables → Actions):
+
+| Nome | Onde | Valor |
+|---|---|---|
+| `EC_WA_PROVIDER` | **Variables** | `callmebot` |
+| `EC_WA_PHONE` | **Secret** | seu número com DDI, ex.: `+5562999998888` |
+| `EC_WA_KEY` | **Secret** | a APIKEY que o bot mandou |
+
+Pronto: toda segunda o resumo chega também no WhatsApp. Para conferir antes,
+rode o workflow com **dry_run** — o texto do zap aparece no artifact.
+
+> **Sendo sincero sobre o CallMeBot:** é um serviço gratuito e comunitário (não é
+> oficial do WhatsApp). Ele só manda texto, só para o seu próprio número, e pode
+> atrasar ou ficar fora do ar em algum dia. Como o backup chega pelo e-mail de
+> qualquer forma, o risco é perder o “teco” no celular — nada além disso.
+
+## Se você quer o carimbo oficial da Meta (Cloud API)
+
+Funciona, mas dá mais trabalho: conta **Meta Business**, número verificado,
+**template de utilidade aprovado** (mensagem iniciada pela empresa precisa de
+template) e a partir de out/2026 as conversas de serviço também passam a ser
+cobradas. No Brasil, o template de utilidade custa cerca de **US$ 0,007 por
+mensagem** (~R$ 0,04) — barato, mas com burocracia. Variáveis:
+
+| Nome | Valor |
+|---|---|
+| `EC_WA_PROVIDER` (Variable) | `cloudapi` |
+| `EC_WA_PHONE_ID` (Secret) | id do número no app da Meta |
+| `EC_WA_TOKEN` (Secret) | token permanente do sistema |
+| `EC_WA_TO` (Secret) | seu número, ex.: `+5562999998888` |
+
+## Se você quer anexo no WhatsApp (não recomendado)
+
+Z-API e UltraMsg conectam **o seu próprio número** por QR code e conseguem enviar
+o arquivo. Mas: são APIs **não oficiais** (o WhatsApp pode bloquear o número
+conectado), têm mensalidade, e transformam o seu WhatsApp pessoal em “robô”.
+Além disso, o `.json` em anexo de zap móvel é bem menos prático de guardar do que
+um anexo de e-mail. Se ainda assim quiser, o script já aceita:
+
+| Provedor | `EC_WA_PROVIDER` | Outras variáveis |
+|---|---|---|
+| UltraMsg | `ultramsg` | `EC_WA_INSTANCE`, `EC_WA_TOKEN`, `EC_WA_TO` |
+| Z-API | `zapi` | `EC_WA_INSTANCE`, `EC_WA_TOKEN`, `EC_WA_TO`, `EC_WA_CLIENT_TOKEN` |
+
+## Como fica o texto
+
+```
+📊 *EdgeControl* — semana 31/08/2026 a 06/09
+Operações: 5  (5W / 0L)
+Acerto: 100,0%
+Resultado: *+R$ 120,99*  (+32,6%)
+Capital: R$ 371,58 → R$ 492,57
+Dias: 3   ·   DD máx: R$ 0,00
+Melhor ativo: EUR/USD R$ 120,99
+
+📎 Backup completo (.json) no seu e-mail:
+   edgecontrol_backup_2026-10-05.json
+```
+
+Se o WhatsApp falhar, o job **não** marca erro: o log avisa
+(`⚠️ WhatsApp não saiu: … (o e-mail já foi enviado)`) e o e-mail segue valendo.

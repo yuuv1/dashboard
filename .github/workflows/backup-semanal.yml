@@ -4,7 +4,9 @@ name: backup-semanal
 #   1. lê a Nuvem fácil (código + PIN) e decifra o pacote;
 #   2. monta os números da semana anterior com o mesmo núcleo do relatório
 #      que mora no app (ferramentas/email-backup/semanal.mjs);
-#   3. manda o e-mail pela Brevo, com o backup .json em anexo.
+#   3. manda o e-mail pela Brevo, com o backup .json em anexo;
+#   4. se você configurou, manda também o resumo no WhatsApp
+#      (EC_WA_*; um erro no zap não derruba o e-mail).
 # Configuração (uma vez): veja ferramentas/email-backup/LEIA-ME.md.
 
 on:
@@ -54,6 +56,15 @@ jobs:
           EC_SEMANA: ${{ inputs.semana }}
           EC_DRY_RUN: ${{ inputs.dry_run }}
           EC_COM_PRINTS: ${{ vars.EC_COM_PRINTS }}
+          # WhatsApp (opcional): callmebot (grátis) ou cloudapi/ultramsg/zapi
+          EC_WA_PROVIDER: ${{ vars.EC_WA_PROVIDER }}
+          EC_WA_PHONE: ${{ secrets.EC_WA_PHONE }}
+          EC_WA_KEY: ${{ secrets.EC_WA_KEY }}
+          EC_WA_TO: ${{ secrets.EC_WA_TO }}
+          EC_WA_TOKEN: ${{ secrets.EC_WA_TOKEN }}
+          EC_WA_PHONE_ID: ${{ secrets.EC_WA_PHONE_ID }}
+          EC_WA_INSTANCE: ${{ secrets.EC_WA_INSTANCE }}
+          EC_WA_CLIENT_TOKEN: ${{ secrets.EC_WA_CLIENT_TOKEN }}
         run: node ferramentas/email-backup/semanal.mjs
 
       - name: Guardar o e-mail montado (somente no dry-run)

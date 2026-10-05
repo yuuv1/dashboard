@@ -40,6 +40,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 (async () => {
   const S = await import('../ferramentas/email-backup/semanal.mjs');
+  const WA = await import('../ferramentas/email-backup/whatsapp.mjs');
   const core = S.carregarCore();
 
   /* ── 1. núcleo do relatório ────────────────────────────────────── */
@@ -239,14 +240,93 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   ok(viaNuvem.anexo.bytes === gravado.anexo.bytes, 'mesmo anexo lido da nuvem e do arquivo local', String(viaNuvem.anexo.bytes));
   fs.unlinkSync(saida);
 
-  /* ── 8. workflow ───────────────────────────────────────────────── */
-  console.log('\n── 8. workflow do GitHub Actions ──');
+  /* ── 8. WhatsApp (opcional) ────────────────────────────────────── */
+  console.log('\n── 8. WhatsApp ──');
+  const waTexto = WA.textoWhatsApp(doScript, core, info);
+  ok(/EdgeControl/.test(waTexto) && waTexto.includes('31/08') , 'texto do WhatsApp traz o período', waTexto.split('\n')[0]);
+  const semNB = t => String(t).replace(/\u00A0|\u202F/g, ' ');   /* Intl usa espaço fixo entre R$ e o número */
+  ok(/\*\+R\$ 120,99\*/.test(semNB(waTexto)), 'resultado em destaque (*negrito*) no texto', (waTexto.match(/Resultado[^\n]*/) || [''])[0]);
+  ok(!/<[a-z]+>/i.test(waTexto), 'texto do WhatsApp sem HTML');
+  ok(!/\(sem ativo\)/.test(waTexto) && !/Pior op: —/.test(waTexto), 'texto não polui com “(sem ativo)” nem traços soltos');
+  ok(waTexto.includes(anexo.nome), 'texto aponta o .json do e-mail');
+  ok(waTexto.length <= 3500, 'texto dentro do limite de mensagem', String(waTexto.length));
+  const waVazio = WA.textoWhatsApp(S.modeloSemana(core, backup.state, '2026-01-05', '2026-01-11'), core, info);
+  ok(/Nenhuma operação registrada/.test(waVazio), 'semana sem operações tem texto próprio');
+
+  ok(WA.waConfigurado({}) === null, 'sem variáveis, WhatsApp fica desligado');
+  ok(WA.waConfigurado({ EC_WA_PHONE: '+5511999998888' }) === null, 'só o telefone não basta');
+  const cfgCall = WA.waConfigurado({ EC_WA_PHONE: '+5511999998888', EC_WA_KEY: '123456' });
+  ok(cfgCall && cfgCall.provider === 'callmebot', 'callmebot é detectado (grátis)');
+  ok(WA.waConfigurado({ EC_WA_TOKEN: 't', EC_WA_PHONE_ID: '1', EC_WA_TO: 'x' }).provider === 'cloudapi', 'cloudapi é detectado');
+  ok(WA.waConfigurado({ EC_WA_INSTANCE: 'i', EC_WA_TOKEN: 't', EC_WA_TO: 'x', EC_WA_PROVIDER: 'zapi' }).provider === 'zapi', 'zapi é detectado quando pedido');
+  ok(WA.waConfigurado({ EC_WA_PROVIDER: 'zapi' }) === null, 'provedor pedido sem as chaves não configura nada');
+
+  let waChamada = null;
+  const fetchWa = async (url, init) => { waChamada = { url: String(url), init: init || {} }; return { ok: true, status: 200, text: async () => 'Message sent', json: async () => ({}) }; };
+  const rCall = await WA.enviarWhatsApp(cfgCall, waTexto, fetchWa);
+  ok(/^https:\/\/api\.callmebot\.com\/whatsapp\.php\?/.test(waChamada.url), 'callmebot: GET no endpoint certo', waChamada.url.slice(0, 60));
+  ok(waChamada.url.includes('phone=' + encodeURIComponent('+5511999998888')) && waChamada.url.includes('apikey=123456'), 'callmebot: telefone e apikey na URL');
+  ok(waChamada.url.includes(encodeURIComponent('EdgeControl')), 'callmebot: mensagem vai codificada', String(rCall.id));
+  const fetchWaErro = async () => ({ ok: true, status: 200, text: async () => 'APIKEY is invalid', json: async () => ({}) });
+  let waErro = '';
+  try { await WA.enviarWhatsApp(cfgCall, waTexto, fetchWaErro); } catch (e) { waErro = e.message; }
+  ok(/invalid/i.test(waErro), 'callmebot que responde erro no corpo também falha', waErro);
+
+  let cloudChamada = null;
+  const fetchCloud = async (url, init) => { cloudChamada = { url: String(url), init }; return { ok: true, status: 200, json: async () => ({ messages: [{ id: 'wamid.1' }] }), text: async () => '' }; };
+  const rCloud = await WA.enviarWhatsApp(WA.waConfigurado({ EC_WA_TOKEN: 'tok', EC_WA_PHONE_ID: '99', EC_WA_TO: '+5511' }), waTexto, fetchCloud);
+  const cloudBody = JSON.parse(cloudChamada.init.body);
+  ok(cloudChamada.url === 'https://graph.facebook.com/v22.0/99/messages', 'cloudapi: endpoint oficial', cloudChamada.url);
+  ok(cloudChamada.init.headers.Authorization === 'Bearer tok', 'cloudapi: token no cabeçalho');
+  ok(cloudBody.messaging_product === 'whatsapp' && cloudBody.to === '+5511' && cloudBody.type === 'text' && cloudBody.text.body === waTexto, 'cloudapi: corpo oficial');
+  ok(rCloud.id === 'wamid.1', 'cloudapi: devolve o id da mensagem');
+
+  let zapiChamada = null;
+  const fetchZ = async (url, init) => { zapiChamada = { url: String(url), init }; return { ok: true, status: 200, json: async () => ({ messageId: 'z1' }), text: async () => '' }; };
+  await WA.enviarWhatsApp(WA.waConfigurado({ EC_WA_PROVIDER: 'zapi', EC_WA_INSTANCE: 'inst', EC_WA_TOKEN: 'tok', EC_WA_TO: '5511', EC_WA_CLIENT_TOKEN: 'ct' }), waTexto, fetchZ);
+  ok(zapiChamada.url.includes('/instances/inst/token/tok/send-text'), 'zapi: endpoint com instância e token', zapiChamada.url.slice(0, 70));
+  ok(zapiChamada.init.headers['Client-Token'] === 'ct', 'zapi: Client-Token no cabeçalho');
+  ok(JSON.parse(zapiChamada.init.body).message === waTexto, 'zapi: mensagem no corpo');
+
+  let ultraChamada = null;
+  const fetchU = async (url, init) => { ultraChamada = { url: String(url), init }; return { ok: true, status: 200, json: async () => ({ sent: 'true', id: 'u1' }), text: async () => '' }; };
+  await WA.enviarWhatsApp(WA.waConfigurado({ EC_WA_PROVIDER: 'ultramsg', EC_WA_INSTANCE: 'i1', EC_WA_TOKEN: 't1', EC_WA_TO: '5511' }), waTexto, fetchU);
+  ok(/api\.ultramsg\.com\/i1\/messages\/chat$/.test(ultraChamada.url) && /token=t1/.test(ultraChamada.init.body), 'ultramsg: endpoint e token no formulário', ultraChamada.url);
+
+  /* o zap não pode derrubar o e-mail: main() segue e devolve o aviso */
+  const packWa = path.join(os.tmpdir(), 'ec-pack-wa.json');
+  fs.writeFileSync(packWa, JSON.stringify({ __ec: 3, exportedAt: '2026-09-03T18:34:05.467Z', state: backup.state, shots: {} }));
+  const chamadasWa = [];
+  const fetchMisto = async (url, init) => {
+    chamadasWa.push(String(url));
+    if (/brevo/.test(String(url))) return { ok: true, status: 201, text: async () => JSON.stringify({ messageId: 'm1' }) };
+    return { ok: false, status: 500, text: async () => 'boom', json: async () => ({}) };   /* WhatsApp cai */
+  };
+  const rMisto = await S.main({ EC_EMAIL: 'eu@gmail.com', EC_REMETENTE: 'eu@gmail.com', BREVO_API_KEY: 'k',
+    EC_WA_PHONE: '+5511999998888', EC_WA_KEY: '123' },
+    ['node', 'semanal.mjs', '--arquivo=' + packWa, '--semana=2026-09-07'],
+    { fetch: fetchMisto, core, app: path.join(RAIZ, 'edgecontrol-glass-v2.html'), log: () => {} });
+  ok(rMisto.enviado === true, 'com o WhatsApp fora do ar, o e-mail continua sendo enviado');
+  ok(chamadasWa.some(u => /brevo/.test(u)) && chamadasWa.some(u => /callmebot/.test(u)), 'tentou e-mail e depois WhatsApp');
+  ok(rMisto.whatsapp && rMisto.whatsapp.ok === false && /500/.test(rMisto.whatsapp.erro), 'o resultado registra a falha do zap', JSON.stringify(rMisto.whatsapp));
+  const saidaWa = path.join(os.tmpdir(), 'ec-payload-wa.json');
+  await S.main({ EC_WA_PHONE: '+5511999998888', EC_WA_KEY: '123' },
+    ['node', 'semanal.mjs', '--arquivo=' + packWa, '--dry-run', '--saida=' + saidaWa, '--semana=2026-09-07'],
+    { fetch: () => { throw new Error('não deveria chamar a rede'); }, core, app: path.join(RAIZ, 'edgecontrol-glass-v2.html'), log: () => {} });
+  const brutoWa = JSON.parse(fs.readFileSync(saidaWa, 'utf8'));
+  ok(brutoWa.whatsapp && brutoWa.whatsapp.provider === 'callmebot' && /EdgeControl/.test(brutoWa.whatsapp.texto),
+    'dry-run mostra o texto do WhatsApp sem enviar');
+  fs.unlinkSync(saidaWa); fs.unlinkSync(packWa);
+
+  /* ── 9. workflow ───────────────────────────────────────────────── */
+  console.log('\n── 9. workflow do GitHub Actions ──');
   const yml = fs.readFileSync(WF, 'utf8');
   ok(/cron:\s*'0 12 \* \* 1'/.test(yml), 'roda toda segunda (12:00 UTC = 09:00 de São Paulo)');
   ok(yml.includes('workflow_dispatch'), 'dá para disparar na mão ("Run workflow")');
   ok(/concurrency:/.test(yml) && /contents: read/.test(yml), 'sem execuções sobrepostas e com permissão mínima');
   ok(/node ferramentas\/email-backup\/semanal\.mjs/.test(yml), 'o workflow chama o script do backup semanal');
-  ['EC_NUVEM_CODIGO', 'EC_NUVEM_PIN', 'EC_EMAIL', 'EC_REMETENTE', 'BREVO_API_KEY', 'EC_SEMANA', 'EC_DRY_RUN', 'EC_COM_PRINTS']
+  ['EC_NUVEM_CODIGO', 'EC_NUVEM_PIN', 'EC_EMAIL', 'EC_REMETENTE', 'BREVO_API_KEY', 'EC_SEMANA', 'EC_DRY_RUN', 'EC_COM_PRINTS',
+   'EC_WA_PROVIDER', 'EC_WA_PHONE', 'EC_WA_KEY', 'EC_WA_TO', 'EC_WA_TOKEN', 'EC_WA_PHONE_ID', 'EC_WA_INSTANCE', 'EC_WA_CLIENT_TOKEN']
     .forEach(nome => ok(yml.includes(nome), 'workflow passa ' + nome));
   ok(!/xkeysib|senha|pin:/i.test(yml.replace(/EC_NUVEM_PIN/g, '')), 'nenhum segredo escrito no workflow');
   ok(/node tests\/test-semanal\.js/.test(yml), 'o workflow confere o núcleo antes de enviar');
