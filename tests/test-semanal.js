@@ -167,6 +167,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   ok(!/Sem prints neste anexo/.test(comPrint.html), 'com prints no anexo, o aviso sai');
   ok(!/NaN|undefined/.test(email.html + email.text), 'nenhum NaN/undefined no e-mail');
   ok(email.text.includes('Resultado:') && email.text.includes('Anexo:'), 'versão em texto puro acompanha');
+  ok(!/Infinity|NaN/.test(email.text), 'texto puro não mostra Infinity/NaN', (email.text.match(/Profit factor[^\n]*/) || [''])[0]);
   const semanaVazia = S.modeloSemana(core, backup.state, '2026-01-05', '2026-01-11');
   const emailVazio = S.montarEmail(semanaVazia, Object.assign({}, info, { subject: 'x' }));
   ok(/Nenhuma operação registrada nesta semana/.test(emailVazio.html), 'semana sem operações tem aviso claro');

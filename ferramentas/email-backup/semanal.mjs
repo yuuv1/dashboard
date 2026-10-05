@@ -231,7 +231,7 @@ export function montarEmail(m, info) {
       'Taxa de acerto: ' + (M.wins + M.losses ? C.rpPct(M.winRate) : '—'),
       'Resultado: ' + C.rpMoney(M.net) + '   Retorno: ' + C.rpPct(M.returnPct),
       'Capital: ' + C.rpMoney(M.capitalStart) + ' → ' + C.rpMoney(M.capitalEnd),
-      'Profit factor: ' + (M.pf ? M.pf.toFixed(2) : '—') + '   Drawdown máx.: ' + C.rpMoney(M.maxDD) + ' (' + C.rpPct(M.maxDDpct) + ')',
+      'Profit factor: ' + (M.pf ? (M.pf === Infinity ? 'infinito (sem perdas)' : M.pf.toFixed(2)) : '—') + '   Drawdown máx.: ' + C.rpMoney(M.maxDD) + ' (' + C.rpPct(M.maxDDpct) + ')',
       'Dias operados: ' + M.tradedDays
     ] : ['Nenhuma operação registrada nesta semana.']),
     '', 'Anexo: ' + info.anexo.nome + ' — ' + info.anexoLegenda,
