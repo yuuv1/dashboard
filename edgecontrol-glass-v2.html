@@ -2421,18 +2421,28 @@ body.rpt-open{overflow:hidden;}
               Quem entrega é um relay que você mesmo publica — a chave do provedor de e-mail nunca fica aqui.
               Montagem em 15 minutos: <strong>ferramentas/email-backup/LEIA-ME.md</strong>.
             </div>
-            <div style="font-size:11px;color:var(--dim);line-height:1.6;margin-bottom:11px;">
-              <strong>Semanal automático (opcional):</strong> o repositório traz um job do GitHub Actions
-              que envia sozinho toda segunda de manhã, sem precisar abrir o app —
-              <strong>.github/workflows/backup-semanal.yml</strong> (passo a passo no LEIA-ME).
+            <div style="font-size:11px;color:var(--dim);line-height:1.6;margin-bottom:11px;padding:9px 10px;border:1px solid var(--line,#2a3345);border-radius:9px;">
+              ✅ <strong>Semanal automático — nada para configurar aqui.</strong>
+              O GitHub já envia sozinho toda segunda de manhã (passo a passo em
+              <strong>ferramentas/email-backup/LEIA-ME.md</strong>). Só precisa das 5 chaves no GitHub,
+              uma vez. Esta tela é apenas para o envio <strong>na hora, pelo app</strong>.
             </div>
-            <div class="fg"><label class="fl">URL do relay (Worker)</label>
+            <div class="fg"><label class="fl">URL do Worker (opcional — só para o botão “Enviar agora”)</label>
               <input class="fi" id="emailWorker" placeholder="https://ec-email.seu-usuario.workers.dev" autocomplete="off" onchange="emailSaveForm()">
+              <div style="font-size:10px;color:var(--dim);margin-top:5px;line-height:1.5;">
+                Não sabe o que é isso? <strong>Deixe em branco</strong> e use o botão
+                “🔗 Enviar pelo GitHub” abaixo (ou o semanal automático).
+                O Worker é só um endereço de um programinha que você cria na Cloudflare (grátis) para o app
+                poder enviar sem guardar a senha do e-mail — assim o site continua sem senha nenhuma.
+              </div>
             </div>
             <div class="fg"><label class="fl">E-mail de destino</label>
               <input class="fi" id="emailTo" type="email" placeholder="voce@email.com" autocomplete="off" onchange="emailSaveForm()">
             </div>
-            <div class="fg"><label class="fl">Chave do app (opcional — só se você definiu APP_KEY no relay)</label>
+            <div class="fg"><label class="fl">Repositório no GitHub (usado pelo botão “Enviar pelo GitHub”)</label>
+              <input class="fi" id="emailRepo" placeholder="usuario/repositorio" autocomplete="off" onchange="emailSaveForm()">
+            </div>
+            <div class="fg"><label class="fl">Chave do app (opcional — só se você definiu APP_KEY no Worker)</label>
               <input class="fi" id="emailKey" type="password" placeholder="deixe vazio se não usou" autocomplete="off" onchange="emailSaveForm()">
             </div>
             <div class="toggle-row">
@@ -2455,6 +2465,7 @@ body.rpt-open{overflow:hidden;}
               <button class="btn-o xs" onclick="emailPreview()">🔍 Conferir pacote</button>
               <button class="btn-s xs" onclick="emailTest()">🧪 Testar canal</button>
               <button class="btn-s xs" onclick="emailSend({manual:true})">📧 Enviar backup agora</button>
+              <button class="btn-o xs" onclick="emailAbrirGitHub()">🔗 Enviar pelo GitHub</button>
             </div>
             <div style="font-size:10.5px;color:var(--dim);line-height:1.55;margin-top:10px;" id="emailStatus">—</div>
           </div>
@@ -8873,9 +8884,11 @@ async function easyBoot(){
 
    O app monta o e-mail e o pacote; quem entrega é um relay
    (Cloudflare Worker) que guarda a chave da Brevo. Aqui NÃO existe
-   chave de e-mail: só a URL do relay, o destino e (opcional) a
-   chave do app. Montagem: ferramentas/email-backup/LEIA-ME.md.
-   Projeto: EMAIL-BACKUP.md.
+   chave de e-mail: só a URL do Worker, o destino e (opcional) a
+   chave do app. O Worker é OPCIONAL: sem ele, o envio semanal
+   automático (GitHub Actions) continua funcionando, e o envio na
+   hora sai pelo botão “Enviar pelo GitHub”.
+   Montagem: ferramentas/email-backup/LEIA-ME.md · EMAIL-BACKUP.md.
 ══════════════════════════════════════════════════════════ */
 const EMAIL_LS='ecEmail';
 let EMAIL_MAX_JSON=15.5*1024*1024;   /* JSON por e-mail (≈20,7 MB em base64) */
@@ -8884,7 +8897,7 @@ let EMAIL_BUDGET_B64=22000000;       /* teto de anexos por e-mail, já em base64
 let EMAIL_BUSY=false;
 
 function emailCfg(){
-  const base={worker:'',to:'',key:'',zip:false,aviso:true,lastAt:'',lastRev:'',lastParts:0,lastBytes:0,lastOps:0,lastShots:0,lastId:''};
+  const base={worker:'',to:'',repo:'yuuv1/dashboard',key:'',zip:false,aviso:true,lastAt:'',lastRev:'',lastParts:0,lastBytes:0,lastOps:0,lastShots:0,lastId:''};
   try{ return Object.assign(base, JSON.parse(localStorage.getItem(EMAIL_LS)||'{}')); }
   catch(e){ return base; }
 }
@@ -8893,6 +8906,7 @@ function emailFillForm(){
   const c=emailCfg();
   const w=document.getElementById('emailWorker'); if(w&&!w.value) w.value=c.worker||'';
   const t=document.getElementById('emailTo'); if(t&&!t.value) t.value=c.to||'';
+  const rp=document.getElementById('emailRepo'); if(rp&&!rp.value) rp.value=c.repo||'yuuv1/dashboard';
   const k=document.getElementById('emailKey'); if(k&&!k.value) k.value=c.key||'';
   const z=document.getElementById('emailZip'); if(z) z.checked=!!c.zip;
   const a=document.getElementById('emailAviso'); if(a) a.checked=c.aviso!==false;
@@ -8901,7 +8915,7 @@ function emailFillForm(){
 function emailSaveForm(){
   const g=id=>{const el=document.getElementById(id);return el?el.value.trim():'';};
   const z=document.getElementById('emailZip'),a=document.getElementById('emailAviso');
-  emailSet({worker:g('emailWorker'),to:g('emailTo'),key:g('emailKey'),
+  emailSet({worker:g('emailWorker'),to:g('emailTo'),repo:g('emailRepo')||'yuuv1/dashboard',key:g('emailKey'),
     zip:!!(z&&z.checked),aviso:!(a&&!a.checked)});
   emailPaintStatus('Configuração salva.');
   return emailCfg();
@@ -8921,7 +8935,7 @@ function emailPaintStatus(extra){
   const el=document.getElementById('emailStatus'); if(!el) return;
   const c=emailCfg(); const linhas=[];
   if(extra) linhas.push(extra);
-  if(!c.worker) linhas.push('Cole a URL do relay (https://…) e clique em Salvar.');
+  if(!c.worker) linhas.push('Sem Worker configurado — o app não envia sozinho. Use “🔗 Enviar pelo GitHub” ou configure o semanal automático (LEIA-ME). Filling a URL do Worker habilita os botões de envio daqui.');
   else if(!c.to) linhas.push('Falta o e-mail de destino.');
   else if(!c.lastAt) linhas.push('Pronto para o primeiro envio — use “Conferir pacote” para ver o que vai.');
   else{
@@ -9227,7 +9241,7 @@ async function emailPost(url,payload,timeoutMs){
 async function emailSend(opts){
   opts=opts||{}; const manual=opts.manual!==false;
   const c=emailCfg();
-  if(!/^https:\/\/.+/.test(c.worker||'')){ toast('Cole a URL do relay (https://…) e salve.','w'); return; }
+  if(!/^https:\/\/.+/.test(c.worker||'')){ toast('Sem Worker: use “🔗 Enviar pelo GitHub” para disparar o envio.','w'); return; }
   if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(c.to||'')){ toast('Informe um e-mail de destino válido.','w'); return; }
   if(EMAIL_BUSY){ if(manual) toast('Envio em andamento…','w'); return; }
   EMAIL_BUSY=true;
@@ -9285,9 +9299,20 @@ async function emailPreview(){
   }
   EMAIL_BUSY=false;
 }
+/* Sem Worker, o envio na hora acontece pelo próprio repositório: o botão abre
+   o job semanal no GitHub, onde “Run workflow” envia a semana escolhida. */
+function emailAbrirGitHub(){
+  const c=emailCfg();
+  const repo=String(c.repo||'yuuv1/dashboard').replace(/^https?:\/\/github\.com\//,'').replace(/\/+$/,'');
+  const url='https://github.com/'+repo+'/actions/workflows/backup-semanal.yml';
+  try{ window.open(url,'_blank','noopener'); }catch(e){}
+  toast('No GitHub: “Run workflow” → escolha a semana (vazio = semana passada) → Run.','w');
+  const el=document.getElementById('emailStatus');
+  if(el) el.innerHTML=escHtml('Abrindo '+url+' — clique em “Run workflow”. Sem o Worker, este é o caminho do envio na hora.');
+}
 async function emailTest(){
   const c=emailCfg();
-  if(!/^https:\/\/.+/.test(c.worker||'')){ toast('Cole a URL do relay (https://…).','w'); return; }
+  if(!/^https:\/\/.+/.test(c.worker||'')){ toast('Sem Worker configurado — o teste de canal precisa dele.','w'); return; }
   if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(c.to||'')){ toast('Informe o e-mail de destino.','w'); return; }
   if(EMAIL_BUSY){ toast('Ocupado…','w'); return; }
   EMAIL_BUSY=true;

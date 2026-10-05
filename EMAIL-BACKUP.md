@@ -24,6 +24,10 @@ EdgeControl (navegador)  ──POST /send──▶  Cloudflare Worker  ──▶
    (sem chave nenhuma)
 ```
 
+- **O relay é opcional.** Ele existe só para o botão “Enviar agora” **dentro do app**
+  (que é o único caminho com os prints anexados). O **semanal automático** não usa o
+  Worker: roda no GitHub Actions, direto contra a Brevo. Sem Worker, o envio fora de
+  hora sai pelo botão “🔗 Enviar pelo GitHub” (abre o job; *Run workflow*).
 - **Por que um relay?** A chave da Brevo é credencial de servidor: em código de
   navegador ela é pública e qualquer um passaria a enviar e-mail na sua conta.
   O site do EdgeControl é público, então a chave não pode morar nele.

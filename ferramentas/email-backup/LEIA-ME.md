@@ -1,5 +1,26 @@
 # Envio do backup por e-mail — montagem (15 minutos, uma vez só)
 
+## Antes de tudo: o que é esse tal de “relay (Worker)”, e você precisa dele?
+
+Imagine um **porteiro** na internet. O EdgeControl precisa mandar e-mail, mas não pode
+guardar a senha do seu e-mail — o site é aberto, e qualquer pessoa que abrisse poderia
+ler a senha e passar a mandar e-mail no seu nome. Então existe um **programinha
+pequeno, hospedado de graça na Cloudflare**, que faz só três coisas:
+
+1. guarda essa senha (a “chave” da Brevo) longe do site;
+2. recebe o pedido do app — “manda este backup para o meu e-mail”;
+3. repassa o pedido para a Brevo, que entrega a mensagem.
+
+A **“URL do Worker”** é apenas o **endereço desse porteiro**, algo como
+`https://ec-email.seu-usuario.workers.dev`. Você cria uma vez, cola no campo do app e
+nunca mais mexe nele.
+
+> ### Você só precisa disso para o botão “📧 Enviar agora” **do app**.
+> Para o **semanal automático** (o que você combinou), **não precisa de Worker nenhum** —
+> ele roda no GitHub Actions: veja a seção *“Semanal automático”* mais abaixo.
+> Sem Worker, para mandar um backup fora de hora, use o botão
+> **“🔗 Enviar pelo GitHub”** dentro do app (abre o job; você clica em *Run workflow*).
+
 O app **não** guarda chave de e-mail nenhuma. Ele manda o pacote para um
 **relay** (um Worker da Cloudflare) que guarda a chave da Brevo e faz o envio.
 São três etapas: Brevo → Worker → app.
@@ -50,6 +71,8 @@ No EdgeControl (v2): **Configurações → 📧 Backup por e-mail**
 - **URL do relay**: a URL do Worker.
 - **E-mail de destino**: o mesmo de `ALLOWED_TO`.
 - **Chave do app**: a mesma de `APP_KEY` (se você definiu).
+- **Repositório no GitHub**: só serve para o botão “🔗 Enviar pelo GitHub” (já vem
+  preenchido com `yuuv1/dashboard`).
 - **Testar canal** → deve chegar um e-mail de teste em segundos.
 - **Enviar backup agora** → chega o período completo (da 1ª operação até hoje)
   com o JSON do backup e o resumo no corpo.

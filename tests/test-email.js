@@ -280,7 +280,7 @@ const b64ToU8 = b64 => {
   ev('toast=window.__toastReal;');
   const avisosTexto = ev('JSON.stringify(window.__avisos)');
   ok(calls.length === 0, 'sem relay/destino não chama a rede');
-  ok(/relay|destino/i.test(avisosTexto), 'o app avisa qual configuração falta', avisosTexto.slice(0, 90));
+  ok(/worker|github|destino/i.test(avisosTexto), 'o app avisa qual configuração falta', avisosTexto.slice(0, 110));
 
   /* ── 8. lembrete de 7 dias ─────────────────────────────────────── */
   console.log('\n── 8. lembrete de semana ──');
@@ -291,6 +291,31 @@ const b64ToU8 = b64 => {
   ok(!/Já faz 10 dias/.test(status()), 'aviso desligado não aparece');
   ev('emailFillForm();');
   ok(/Último envio:/.test(status()), 'status mostra o último envio');
+
+  /* ── 9. quem não tem Worker: caminho pelo GitHub ───────────────── */
+  console.log('\n── 9. sem Worker ──');
+  ok(ev("emailCfg().repo") === 'yuuv1/dashboard', 'repositório vem preenchido por padrão', ev('emailCfg().repo'));
+  ev("emailFillForm()");
+  ok(d.getElementById('emailRepo').value === 'yuuv1/dashboard', 'formulário mostra o repositório');
+  ev("document.getElementById('emailRepo').value='yuuv1/outro-repo';emailSaveForm();");
+  ok(ev("emailCfg().repo") === 'yuuv1/outro-repo', 'trocar o repositório é salvo');
+  ev("emailSet({repo:'yuuv1/dashboard'});");
+  const abertos = [];
+  w.open = (u) => { abertos.push(String(u)); return null; };
+  ev('emailAbrirGitHub()');
+  ok(abertos.length === 1 && abertos[0] === 'https://github.com/yuuv1/dashboard/actions/workflows/backup-semanal.yml',
+    'o botão abre o job semanal no GitHub', abertos[0]);
+  ok(/Run workflow|GitHub/i.test(status()), 'o status explica o que fazer no GitHub', status().slice(0, 90));
+  ev("emailSet({worker:'https://ec-email.exemplo.workers.dev'});emailSaveForm();");
+  ev("emailSet({worker:''});emailFillForm();");
+  ok(/Sem Worker configurado/.test(status()), 'sem Worker o status mostra o caminho alternativo', status().slice(0, 90));
+  ok(/Enviar pelo GitHub/.test(status()), 'o status cita o botão do GitHub');
+  const cartao = fs.readFileSync(HTML, 'utf8');
+  ok(/Semanal automático — nada para configurar aqui/.test(cartao), 'o cartão deixa claro que o semanal não precisa de configuração');
+  ok(/URL do Worker \(opcional — só para o botão “Enviar agora”\)/.test(cartao), 'o campo do Worker se declara opcional');
+  ok(/Não sabe o que é isso\?/.test(cartao) && /Cloudflare/.test(cartao), 'o cartão explica o Worker em linguagem simples');
+  ok(/emailAbrirGitHub\(\)/.test(cartao) && /🔗 Enviar pelo GitHub/.test(cartao), 'o botão do GitHub existe no cartão');
+  ok(/Repositório no GitHub/.test(cartao), 'o cartão pede o repositório para esse botão');
 
   ok(errors.length === 0, 'nenhum erro de JS durante os testes', errors.slice(0, 2).join(' | '));
 
