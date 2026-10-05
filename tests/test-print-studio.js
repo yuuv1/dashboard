@@ -19,7 +19,7 @@ const vm = require('vm');
 
 const V2 = path.join(__dirname, '..', 'edgecontrol-glass-v2.html');
 const V1 = path.join(__dirname, '..', 'edgecontrol-glass.html');
-const FIXTURE = path.join(__dirname, '..', 'edgecontrol_2026-09-17 (1).json');
+const FIXTURE = path.join(__dirname, '..', 'dados', 'backups', 'edgecontrol_2026-09-17 (1).json');
 
 const srcV2 = fs.readFileSync(V2, 'utf8');
 const srcV1 = fs.readFileSync(V1, 'utf8');

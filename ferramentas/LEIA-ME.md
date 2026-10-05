@@ -16,6 +16,7 @@ dentro de `edgecontrol-glass-v2.html`. A regra do projeto é uma só:
 
 ```
 ferramentas/
+├── preview-serve.js           ← servidor estático de desenvolvimento (Node)
 ├── LEIA-ME.md                 ← este contrato
 ├── registro.json              ← quais pastas o app deve procurar
 ├── ferramenta.schema.json     ← esquema do manifesto (documentação/validação)

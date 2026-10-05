@@ -4,7 +4,7 @@ Envio **manual** do backup do período completo para o seu e-mail, com o
 `.json` restauração (prints dentro) em anexo e um resumo analítico no corpo
 da mensagem.
 
-> Montagem em 15 minutos (Brevo + Worker): [`ferramentas/email-backup/LEIA-ME.md`](ferramentas/email-backup/LEIA-ME.md)
+> Montagem em 15 minutos (Brevo + Worker): [`ferramentas/email-backup/LEIA-ME.md`](../ferramentas/email-backup/LEIA-ME.md)
 
 ## Decisões (o que foi combinado)
 
@@ -144,6 +144,7 @@ GitHub Actions (toda segunda, 09:00 de São Paulo)
 |---|---|
 | Job semanal | `.github/workflows/backup-semanal.yml` |
 | Programa (Node puro, sem dependências) | `ferramentas/email-backup/semanal.mjs` |
+| Backups e fixtures de teste | `dados/backups/` |
 | Segredos (uma vez) | `EC_NUVEM_CODIGO`, `EC_NUVEM_PIN`, `EC_EMAIL`, `EC_REMETENTE`, `BREVO_API_KEY` |
 | Testes | `tests/test-semanal.js` |
 

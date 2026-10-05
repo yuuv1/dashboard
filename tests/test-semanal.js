@@ -27,7 +27,7 @@ const { IDBFactory } = require('fake-indexeddb');
 const { webcrypto } = require('node:crypto');
 
 const RAIZ = path.join(__dirname, '..');
-const FIXTURE = path.join(RAIZ, 'edgecontrol_2026-09-03.json');
+const FIXTURE = path.join(RAIZ, 'dados', 'backups', 'edgecontrol_2026-09-03.json');
 const WF = path.join(RAIZ, '.github', 'workflows', 'backup-semanal.yml');
 const backup = JSON.parse(fs.readFileSync(FIXTURE, 'utf8'));
 const html = fs.readFileSync(path.join(RAIZ, 'edgecontrol-glass-v2.html'), 'utf8');

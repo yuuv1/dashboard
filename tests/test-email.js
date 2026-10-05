@@ -23,7 +23,7 @@ const { JSDOM } = require('jsdom');
 const { IDBFactory } = require('fake-indexeddb');
 
 const HTML = path.join(__dirname, '..', 'edgecontrol-glass-v2.html');
-const FIXTURE = path.join(__dirname, '..', 'edgecontrol_2026-09-03.json');
+const FIXTURE = path.join(__dirname, '..', 'dados', 'backups', 'edgecontrol_2026-09-03.json');
 const html = fs.readFileSync(HTML, 'utf8');
 const backup = JSON.parse(fs.readFileSync(FIXTURE, 'utf8'));
 

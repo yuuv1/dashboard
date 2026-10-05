@@ -27,7 +27,7 @@ const ROOT = path.join(__dirname, '..');
 const V2 = path.join(ROOT, 'edgecontrol-glass-v2.html');
 const V1 = path.join(ROOT, 'edgecontrol-glass.html');
 const FERR = path.join(ROOT, 'ferramentas');
-const FIXTURE = path.join(ROOT, 'edgecontrol_2026-09-17 (1).json');
+const FIXTURE = path.join(ROOT, 'dados', 'backups', 'edgecontrol_2026-09-17 (1).json');
 
 const srcV2 = fs.readFileSync(V2, 'utf8');
 const srcV1 = fs.readFileSync(V1, 'utf8');

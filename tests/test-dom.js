@@ -14,9 +14,9 @@ const { JSDOM } = require('jsdom');
 const { IDBFactory } = require('fake-indexeddb');
 
 const HTML = path.join(__dirname, '..', 'edgecontrol-glass.html');
-const FIXTURE = path.join(__dirname, '..', 'edgecontrol_2026-09-03.json');
-const CORRECTED_AI_BACKUP = path.join(__dirname, '..', 'edgecontrol_2026-09-16_corrigido.json');
-const BACKUP_WITH_IMAGES = path.join(__dirname, '..', 'edgecontrol_2026-09-16_com_imagens.json');
+const FIXTURE = path.join(__dirname, '..', 'dados', 'backups', 'edgecontrol_2026-09-03.json');
+const CORRECTED_AI_BACKUP = path.join(__dirname, '..', 'dados', 'backups', 'edgecontrol_2026-09-16_corrigido.json');
+const BACKUP_WITH_IMAGES = path.join(__dirname, '..', 'dados', 'backups', 'edgecontrol_2026-09-16_com_imagens.json');
 const html = fs.readFileSync(HTML, 'utf8');
 const backup = JSON.parse(fs.readFileSync(FIXTURE, 'utf8'));
 const correctedAiBackupText = fs.readFileSync(CORRECTED_AI_BACKUP, 'utf8');

@@ -8889,7 +8889,7 @@ async function easyBoot(){
    chave do app. O Worker é OPCIONAL: sem ele, o envio semanal
    automático (GitHub Actions) continua funcionando, e o envio na
    hora sai pelo botão “Enviar pelo GitHub”.
-   Montagem: ferramentas/email-backup/LEIA-ME.md · EMAIL-BACKUP.md.
+   Montagem: ferramentas/email-backup/LEIA-ME.md · docs/EMAIL-BACKUP.md.
 ══════════════════════════════════════════════════════════ */
 const EMAIL_LS='ecEmail';
 let EMAIL_MAX_JSON=15.5*1024*1024;   /* JSON por e-mail (≈20,7 MB em base64) */
@@ -9370,7 +9370,7 @@ async function maybeLoadDemoData(){
   try{
     if(!/[?&]demo=1(&|$)/.test(location.search)) return;
     if((S.operations||[]).length||(await IMGDB.keys()).length) return;
-    const r=await fetch(encodeURI('edgecontrol_2026-09-17 (1).json'));
+    const r=await fetch(encodeURI('dados/backups/edgecontrol_2026-09-17 (1).json'));
     if(!r.ok) return;
     const txt=await r.text();
     const oc=window.confirm;

@@ -22,4 +22,4 @@ No app: **Configurações → Nuvem GitHub** → token `repo` nos dois aparelhos
 
 Além da nuvem, o app envia o backup do **período completo** (com os prints)
 para o seu e-mail, num cartão próprio em Configurações.
-Montagem: **ferramentas/email-backup/LEIA-ME.md** · projeto: **EMAIL-BACKUP.md**.
+Montagem: **ferramentas/email-backup/LEIA-ME.md** · projeto: **EMAIL-BACKUP.md** (esta pasta `docs/`).
