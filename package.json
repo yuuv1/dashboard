@@ -4,14 +4,13 @@
   "private": true,
   "description": "EdgeControl - painel de operações em um único HTML. v1: edgecontrol-glass.html (intacta). v2: edgecontrol-glass-v2.html com o Estúdio de Prints (zoom + anotações não-destrutivas). Testes de desenvolvimento não fazem parte do app publicado.",
   "scripts": {
-    "test": "node tests/test-core.js && node tests/test-dom.js && node tests/test-print-css.js && node tests/test-themes.js && node tests/test-import.js && node tests/test-print-studio.js && node tests/test-extensions.js",
+    "test": "node tests/test-core.js && node tests/test-dom.js && node tests/test-print-css.js && node tests/test-themes.js && node tests/test-import.js && node tests/test-print-studio.js",
     "test:core": "node tests/test-core.js",
     "test:dom": "node tests/test-dom.js",
     "test:print": "node tests/test-print-css.js",
     "test:themes": "node tests/test-themes.js",
     "test:import": "node tests/test-import.js",
-    "test:studio": "node tests/test-print-studio.js",
-    "test:ecx": "node tests/test-extensions.js"
+    "test:studio": "node tests/test-print-studio.js"
   },
   "devDependencies": {
     "fake-indexeddb": "^6.2.5",

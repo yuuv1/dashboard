@@ -1,0 +1,18 @@
+═══════════════════════════════════════════════════════════
+  1) SITE   2) NUVEM FÁCIL (código + PIN)
+═══════════════════════════════════════════════════════════
+
+SITE
+1. Abra https://app.netlify.com/drop
+2. Arraste ESTA PASTA (_public)
+3. Copie o link ….netlify.app
+4. Abra no PC e no celular
+
+NUVEM (mesmos dados, sem token GitHub)
+1. No PC, no app: Configurações → Nuvem fácil
+   Escolha um PIN (ex: 4821) → Criar nuvem → Copiar o código
+2. No celular, o mesmo PIN, cole o código → Entrar
+3. Pronto. O que você salvar no PC sobe sozinho.
+
+Não compartilhe PIN nem código. Prints não vão nesta nuvem
+(arquivo ficaria grande); use Exportar JSON se precisar dos prints.

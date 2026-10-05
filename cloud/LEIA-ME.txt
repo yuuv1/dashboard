@@ -1,0 +1,7 @@
+Esta pasta é a NUVEM dos seus dados.
+
+O arquivo edgecontrol-sync.json nasce sozinho na primeira vez
+que você clicar em “Enviar agora” no app (precisa do token).
+
+Não edite esse JSON na mão.
+Não coloque o token GitHub neste arquivo nem no site.

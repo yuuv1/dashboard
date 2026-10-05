@@ -216,11 +216,7 @@ ok(srcV1.indexOf('psRoot') < 0 && srcV1.indexOf('STUDIO-CORE-START') < 0, 'v1 N�
 ok(srcV1.indexOf("EC_BUILD='2026-09-18.3-ticker'") > 0, 'v1 mantém o build antigo');
 ok(srcV2.indexOf('id="psRoot"') > 0, 'v2 tem o palco do estúdio (#psRoot)');
 ok(srcV2.indexOf('id="shotViewer"') < 0, 'v2 não tem mais o visor antigo');
-/* o número do build muda a cada entrega — o que importa é que a v2 tenha o
-   SEU build (diferente do da v1), senão o teste quebra em todo bump */
-const buildV2 = (srcV2.match(/EC_BUILD='([^']+)'/) || [])[1] || '';
-ok(buildV2 && buildV2 !== '2026-09-18.3-ticker', 'v2 tem build próprio (' + (buildV2 || 'nenhum') + ')');
-ok(/^2026-09-29\./.test(buildV2), 'build da v2 é da linhagem atual (2026-09-29.x)');
+ok(srcV2.indexOf("EC_BUILD='2026-09-29.2-analise-v2'") > 0, 'v2 tem build próprio');
 ['psStage', 'psTools', 'psFilm', 'psSide', 'psCv', 'psCropBar', 'psTextEdit', 'psHelpPanel'].forEach(id =>
   ok(srcV2.indexOf(`id="${id}"`) > 0, `v2 tem #${id}`));
 ['rect', 'ellipse', 'arrow', 'line', 'pencil', 'hl', 'text', 'blur', 'counter', 'crop', 'eraser', 'hand', 'select']

@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>EdgeControl v2 — Gestão de Capital</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -1824,6 +1824,11 @@ body.rpt-open{overflow:hidden;}
   .rdonut{height:150px;}
   .rcov{padding:14px 14px 13px;}
   .rsec-t{font-size:14px;}
+  /* toque no telefone — não altera o layout de desktop */
+  #hdr .btn-o{display:none;}
+  .nav-item{padding:9px 11px;}
+  input.fi,select.fi,textarea{font-size:16px;}
+  #fab{width:52px;height:52px;}
 }
 @media (max-width:520px){
   #rbarThemes .rth-n{display:none;}     /* no telefone fica só o quadradinho de cor */
@@ -1833,55 +1838,6 @@ body.rpt-open{overflow:hidden;}
   .rcov-k b{font-size:17px;}
 }
 
-/* ══ ECX — hospedeiro de ferramentas externas (pasta /ferramentas) ══
-   Tudo aqui é aditivo e só aparece quando existe ferramenta instalada:
-   sem a pasta, nenhuma destas regras tem efeito (as abas ficam hidden). */
-.ecx-tabs{display:flex;gap:6px;align-items:center;margin:0 0 9px;flex-wrap:wrap;}
-.ecx-tabs[hidden]{display:none;}
-.ecx-tab{background:color-mix(in srgb,var(--surf) 62%,transparent);border:1px solid var(--border);color:var(--lgray);
-  padding:6px 12px;border-radius:10px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;
-  display:inline-flex;align-items:center;gap:6px;transition:all .18s;white-space:nowrap;}
-.ecx-tab:hover{color:var(--white);border-color:color-mix(in srgb,var(--accent) 40%,transparent);}
-.ecx-tab.on{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border-color:transparent;
-  box-shadow:0 5px 16px color-mix(in srgb,var(--accent) 32%,transparent);}
-.ecx-gear{width:26px;height:26px;border-radius:8px;border:1px solid var(--border);
-  background:color-mix(in srgb,var(--surf) 70%,transparent);color:var(--lgray);cursor:pointer;font-size:12px;
-  display:inline-flex;align-items:center;justify-content:center;padding:0;margin-left:2px;transition:all .15s;}
-.ecx-gear:hover{color:var(--white);border-color:color-mix(in srgb,var(--accent) 40%,transparent);}
-.ecx-slot{margin:0 0 10px;}
-.ecx-slot[hidden]{display:none;}
-.ecx-host{position:relative;min-height:340px;border-radius:16px;overflow:hidden;
-  border:1px solid var(--border);background:color-mix(in srgb,var(--surf) 55%,transparent);
-  box-shadow:0 18px 44px rgba(0,0,0,.10);}
-.ecx-frame{display:block;width:100%;height:min(74vh,780px);border:0;background:transparent;}
-.ecx-nativo{padding:14px;}
-.ecx-slot.ecx-fs{position:fixed;inset:12px;z-index:1200;margin:0;}
-.ecx-slot.ecx-fs .ecx-host{height:100%;border-radius:14px;}
-.ecx-slot.ecx-fs .ecx-frame{height:100%;}
-body.ecx-travado{overflow:hidden;}
-.ecx-carregando{padding:26px 18px;text-align:center;color:var(--lgray);font-size:12px;}
-.ecx-vazio{padding:26px 18px;text-align:center;color:var(--lgray);font-size:12px;}
-.ecx-vazio-i{font-size:26px;margin-bottom:6px;}
-.ecx-vazio b{display:block;font-size:13px;color:var(--white);margin-bottom:5px;}
-.ecx-vazio p{margin:4px 0;line-height:1.55;}
-.ecx-vazio code,.ecx-item-d code,.ecx-erros code{background:color-mix(in srgb,var(--surf) 78%,transparent);
-  border:1px solid var(--border);border-radius:6px;padding:1px 5px;font-size:11px;}
-.ecx-dica{color:var(--dim);font-size:11px;}
-.ecx-item{display:flex;gap:10px;align-items:flex-start;padding:11px 12px;border-radius:13px;
-  border:1px solid var(--border);background:color-mix(in srgb,var(--surf) 46%,transparent);margin-bottom:8px;}
-.ecx-item.off{opacity:.6;}
-.ecx-item-i{font-size:19px;line-height:1.2;}
-.ecx-item-c{flex:1;min-width:0;font-size:12px;color:var(--white);}
-.ecx-tag{font-size:9.5px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--lgray);
-  border:1px solid var(--border);border-radius:6px;padding:1px 5px;margin-left:4px;}
-.ecx-item-d{color:var(--lgray);font-size:11px;margin-top:3px;word-break:break-word;}
-.ecx-item-e{color:var(--warn);font-size:11px;margin-top:3px;}
-.ecx-item-a{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end;}
-.ecx-erros{margin-top:10px;padding:10px 12px;border-radius:12px;
-  border:1px solid color-mix(in srgb,var(--warn) 40%,transparent);
-  background:color-mix(in srgb,var(--warn) 8%,transparent);font-size:11px;color:var(--lgray);}
-.ecx-erros ul{margin:5px 0 0 16px;padding:0;}
-@media print{.ecx-tabs,.ecx-slot{display:none!important;}}
 </style>
 </head>
 <body>
@@ -2080,8 +2036,6 @@ body.ecx-travado{overflow:hidden;}
           <button class="btn-o" onclick="openNewOpModal()">＋ Nova Operação</button>
         </div>
       </div>
-      <!-- ECX: abas de visão — só aparecem se houver ferramenta instalada em /ferramentas -->
-      <div class="ecx-tabs" id="ecxTabs" hidden></div>
       <div class="ops-fil">
         <div class="card" style="border-radius:14px;">
           <div class="fil-row">
@@ -2093,8 +2047,6 @@ body.ecx-travado{overflow:hidden;}
           </div>
         </div>
       </div>
-      <!-- ECX: ponto de montagem da ferramenta (vazio até alguém abrir a aba) -->
-      <div class="ecx-slot" id="ecxSlot" hidden><div class="ecx-host" id="ecxHost"></div></div>
       <div class="ops-tbl">
         <div class="card">
           <div class="tbl-sc">
@@ -2110,10 +2062,6 @@ body.ecx-travado{overflow:hidden;}
     <!-- ANALYTICS -->
     <div id="page-analytics" class="page">
       <div style="flex-shrink:0;padding:0 2px 9px;"><div class="pg-title">Analytics</div><div class="pg-sub">Análise detalhada de performance e métricas avançadas</div></div>
-      <!-- ECX: abas de visão do Analytics (só aparecem com ferramenta instalada) -->
-      <div class="ecx-tabs" id="ecxTabsAn" hidden></div>
-      <!-- ECX: ponto de montagem no Analytics — abrir a aba esconde os painéis -->
-      <div class="ecx-slot" id="ecxSlotAn" hidden><div class="ecx-host" id="ecxHostAn"></div></div>
       <div class="an-body">
         <div class="an-sr">
           <div class="an-st" title="Todo o dinheiro que passou pelas suas operações, somando ganhos e perdas sem descontar nada."><div class="an-lbl">Volume Movimentado</div><div class="an-val" id="anI">R$ 0</div><div class="an-sub">soma dos resultados (bruto)</div></div>
@@ -2405,6 +2353,67 @@ body.ecx-travado{overflow:hidden;}
           </div>
 
           <div class="set-card">
+            <div class="set-tit">☁️ Nuvem fácil (PC ↔ celular)</div>
+            <div style="font-size:11px;color:var(--lgray);line-height:1.6;margin-bottom:11px;">
+              Sem token. No PC clique <strong>Criar nuvem</strong>, copie o código, cole no celular e
+              <strong>Entrar</strong>. Use o mesmo PIN nos dois. Os dados sobem sozinhos ao salvar.
+            </div>
+            <div class="fg"><label class="fl">PIN (mesmo nos dois aparelhos)</label>
+              <input class="fi" id="easyPin" type="password" inputmode="numeric" placeholder="ex: 4821" autocomplete="off">
+            </div>
+            <div class="fg"><label class="fl">Código da nuvem</label>
+              <div style="display:flex;gap:7px;">
+                <input class="fi" id="easyCode" placeholder="aparece depois de criar" autocomplete="off" style="flex:1;">
+                <button class="btn-s xs" onclick="easyCopyCode()">Copiar</button>
+              </div>
+            </div>
+            <div class="toggle-row">
+              <label class="tgl">
+                <input type="checkbox" id="easyAuto" checked onchange="easySaveForm()">
+                <div class="tgl-track"></div>
+                <div class="tgl-thumb"></div>
+              </label>
+              <span style="font-size:12px;font-weight:600;color:var(--white);">Enviar sozinho quando eu salvar</span>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
+              <button class="btn-o xs" onclick="easyCreate()">✨ Criar nuvem (PC)</button>
+              <button class="btn-s xs" onclick="easyJoin()">📲 Entrar (celular)</button>
+              <button class="btn-s xs" onclick="easyPush(true)">⬆ Enviar</button>
+              <button class="btn-s xs" onclick="easyPull(true)">⬇ Trazer</button>
+            </div>
+            <div style="font-size:10.5px;color:var(--dim);line-height:1.55;margin-top:10px;" id="easyStatus">Ainda sem nuvem neste aparelho.</div>
+            <details style="margin-top:12px;">
+              <summary style="cursor:pointer;font-size:11px;color:var(--lgray);">Opção avançada: GitHub</summary>
+              <div style="font-size:10.5px;color:var(--dim);margin:8px 0;">Só se a nuvem fácil falhar. Precisa de token.</div>
+              <div class="fg"><label class="fl">Dono / repositório</label>
+                <div class="s2">
+                  <input class="fi" id="cloudOwner" placeholder="yuuv1" autocomplete="off">
+                  <input class="fi" id="cloudRepo" placeholder="dashboard" autocomplete="off">
+                </div>
+              </div>
+              <div class="fg"><label class="fl">Arquivo no repo</label>
+                <input class="fi" id="cloudPath" placeholder="cloud/edgecontrol-sync.json" autocomplete="off">
+              </div>
+              <div class="fg"><label class="fl">Token GitHub</label>
+                <input class="fi" id="cloudToken" type="password" placeholder="ghp_…" autocomplete="off">
+              </div>
+              <div class="toggle-row">
+                <label class="tgl"><input type="checkbox" id="cloudAuto" onchange="cloudSaveCfgFromForm()"><div class="tgl-track"></div><div class="tgl-thumb"></div></label>
+                <span style="font-size:12px;font-weight:600;">Auto GitHub</span>
+              </div>
+              <div class="toggle-row" style="margin-top:0;">
+                <label class="tgl"><input type="checkbox" id="cloudShots" onchange="cloudSaveCfgFromForm()"><div class="tgl-track"></div><div class="tgl-thumb"></div></label>
+                <span style="font-size:12px;font-weight:600;">Incluir prints no GitHub</span>
+              </div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
+                <button class="btn-s xs" onclick="cloudPush({manual:true})">Enviar GitHub</button>
+                <button class="btn-s xs" onclick="cloudPull({manual:true})">Trazer GitHub</button>
+              </div>
+              <div style="font-size:10px;color:var(--dim);margin-top:8px;" id="cloudStatus"></div>
+            </details>
+          </div>
+
+          <div class="set-card">
             <div class="set-tit">🔒 Backup de Dados</div>
             <div class="bkp-box">
               <div style="font-size:13px;font-weight:700;margin-bottom:5px;">Proteja seus dados</div>
@@ -2640,23 +2649,6 @@ body.ecx-travado{overflow:hidden;}
   <div class="pwa-tx">Instalar o EdgeControl<span>abre como aplicativo, funciona offline</span></div>
   <button class="btn-o xs" onclick="doInstall()">Instalar</button>
   <span class="pwa-x" onclick="dismissInstall()">✕</span>
-</div>
-
-<!-- ECX — ferramentas instaladas (pasta /ferramentas) -->
-<div class="mol" id="ecxMod">
-  <div class="mod" style="max-width:660px;">
-    <div class="mhd">
-      <div class="mtit">🧩 Ferramentas</div>
-      <div style="display:flex;align-items:center;gap:8px;">
-        <div class="mcls" onclick="ecxRecarregar()" title="Relê a pasta /ferramentas">🔄</div>
-        <div class="mcls" onclick="ecxMod(false)">✕</div>
-      </div>
-    </div>
-    <div class="mbd" style="max-height:66vh;overflow-y:auto;">
-      <div class="upill" id="ecxStatus" style="margin-bottom:10px;display:inline-flex;"></div>
-      <div id="ecxLista"></div>
-    </div>
-  </div>
 </div>
 
 <div class="mol" id="galleryMod">
@@ -3371,6 +3363,7 @@ function save(){
     _saveFailWarned=false;
     const e=document.getElementById('sumSync');
     if(e) e.textContent=new Date().toLocaleString('pt-BR');
+    try{ if(typeof cloudOnLocalSave==='function') cloudOnLocalSave(); }catch(err){}
   }catch(e){
     /* QuotaExceededError: o armazenamento encheu (ex.: avatar muito grande).
        Antes o erro era engolido em silêncio e o usuário perdia dados sem saber. */
@@ -3489,6 +3482,7 @@ function loadSetForm(){
   document.getElementById('sMaxLoss').value=S.settings.maxLosses||3;
   document.getElementById('sMaxHand').value=S.settings.maxHand||0;
   prevSAv();prevSLogo();updSetPrev();updSum();renderOperationalSettings();renderEmotionSettings();syncTickerUI();
+  try{ cloudFillForm(); easyFillForm(); }catch(e){}
 }
 function updSetPrev(){
   const c=parseFloat(document.getElementById('sCurC').value)||0;
@@ -8531,727 +8525,303 @@ function cycleFadeChange(el){
 }
 function chartsRefresh(){ if(isChartsActive()) renderCharts(); }
 
-/* ══════════════════════════════════════════════════════════════════
-   ECX — HOSPEDEIRO DE FERRAMENTAS EXTERNAS
-   Uma ferramenta mora numa pasta própria em /ferramentas/<pasta>/ e só
-   é carregada se a pasta existir. Regras de segurança deste bloco:
-     · nada roda antes do init() terminar (ecxInit é a última linha);
-     · tudo está em try/catch — sem a pasta, o app é exatamente o mesmo;
-     · montagem preguiçosa: o código da ferramenta só executa quando o
-       usuário clica na aba dela, nunca na abertura do app;
-     · kill switch: ?ecx=0 na URL ou localStorage.ecxOff='1' desliga tudo;
-     · iframe só da mesma origem (postMessage validado por origin);
-     · os hooks embrulham funções existentes SEM reescrevê-las: se algo
-       der errado no hook, a função original continua valendo;
-     · sem ferramenta.json o hospedeiro ainda tenta o básico da pasta
-       (index.html em iframe) — dá para só jogar a pasta dentro.
-   Pontos de montagem: página Operações e página Analytics.
-   Ponte para a ferramenta: window.EC.host (+ /ferramentas/ponte.js).
-══════════════════════════════════════════════════════════════════ */
-const EC_HOST_API=1;
-const ECX_ROOT='ferramentas/';
-const ECX_PADRAO=['visual-operacoes'];     /* pasta reservada, tentada mesmo sem registro.json */
-/* onde uma ferramenta pode ser montada (cada ponto tem aba, slot e o que
-   esconder enquanto ela estiver aberta) */
-const ECX_PAGINAS={
-  operacoes:{pagina:'operations',tabs:'ecxTabs',slot:'ecxSlot',host:'ecxHost',
-    oculta:'#page-operations .ops-tbl',padrao:'📋 Tabela',rotulo:'Operações',
-    dicaPadrao:'Lista de operações (padrão do app)'},
-  analytics:{pagina:'analytics',tabs:'ecxTabsAn',slot:'ecxSlotAn',host:'ecxHostAn',
-    oculta:'#page-analytics .an-body',padrao:'📊 Painéis',rotulo:'Analytics',
-    dicaPadrao:'Painéis de análise do app'}
-};
-const ECX={tools:[],errors:[],views:{operacoes:'tabela',analytics:'tabela'},
-           ready:false,off:false,subs:{},frames:{},hooks:[],rpc:{}};
-
-function ecxOff(){
-  try{
-    if(/[?&]ecx=0(&|$)/.test(location.search)) return true;
-    if(localStorage.getItem('ecxOff')==='1') return true;
-  }catch(e){}
-  return false;
-}
-function ecxErr(msg,det){
-  ECX.errors.push({msg:String(msg||''),det:String((det&&det.message)||det||''),at:new Date().toISOString()});
-  if(ECX.errors.length>60) ECX.errors.shift();
-  try{ console.warn('[ECX] '+msg,det||''); }catch(e){}
-}
-/* no-cache (e não no-store): o service worker do app guarda toda resposta
-   no Cache Storage, e 'no-store' pode ser recusado ali dentro. */
-async function ecxBaixar(url){
-  const r=await fetch(url,{cache:'no-cache'});
-  if(!r.ok) throw new Error('HTTP '+r.status+' em '+url);
-  return r;
-}
-async function ecxJson(url){ return JSON.parse(await (await ecxBaixar(url)).text()); }
-
-/* ── manifesto ───────────────────────────────────────────────────── */
-function ecxMontagens(m){
-  let v=m.montagem;
-  if(typeof v==='string') v=[v];
-  if(!Array.isArray(v)||!v.length) v=['operacoes'];
-  v=[...new Set(v.map(x=>String(x||'').trim().toLowerCase()))];
-  if(v.indexOf('ambos')>=0||v.indexOf('todas')>=0) v=Object.keys(ECX_PAGINAS);
-  return v;
-}
-function ecxValidar(m,pasta){
-  if(!m||typeof m!=='object') return {ok:false,erro:'manifesto vazio ou inválido'};
-  const id=String(m.id||'').trim();
-  if(!/^[A-Za-z0-9][A-Za-z0-9_-]{1,40}$/.test(id)) return {ok:false,erro:'id inválido ("'+id+'") — use letras, números, - ou _'};
-  if(ECX.tools.some(t=>t.id===id)) return {ok:false,erro:'id duplicado: '+id};
-  const modo=String(m.modo||'iframe').toLowerCase();
-  if(modo!=='iframe'&&modo!=='script') return {ok:false,erro:'modo precisa ser "iframe" ou "script"'};
-  if(modo==='iframe'&&!String(m.entrada||'').trim()) return {ok:false,erro:'modo iframe exige "entrada" (ex.: index.html)'};
-  if(modo==='script'&&!String(m.script||'').trim()) return {ok:false,erro:'modo script exige "script" (ex.: index.js)'};
-  const precisa=Number(m['api-host']||EC_HOST_API);
-  if(precisa>EC_HOST_API) return {ok:false,erro:'a ferramenta pede a API '+precisa+' e o app oferece a '+EC_HOST_API};
-  const montagem=ecxMontagens(m);
-  const ruins=montagem.filter(x=>!ECX_PAGINAS[x]);
-  if(ruins.length||!montagem.length) return {ok:false,erro:'montagem desconhecida ("'+ruins.join('", "')+
-    '") — use: '+Object.keys(ECX_PAGINAS).join(', ')+' ou "ambos"'};
-  const base=ECX_ROOT+pasta+'/';
-  const limpa=v=>String(v||'').replace(/^\/+/,'');
-  return {ok:true,tool:{
-    id,pasta,modo,base,montagem,
-    nome:String(m.nome||id),versao:String(m.versao||'0'),descricao:String(m.descricao||''),
-    icone:String(m.icone||'🧩'),rotulo:String(m.rotulo||m.nome||id),
-    entrada:m.entrada?base+limpa(m.entrada):'',
-    script:m.script?base+limpa(m.script):'',
-    estilo:m.estilo?base+limpa(m.estilo):'',
-    telaCheia:m['tela-cheia']!==false,ativa:m.ativa!==false,semManifesto:!!m.__sintetico,
-    apiHost:precisa,api:null,montado:false,montadoEm:null,el:null,erro:''
-  }};
-}
-async function ecxCarregar(){
-  let pastas=[];
-  try{
-    const reg=await ecxJson(ECX_ROOT+'registro.json');
-    const lista=(reg&&Array.isArray(reg.ferramentas))?reg.ferramentas:[];
-    pastas=lista.map(f=>typeof f==='string'?f:(f&&f.pasta)).filter(Boolean);
-  }catch(e){ /* sem registro.json → só as pastas padrão */ }
-  pastas=[...new Set([...pastas,...ECX_PADRAO])];
-  for(const bruta of pastas){
-    const pasta=String(bruta).replace(/^\/+|\/+$/g,'');
-    const base=ECX_ROOT+pasta+'/';
-    let m=null;
-    try{
-      m=await ecxJson(base+'ferramenta.json');
-    }catch(e){
-      /* pasta que não existe é o caso normal (ferramenta ainda não instalada) */
-      const msg=String((e&&e.message)||e||'');
-      if(!/HTTP 404/.test(msg)) ecxErr('não li o manifesto de "'+pasta+'"',msg);
-    }
-    if(!m){
-      /* sem manifesto: tenta o básico da pasta (index.html em iframe).
-         Assim dá para simplesmente jogar a pasta do sistema aqui dentro. */
-      try{ await ecxBaixar(base+'index.html'); }
-      catch(e){ continue; }
-      m={__sintetico:true,id:pasta,nome:pasta,rotulo:pasta,versao:'0',icone:'🧩',
-         modo:'iframe',entrada:'index.html',montagem:['ambos'],'api-host':EC_HOST_API};
-      ecxErr('ferramenta "'+pasta+'" está sem ferramenta.json',
-        'carregada no padrão: iframe + index.html, em Operações e Analytics. '+
-        'Crie o ferramenta.json para nomear, versionar e escolher onde aparece.');
-    }
-    const v=ecxValidar(m,pasta);
-    if(!v.ok){ ecxErr('manifesto de "'+pasta+'" recusado',v.erro); continue; }
-    ECX.tools.push(v.tool);
-  }
-}
-function ecxPaginaAtual(sugerida){
-  if(sugerida&&ECX_PAGINAS[sugerida]) return sugerida;
-  for(const chave of Object.keys(ECX_PAGINAS)){
-    const pg=document.getElementById('page-'+ECX_PAGINAS[chave].pagina);
-    if(pg&&pg.classList.contains('active')) return chave;
-  }
-  return 'operacoes';
-}
-
-/* ── dados: operações → série pronta para gráfico ────────────────── */
-function ecxFiltroAtual(){
-  const g=id=>{ const e=document.getElementById(id); return e?(e.value||''):''; };
-  return {data:g('fDate'),resultado:g('fRes'),ativo:g('fType'),plano:g('fPlan')};
-}
-function ecxOpsCrono(){ try{ return chronoOps(S.operations||[]); }catch(e){ return [...(S.operations||[])]; } }
-function ecxOpsFiltradas(){
-  const f=ecxFiltroAtual();
-  let ops=ecxOpsCrono();
-  if(f.data) ops=ops.filter(o=>o.date===f.data);
-  if(f.resultado) ops=ops.filter(o=>String(o.result||'').toUpperCase()===f.resultado);
-  if(f.ativo) ops=ops.filter(o=>opAsset(o)===f.ativo);
-  if(f.plano) ops=ops.filter(o=>o.plan===f.plano);
-  return ops;
-}
-function ecxTs(op){
-  const t=Date.parse((op.date||'')+'T'+(op.time||'00:00')+':00');
-  if(Number.isFinite(t)) return t;
-  const c=Date.parse(op.createdAt||'');
-  return Number.isFinite(c)?c:0;
-}
-function ecxCapitalInicial(){ return Number(S&&S.settings&&S.settings.initialCapital)||0; }
-function ecxOperacoes(opts){
-  const o=opts||{};
-  const lista=(o.filtradas===false)?ecxOpsCrono():ecxOpsFiltradas();
-  let saldo=ecxCapitalInicial();
-  return lista.map((op,i)=>{
-    const efeito=opCapitalEffect(op);
-    saldo+=efeito;
-    return {i:i,n:i+1,id:String(op.id),data:op.date||'',hora:op.time||'',ts:ecxTs(op),
-      ativo:opAsset(op)||'',direcao:opDirection(op)||'',
-      resultado:String(op.result||'').toUpperCase(),
-      valor:Number(op.value)||0,usd:Number(op.usd)||0,efeito:efeito,saldo:saldo,
-      plano:op.plan||'',motivo:op.reason||'',notas:op.notes||'',
-      emocoes:opEmotions(op),operacionais:opOperationals(op),
-      prints:opShotIds(op),video:op.yt||'',imagem:op.img||'',criadoEm:op.createdAt||''};
-  });
-}
-function ecxPorDia(ops,ini){
-  const mapa=new Map();
-  let saldo=Number.isFinite(ini)?ini:ecxCapitalInicial();
-  (ops||[]).forEach(o=>{
-    const k=o.data||'(sem data)';
-    let d=mapa.get(k);
-    if(!d){ d={data:k,ts:o.ts,n:0,wins:0,losses:0,outros:0,resultado:0,abertura:saldo,max:saldo,min:saldo,saldo:saldo}; mapa.set(k,d); }
-    saldo+=o.efeito;
-    d.n++; d.resultado+=o.efeito; d.saldo=saldo;
-    if(o.resultado==='WIN') d.wins++; else if(o.resultado==='LOSS') d.losses++; else d.outros++;
-    if(saldo>d.max) d.max=saldo;
-    if(saldo<d.min) d.min=saldo;
-  });
-  return [...mapa.values()];
-}
-function ecxVelas(ops,ini){
-  const abertura0=Number.isFinite(ini)?ini:ecxCapitalInicial();
-  let abertura=abertura0;
-  return ecxPorDia(ops,abertura0).map(d=>{
-    const v={t:d.data,ts:d.ts,o:abertura,h:Math.max(abertura,d.max,d.saldo),l:Math.min(abertura,d.min,d.saldo),
-      c:d.saldo,n:d.n,wins:d.wins,losses:d.losses,resultado:d.resultado};
-    abertura=d.saldo;
-    return v;
-  });
-}
-function ecxPorAtivo(ops){
-  const m=new Map();
-  (ops||[]).forEach(o=>{
-    const k=o.ativo||'(sem ativo)';
-    let a=m.get(k);
-    if(!a){ a={ativo:k,n:0,wins:0,losses:0,outros:0,resultado:0,maiorWin:0,maiorLoss:0}; m.set(k,a); }
-    a.n++; a.resultado+=o.efeito;
-    if(o.resultado==='WIN'){ a.wins++; if(o.valor>a.maiorWin) a.maiorWin=o.valor; }
-    else if(o.resultado==='LOSS'){ a.losses++; if(o.valor>a.maiorLoss) a.maiorLoss=o.valor; }
-    else a.outros++;
-  });
-  return [...m.values()].map(a=>Object.assign(a,{taxa:(a.wins+a.losses)?a.wins/(a.wins+a.losses):0}))
-    .sort((x,y)=>y.n-x.n);
-}
-function ecxPorHora(ops){
-  const h=[]; for(let i=0;i<24;i++) h.push({hora:i,n:0,wins:0,losses:0,resultado:0});
-  (ops||[]).forEach(o=>{
-    const n=parseInt(String(o.hora).slice(0,2),10);
-    if(!(n>=0&&n<24)) return;
-    const b=h[n]; b.n++; b.resultado+=o.efeito;
-    if(o.resultado==='WIN') b.wins++; else if(o.resultado==='LOSS') b.losses++;
-  });
-  return h;
-}
-function ecxResumo(ops,ini){
-  const lista=ops||ecxOperacoes();
-  const capital=Number.isFinite(ini)?ini:ecxCapitalInicial();
-  const n=lista.length;
-  const wins=lista.filter(o=>o.resultado==='WIN');
-  const losses=lista.filter(o=>o.resultado==='LOSS');
-  const resultado=lista.reduce((a,o)=>a+o.efeito,0);
-  const brutoWin=wins.reduce((a,o)=>a+o.valor,0);
-  const brutoLoss=losses.reduce((a,o)=>a+o.valor,0);
-  const maiorWin=wins.reduce((a,o)=>Math.max(a,o.valor),0);
-  const maiorLoss=losses.reduce((a,o)=>Math.max(a,o.valor),0);
-  let ant='',corrida=0,melhorWin=0,piorLoss=0;
-  lista.forEach(o=>{
-    const r=o.resultado;
-    if(r!=='WIN'&&r!=='LOSS') return;
-    if(r===ant) corrida++; else { ant=r; corrida=1; }
-    if(r==='WIN'){ if(corrida>melhorWin) melhorWin=corrida; }
-    else if(corrida>piorLoss) piorLoss=corrida;
-  });
-  let pico=capital,dd=0,ddPct=0,saldo=capital;
-  lista.forEach(o=>{
-    saldo+=o.efeito;
-    if(saldo>pico) pico=saldo;
-    const q=pico-saldo;
-    if(q>dd){ dd=q; ddPct=pico>0?q/pico:0; }
-  });
-  const decididos=wins.length+losses.length;
-  return {n:n,wins:wins.length,losses:losses.length,outros:n-decididos,
-    taxa:decididos?wins.length/decididos:0,resultado:resultado,
-    brutoWin:brutoWin,brutoLoss:brutoLoss,
-    fatorLucro:brutoLoss>0?brutoWin/brutoLoss:(brutoWin>0?Infinity:0),
-    mediaWin:wins.length?brutoWin/wins.length:0,
-    mediaLoss:losses.length?brutoLoss/losses.length:0,
-    maiorWin:maiorWin,maiorLoss:maiorLoss,
-    expectativa:n?resultado/n:0,
-    saldoInicial:capital,saldoFinal:saldo,
-    drawdown:dd,drawdownPct:ddPct,
-    sequenciaAtual:corrida,sequenciaTipo:ant,
-    melhorSequenciaWin:melhorWin,piorSequenciaLoss:piorLoss,
-    ativosDistintos:ecxPorAtivo(lista).length,diasDistintos:ecxPorDia(lista,capital).length};
-}
-function ecxSerie(opts){
-  const ops=ecxOperacoes(opts);
-  const ini=ecxCapitalInicial();
-  return {api:EC_HOST_API,build:EC_BUILD,geradoEm:new Date().toISOString(),
-    capitalInicial:ini,filtro:ecxFiltroAtual(),
-    operacoes:ops,
-    equity:[{ts:ops.length?ops[0].ts:Date.now(),i:0,n:0,saldo:ini}].concat(ops.map(o=>({ts:o.ts,i:o.i,n:o.n,saldo:o.saldo}))),
-    velas:ecxVelas(ops,ini),porDia:ecxPorDia(ops,ini),porAtivo:ecxPorAtivo(ops),porHora:ecxPorHora(ops),
-    resumo:ecxResumo(ops,ini)};
-}
-function ecxTema(){
-  const id=(S&&S.theme)||'default';
-  const lista=(typeof THEMES!=='undefined'&&Array.isArray(THEMES))?THEMES:[];
-  const t=lista.find(x=>x.id===id)||{id:id,name:id,dark:false};
-  let css=null;
-  try{ css=getComputedStyle(document.documentElement); }catch(e){}
-  const v=n=>{ try{ return css?(css.getPropertyValue(n)||'').trim():''; }catch(e){ return ''; } };
-  return {id:t.id,nome:t.name||t.id,escuro:!!t.dark,vibrante:!!t.vivid,metal:t.metal||'',amostras:t.sw||[],
-    cores:{fundo:v('--bg'),superficie:v('--surf'),cartao:v('--card'),borda:v('--border'),fio:v('--hair'),
-      texto:v('--white'),suave:v('--lgray'),apagado:v('--dim'),acento:v('--accent'),acento2:v('--accent2'),
-      ciano:v('--cyan'),win:v('--green'),loss:v('--red'),alerta:v('--warn')}};
-}
-function ecxConf(){
-  const s=(S&&S.settings)||{},p=(S&&S.profile)||{};
-  return {capitalInicial:+s.initialCapital||0,capitalAtual:+s.currentCapital||0,cotacaoUsd:+s.usdRate||1,
-    stopLossPct:+s.stopLoss||0,alvoPct:+s.target||0,perdasMaximas:+s.maxLosses||0,maoMaxima:+s.maxHand||0,
-    perfil:String(p.name||'')};
-}
-async function ecxPrintsDaOperacao(opId,maxW){
-  const op=(S.operations||[]).find(o=>String(o.id)===String(opId));
-  if(!op) return [];
-  const out=[];
-  for(const id of opShotIds(op)){
-    try{
-      const rec=await IMGDB.get(id);
-      if(!rec) continue;
-      const url=await psShotURL(id,maxW||1200);
-      out.push({id:id,nome:rec.name||'',nota:rec.note||'',analise:rec.kind==='analise',
-        largura:rec.w||0,altura:rec.h||0,url:url});
-    }catch(e){ /* print sem imagem: segue sem ele */ }
-  }
-  return out;
-}
-async function ecxAbrirPrint(id){
-  try{
-    if(!(await IMGDB.get(id))){ toast('Este print não está no armazenamento deste navegador.','w'); return false; }
-    if(typeof galCache!=='undefined') galCache=[String(id)];
-    await openShotViewer('gal',0);
-    return true;
-  }catch(e){ ecxErr('abrir print',e); return false; }
-}
-
-/* ── eventos ─────────────────────────────────────────────────────── */
-function ecxEmitir(evt,data){
-  const lista=ECX.subs[evt];
-  if(lista&&lista.length){
-    lista.slice().forEach(fn=>{ try{ fn(data); }catch(e){ ecxErr('assinante de "'+evt+'"',e); } });
-  }
-  if(evt==='dados'||evt==='filtro'||evt==='tema') ecxAtualizar(evt);
-}
-function ecxAtualizar(motivo){
-  ECX.tools.forEach(t=>{
-    if(!t.montado||!t.el) return;
-    try{
-      if(t.modo==='iframe'){
-        if(t.el.contentWindow) t.el.contentWindow.postMessage({ecx:1,evt:motivo,data:{api:EC_HOST_API,motivo:motivo}},location.origin);
-      }else if(t.api&&typeof t.api.update==='function'){
-        t.api.update(ecxContexto(t),motivo);
-      }
-    }catch(e){ ecxErr('update de '+t.id,e); }
-  });
-}
-function ecxContexto(tool){
-  return {api:EC_HOST_API,build:EC_BUILD,
-    ferramenta:{id:tool.id,versao:tool.versao,modo:tool.modo,nome:tool.nome,montagem:tool.montagem.slice()},
-    paginas:Object.keys(ECX_PAGINAS),montadoEm:tool.montadoEm,
-    tema:ecxTema(),config:ecxConf(),filtro:ecxFiltroAtual()};
-}
-
-/* ── ponte (window.EC.host) ──────────────────────────────────────── */
-function ecxPonte(){
-  return {
-    api:EC_HOST_API,build:EC_BUILD,app:'EdgeControl',
-    versao(){ return {api:EC_HOST_API,build:EC_BUILD,app:'EdgeControl',ferramentas:ECX.tools.length,
-      paginas:Object.keys(ECX_PAGINAS),desligado:ECX.off}; },
-    operacoes(args){ return ecxOperacoes(args||{}); },
-    serie(args){ return ecxSerie(args||{}); },
-    resumo(args){ return ecxResumo(ecxOperacoes(args||{}),ecxCapitalInicial()); },
-    velas(args){ return ecxVelas(ecxOperacoes(args||{}),ecxCapitalInicial()); },
-    porDia(args){ return ecxPorDia(ecxOperacoes(args||{}),ecxCapitalInicial()); },
-    porAtivo(args){ return ecxPorAtivo(ecxOperacoes(args||{})); },
-    porHora(args){ return ecxPorHora(ecxOperacoes(args||{})); },
-    ativos(){ return [...new Set((S.operations||[]).map(opAsset).filter(Boolean))]; },
-    filtros(){ return ecxFiltroAtual(); },
-    config(){ return ecxConf(); },
-    tema(){ return ecxTema(); },
-    temas(){ return ((typeof THEMES!=='undefined')?THEMES:[]).map(t=>({id:t.id,nome:t.name,escuro:!!t.dark,vibrante:!!t.vivid})); },
-    prints(args){ return ecxPrintsDaOperacao(args&&args.operacao,args&&args.maxW); },
-    abrirPrint(args){ return ecxAbrirPrint(args&&args.id); },
-    abrirOperacao(args){ try{ openDet(String((args&&args.id)||'')); return true; }catch(e){ ecxErr('abrir operação',e); return false; } },
-    irPara(args){ try{ nav(String((args&&args.pagina)||'dashboard')); return true; }catch(e){ ecxErr('navegar',e); return false; } },
-    toast(args){ try{ toast(String((args&&args.msg)||''),String((args&&args.tipo)||'s')); return true; }catch(e){ return false; } },
-    telaCheia(args){ return ecxTelaCheia(!!(args&&args.on),args&&args.pagina); },
-    paginas(){ return Object.keys(ECX_PAGINAS).map(k=>({montagem:k,pagina:ECX_PAGINAS[k].pagina,rotulo:ECX_PAGINAS[k].rotulo,visao:ECX.views[k]})); },
-    guardar(args){ return ecxGuardar(args&&args.ferramenta,args&&args.chave,args&&args.valor); },
-    ler(args){ return ecxLer(args&&args.ferramenta,args&&args.chave,args&&args.padrao); },
-    on(evt,fn){ return ecxOn(evt,fn); },
-    off(evt,fn){ return ecxOff2(evt,fn); },
-    registrar(id,api){ return ecxRegistrar(id,api); },
-    ferramentas(){ return ECX.tools.map(t=>({id:t.id,nome:t.nome,versao:t.versao,modo:t.modo,
-      montagem:t.montagem.slice(),ativa:t.ativa,montada:!!t.montado,montadaEm:t.montadoEm,erro:t.erro||''})); },
-    erros(){ return ECX.errors.slice(-20); }
-  };
-}
-/* RPC usado pelo iframe (mesmos métodos, args sempre em objeto) */
-function ecxRpc(){
-  return {versao:()=>EC.host.versao(),operacoes:a=>EC.host.operacoes(a),serie:a=>EC.host.serie(a),
-    resumo:a=>EC.host.resumo(a),velas:a=>EC.host.velas(a),porDia:a=>EC.host.porDia(a),
-    porAtivo:a=>EC.host.porAtivo(a),porHora:a=>EC.host.porHora(a),ativos:()=>EC.host.ativos(),
-    filtros:()=>EC.host.filtros(),config:()=>EC.host.config(),tema:()=>EC.host.tema(),temas:()=>EC.host.temas(),
-    prints:a=>EC.host.prints(a),abrirPrint:a=>EC.host.abrirPrint(a),abrirOperacao:a=>EC.host.abrirOperacao(a),
-    irPara:a=>EC.host.irPara(a),toast:a=>EC.host.toast(a),telaCheia:a=>EC.host.telaCheia(a),
-    paginas:()=>EC.host.paginas(),guardar:a=>EC.host.guardar(a),ler:a=>EC.host.ler(a),
-    ferramentas:()=>EC.host.ferramentas(),erros:()=>EC.host.erros()};
-}
-function ecxOn(evt,fn){
-  if(typeof fn!=='function') return false;
-  const k=String(evt||'');
-  (ECX.subs[k]=ECX.subs[k]||[]).push(fn);
-  return true;
-}
-function ecxOff2(evt,fn){
-  const k=String(evt||'');
-  if(!ECX.subs[k]) return false;
-  ECX.subs[k]=fn?ECX.subs[k].filter(f=>f!==fn):[];
-  return true;
-}
-function ecxChaveDe(toolId,chave){ return 'ecx:'+String(toolId||'?')+':'+String(chave||''); }
-function ecxGuardar(toolId,chave,valor){
-  try{ localStorage.setItem(ecxChaveDe(toolId,chave),JSON.stringify(valor===undefined?null:valor)); return true; }
-  catch(e){ ecxErr('guardar "'+chave+'"',e); return false; }
-}
-function ecxLer(toolId,chave,padrao){
-  const d=padrao===undefined?null:padrao;
-  try{
-    const raw=localStorage.getItem(ecxChaveDe(toolId,chave));
-    return raw==null?d:JSON.parse(raw);
-  }catch(e){ return d; }
-}
-function ecxRegistrar(id,api){
-  const t=ECX.tools.find(x=>x.id===String(id));
-  if(!t){ ecxErr('registrar: ferramenta desconhecida',id); return false; }
-  if(!api||typeof api.mount!=='function'){ ecxErr('registrar: api sem mount()',id); return false; }
-  t.api=api;
-  /* registro tardio (a ferramenta se registrou depois da injeção do script):
-     monta agora, se a aba dela estiver aberta */
-  if(!t.esperando&&!t.montado&&t.el&&t.el.nodeType===1&&t.montadoEm){
-    try{ t.el.innerHTML=''; api.mount(t.el,ecxContexto(t)); t.montado=true; ecxEmitir('abrir',{ferramenta:t.id,montagem:t.montadoEm}); }
-    catch(e){ ecxErr('mount tardio de '+t.id,e); }
-  }
-  return true;
-}
-
-/* ── montagem ────────────────────────────────────────────────────── */
-function ecxVazioHTML(tool,msg){
-  return '<div class="ecx-vazio"><div class="ecx-vazio-i">🧩</div>'+
-    '<b>'+(tool?escHtml(tool.nome):'Ferramenta')+'</b>'+
-    '<p>'+(msg||'')+'</p>'+
-    '<p class="ecx-dica">Contrato de integração: <code>ferramentas/LEIA-ME.md</code></p></div>';
-}
-function ecxCss(tool){
-  if(!tool.estilo||document.getElementById('ecxCss_'+tool.id)) return;
-  const l=document.createElement('link');
-  l.rel='stylesheet';l.href=tool.estilo;l.id='ecxCss_'+tool.id;
-  l.onerror=()=>ecxErr('CSS não carregou',tool.estilo);
-  document.head.appendChild(l);
-}
-async function ecxMontar(tool,chave){
-  const cfg=ECX_PAGINAS[chave];
-  if(!tool||!cfg||tool.montado) return;
-  const host=document.getElementById(cfg.host);
-  if(!host) return;
-  host.innerHTML='<div class="ecx-carregando">carregando '+escHtml(tool.nome)+'…</div>';
-  tool.erro='';
-  try{
-    if(tool.modo==='iframe'){
-      const f=document.createElement('iframe');
-      f.className='ecx-frame';f.title=tool.nome;
-      f.setAttribute('sandbox','allow-scripts allow-same-origin allow-forms allow-popups allow-downloads allow-pointer-lock');
-      f.addEventListener('load',()=>{ ECX.frames[tool.id]=f; ecxQuadroPronto(tool); });
-      f.src=tool.entrada;
-      host.innerHTML='';host.appendChild(f);
-      /* o quadro já existe (mesmo antes do load): marca como montado para a
-         ponte responder e para os eventos de dados chegarem até ele */
-      tool.el=f;tool.montado=true;tool.montadoEm=chave;
-    }else{
-      ecxCss(tool);
-      const box=document.createElement('div');
-      box.className='ecx-nativo';box.id='ecxNativo_'+tool.id;
-      host.innerHTML='';host.appendChild(box);
-      tool.el=box;tool.montadoEm=chave;
-      const codigo=await (await ecxBaixar(tool.script)).text();
-      const s=document.createElement('script');
-      s.textContent=codigo;s.setAttribute('data-ecx',tool.id);
-      /* durante a injeção o registrar() não monta: quem monta é este fluxo,
-         senão o mount() rodaria duas vezes */
-      tool.esperando=true;
-      (document.body||document.documentElement).appendChild(s);
-      tool.esperando=false;
-      if(tool.api&&typeof tool.api.mount==='function'){
-        await tool.api.mount(box,ecxContexto(tool));
-        tool.montado=true;
-      }else{
-        box.innerHTML=ecxVazioHTML(tool,'O script carregou, mas não se registrou. Ele precisa chamar '+
-          '<code>EC.host.registrar("'+escHtml(tool.id)+'",{mount(el,ctx){…}})</code>.');
-      }
-    }
-    if(tool.montado) ecxEmitir('abrir',{ferramenta:tool.id,montagem:chave});
-  }catch(e){
-    tool.montado=false;tool.montadoEm=null;tool.erro=String((e&&e.message)||e||'');
-    ecxErr('não montei '+tool.id,e);
-    host.innerHTML=ecxVazioHTML(tool,'Não consegui montar esta ferramenta.<br><code>'+escHtml(tool.erro)+'</code>');
-  }
-}
-function ecxDesmontar(tool){
-  if(!tool||!tool.montado) return;
-  try{ if(tool.api&&typeof tool.api.unmount==='function') tool.api.unmount(); }
-  catch(e){ ecxErr('unmount de '+tool.id,e); }
-  try{ if(tool.el&&tool.el.parentNode) tool.el.parentNode.removeChild(tool.el); }catch(e){}
-  delete ECX.frames[tool.id];
-  tool.montado=false;tool.el=null;tool.montadoEm=null;
-  ecxEmitir('fechar',{ferramenta:tool.id});
-}
-function ecxQuadroPronto(tool){
-  try{
-    const f=tool.el;
-    if(!f||!f.contentWindow) return;
-    f.contentWindow.postMessage({ecx:1,evt:'pronto',data:ecxContexto(tool)},location.origin);
-    f.contentWindow.postMessage({ecx:1,evt:'dados',data:{api:EC_HOST_API,motivo:'abertura'}},location.origin);
-  }catch(e){ ecxErr('aviso de quadro pronto ('+tool.id+')',e); }
-}
-function ecxSetView(id,pagina,silencioso){
-  try{
-    const chave=ecxPaginaAtual(pagina);
-    const cfg=ECX_PAGINAS[chave];
-    if(!cfg) return;
-    const tool=ECX.tools.find(t=>t.id===id&&t.ativa&&t.montagem.indexOf(chave)>=0);
-    const tabela=(!id||id==='tabela'||!tool);
-    /* uma ferramenta só fica montada num lugar por vez */
-    if(tool&&tool.montado&&tool.montadoEm!==chave) ecxDesmontar(tool);
-    const anterior=ECX.tools.find(t=>t.id===ECX.views[chave]);
-    if(anterior&&anterior!==tool) ecxDesmontar(anterior);
-    ECX.views[chave]=tabela?'tabela':tool.id;
-    const slot=document.getElementById(cfg.slot);
-    const alvo=document.querySelector(cfg.oculta);
-    if(slot) slot.hidden=ECX.views[chave]==='tabela';
-    if(alvo) alvo.style.display=ECX.views[chave]==='tabela'?'':'none';
-    ecxRenderTabs();
-    if(ECX.views[chave]!=='tabela') ecxMontar(tool,chave);
-    if(!silencioso) ecxEmitir('pagina',{pagina:cfg.pagina,montagem:chave,visao:ECX.views[chave]});
-  }catch(e){ ecxErr('troca de visão',e); }
-}
-function ecxTelaCheia(on,pagina){
-  const cfg=ECX_PAGINAS[ecxPaginaAtual(pagina)];
-  const slot=cfg&&document.getElementById(cfg.slot);
-  if(!slot) return false;
-  slot.classList.toggle('ecx-fs',!!on);
-  try{ document.body.classList.toggle('ecx-travado',!!on); }catch(e){}
-  ecxEmitir('redimensionar',{telaCheia:!!on});
-  return !!on;
-}
-
-/* ── interface ───────────────────────────────────────────────────── */
-function ecxRenderTabs(){
-  Object.keys(ECX_PAGINAS).forEach(chave=>{
-    const cfg=ECX_PAGINAS[chave];
-    const bar=document.getElementById(cfg.tabs);
-    if(!bar) return;
-    const tools=ECX.tools.filter(t=>t.ativa&&t.montagem.indexOf(chave)>=0);
-    if(ECX.off||!tools.length){
-      bar.hidden=true;bar.innerHTML='';
-      if(ECX.views[chave]!=='tabela') ecxSetView('tabela',chave,true);
-      return;
-    }
-    const view=ECX.views[chave];
-    bar.hidden=false;
-    bar.innerHTML=
-      '<button class="ecx-tab'+(view==='tabela'?' on':'')+'" onclick="ecxSetView(\'tabela\',\''+chave+'\')" title="'+
-        escHtml(cfg.dicaPadrao)+'">'+cfg.padrao+'</button>'+
-      tools.map(t=>'<button class="ecx-tab'+(view===t.id?' on':'')+'" onclick="ecxSetView(\''+t.id+'\',\''+chave+'\')" title="'+
-        escHtml(t.descricao||t.nome)+' · v'+escHtml(t.versao)+' · '+escHtml(t.modo)+'">'+
-        escHtml(t.icone)+' '+escHtml(t.rotulo)+'</button>').join('')+
-      '<button class="ecx-gear" onclick="ecxMod(true)" title="Ferramentas instaladas">⚙</button>'+
-      (view!=='tabela'&&tools.some(t=>t.id===view&&t.telaCheia)
-        ? '<button class="ecx-gear" onclick="ecxTelaCheia(true,\''+chave+'\')" title="Expandir para a tela toda">⛶</button>' : '');
-  });
-}
-function ecxMod(show){
-  const m=document.getElementById('ecxMod');
-  if(!m) return;
-  if(show){ ecxRenderMod(); showMod('ecxMod'); } else closeMod('ecxMod');
-}
-function ecxRenderMod(){
-  const b=document.getElementById('ecxLista');
-  if(!b) return;
-  const st=document.getElementById('ecxStatus');
-  if(st) st.textContent='API do hospedeiro v'+EC_HOST_API+' · build '+EC_BUILD+
-    ' · pontos: '+Object.keys(ECX_PAGINAS).map(k=>ECX_PAGINAS[k].rotulo).join(' + ')+
-    (ECX.off?' · DESLIGADO (kill switch)':' · '+ECX.tools.length+' ferramenta(s)');
-  if(ECX.off){
-    b.innerHTML='<div class="ecx-vazio"><div class="ecx-vazio-i">⛔</div><b>Hospedeiro desligado</b>'+
-      '<p>Remova <code>?ecx=0</code> da URL ou apague <code>localStorage.ecxOff</code> e recarregue.</p></div>';
-    return;
-  }
-  if(!ECX.tools.length){
-    b.innerHTML=ecxVazioHTML(null,'Nenhuma ferramenta instalada. Coloque a pasta dela em <code>ferramentas/</code> '+
-      '(com <code>ferramenta.json</code>, ou só com um <code>index.html</code>) e liste-a em '+
-      '<code>ferramentas/registro.json</code>.');
-    return;
-  }
-  b.innerHTML=ECX.tools.map(t=>'<div class="ecx-item'+(t.ativa?'':' off')+'">'+
-    '<div class="ecx-item-i">'+escHtml(t.icone)+'</div>'+
-    '<div class="ecx-item-c"><b>'+escHtml(t.nome)+'</b> <span class="ecx-tag">v'+escHtml(t.versao)+'</span>'+
-    ' <span class="ecx-tag">'+escHtml(t.modo)+'</span>'+
-    ' <span class="ecx-tag">'+t.montagem.map(k=>ECX_PAGINAS[k]?ECX_PAGINAS[k].rotulo:k).join(' + ')+'</span>'+
-    '<div class="ecx-item-d">'+escHtml(t.descricao||'sem descrição')+'</div>'+
-    '<div class="ecx-item-d">pasta: <code>'+escHtml(t.base)+'</code>'+
-    (t.montado?' · montada em '+escHtml((ECX_PAGINAS[t.montadoEm]||{}).rotulo||t.montadoEm||''):'')+
-    (t.semManifesto?' · <b>sem ferramenta.json</b> (padrão aplicado)':'')+'</div>'+
-    (t.erro?'<div class="ecx-item-e">⚠ '+escHtml(t.erro)+'</div>':'')+'</div>'+
-    '<div class="ecx-item-a">'+
-    t.montagem.filter(k=>ECX_PAGINAS[k]).map(k=>'<button class="btn-s xs" onclick="ecxIr(\''+k+'\',\''+t.id+'\')">Abrir em '+
-      escHtml(ECX_PAGINAS[k].rotulo)+'</button>').join('')+
-    '<button class="btn-s xs" onclick="ecxAlternar(\''+t.id+'\')">'+(t.ativa?'Desativar':'Ativar')+'</button>'+
-    '<button class="btn-s xs" onclick="ecxRecarregar()">Recarregar</button>'+
-    '</div></div>').join('')+
-    (ECX.errors.length?'<div class="ecx-erros"><b>Avisos do carregamento ('+ECX.errors.length+')</b><ul>'+
-      ECX.errors.slice(-8).map(e=>'<li>'+escHtml(e.msg)+(e.det?' — <code>'+escHtml(e.det)+'</code>':'')+'</li>').join('')+
-      '</ul></div>':'');
-}
-/* vai até a página e abre a ferramenta nela */
-function ecxIr(chave,id){
-  const cfg=ECX_PAGINAS[chave];
-  if(!cfg) return;
-  try{
-    ecxMod(false);
-    const item=document.querySelector('.nav-item[onclick*="\''+cfg.pagina+'\'"]');
-    nav(cfg.pagina,item||null);
-    ecxSetView(id,chave);
-  }catch(e){ ecxErr('abrir ferramenta em '+chave,e); }
-}
-function ecxAlternar(id){
-  const t=ECX.tools.find(x=>x.id===id);
-  if(!t) return;
-  t.ativa=!t.ativa;
-  if(!t.ativa){
-    Object.keys(ECX.views).forEach(chave=>{ if(ECX.views[chave]===id) ecxSetView('tabela',chave,true); });
-    ecxDesmontar(t);
-  }
-  ecxRenderTabs();ecxRenderMod();
-  try{ toast(t.ativa?('🧩 '+t.nome+' ativada'):('🧩 '+t.nome+' desativada'),'s'); }catch(e){}
-}
-async function ecxRecarregar(){
-  try{
-    ECX.tools.forEach(t=>ecxDesmontar(t));
-    ECX.tools=[];ECX.errors=[];
-    Object.keys(ECX.views).forEach(k=>{ ECX.views[k]='tabela'; });
-    await ecxCarregar();
-    ecxRenderTabs();ecxRenderMod();
-    toast('🧩 Ferramentas recarregadas ('+ECX.tools.length+')','s');
-  }catch(e){ ecxErr('recarregar',e); }
-}
-function ecxMensagem(ev){
-  try{
-    if(ev.origin&&ev.origin!==location.origin) return;      /* só a mesma origem */
-    const m=ev.data;
-    if(!m||m.ecx!==1) return;
-    const src=ev.source;
-    const tool=ECX.tools.find(t=>t.montado&&t.el&&t.el.contentWindow===src);
-    if(m.evt==='pronto'&&tool){ ecxQuadroPronto(tool); return; }
-    if(!m.req) return;
-    const nome=String(m.metodo||'');
-    const fn=ECX.rpc[nome];
-    const args=Object.assign({},(m.args&&typeof m.args==='object')?m.args:{});
-    if(tool&&!args.ferramenta) args.ferramenta=tool.id;
-    Promise.resolve().then(()=>{
-      if(typeof fn!=='function') throw new Error('método desconhecido: '+nome);
-      return fn(args);
-    }).then(data=>{
-      if(src) src.postMessage({ecx:1,res:m.req,ok:true,data:data},location.origin);
-    },erro=>{
-      ecxErr('rpc "'+nome+'"',erro);
-      if(src) src.postMessage({ecx:1,res:m.req,ok:false,erro:String((erro&&erro.message)||erro)},location.origin);
-    });
-  }catch(e){ ecxErr('mensagem de ferramenta',e); }
-}
-
-/* ── hooks: embrulha funções existentes sem reescrevê-las ────────── */
-function ecxHooks(){
-  const depois={
-    save:()=>ecxEmitir('dados',{motivo:'save'}),
-    importData:()=>ecxEmitir('dados',{motivo:'import'}),
-    applyFilter:()=>ecxEmitir('filtro',ecxFiltroAtual()),
-    clearFilter:()=>ecxEmitir('filtro',ecxFiltroAtual()),
-    applyTheme:()=>ecxEmitir('tema',ecxTema()),
-    renderOps:()=>{ const tb=document.getElementById('opsTb'); ecxEmitir('tabela',{linhas:tb?tb.childElementCount:0}); },
-    nav:()=>{
-      /* ao sair de uma página, a ferramenta dela é desmontada e a visão volta
-         ao padrão — o app nunca fica com um painel órfão escondido */
-      Object.keys(ECX_PAGINAS).forEach(chave=>{
-        const pg=document.getElementById('page-'+ECX_PAGINAS[chave].pagina);
-        const ativa=!!(pg&&pg.classList.contains('active'));
-        if(!ativa&&ECX.views[chave]!=='tabela') ecxSetView('tabela',chave,true);
-      });
-      const ativa=document.querySelector('.page.active');
-      ecxEmitir('pagina',{pagina:ativa?String(ativa.id).replace('page-',''):'',visao:Object.assign({},ECX.views)});
-    }
-  };
-  Object.keys(depois).forEach(nome=>{
-    try{
-      const original=window[nome];
-      if(typeof original!=='function'||original.__ecx) return;
-      const gancho=depois[nome];
-      const embrulho=function(){
-        const r=original.apply(this,arguments);
-        const dispara=()=>{ try{ gancho(); }catch(e){ /* hook nunca derruba o app */ } };
-        if(r&&typeof r.then==='function') r.then(dispara,dispara); else dispara();
-        return r;
-      };
-      embrulho.__ecx=true;
-      window[nome]=embrulho;
-      ECX.hooks.push(nome);
-    }catch(e){ ecxErr('hook de '+nome,e); }
-  });
-}
-
-/* ── inicialização (última linha do init()) ──────────────────────── */
-async function ecxInit(){
-  try{
-    window.EC=window.EC||{};
-    window.EC.host=ecxPonte();
-    ECX.rpc=ecxRpc();
-    if(ecxOff()){ ECX.off=true; ecxRenderTabs(); return; }
-    await ecxCarregar();
-    ecxRenderTabs();
-    ecxHooks();
-    window.addEventListener('message',ecxMensagem);
-    window.addEventListener('resize',()=>ecxEmitir('redimensionar',{largura:innerWidth,altura:innerHeight}));
-    ECX.ready=true;
-    if(ECX.tools.length) console.info('[ECX] ferramenta(s): '+ECX.tools.map(t=>t.id+' v'+t.versao+
-      ' ('+t.modo+' em '+t.montagem.join('+')+')').join(', '));
-  }catch(e){ ecxErr('falha ao iniciar o hospedeiro',e); }
-}
-
 /* ══════════════════════════════════════
    INIT
 ══════════════════════════════════════ */
-var EC_BUILD='2026-09-29.4-ecx-analytics-v2';   /* digite EC_BUILD no console p/ ver a versão */
+var EC_BUILD='2026-10-02.1-nuvem';   /* digite EC_BUILD no console p/ ver a versão */
+
+/* ══════════════════════════════════════
+   NUVEM GITHUB — mesmo backup no PC e no celular
+   Token e repo ficam em localStorage `ecCloud` (não no JSON das ops).
+══════════════════════════════════════ */
+const CLOUD_LS='ecCloud';
+let _cloudTimer=null,_cloudBusy=false;
+function cloudCfg(){
+  try{ return Object.assign({owner:'yuuv1',repo:'dashboard',path:'cloud/edgecontrol-sync.json',token:'',auto:false,shots:true,sha:'',rev:''}, JSON.parse(localStorage.getItem(CLOUD_LS)||'{}')); }
+  catch(e){ return {owner:'yuuv1',repo:'dashboard',path:'cloud/edgecontrol-sync.json',token:'',auto:false,shots:true,sha:'',rev:''}; }
+}
+function cloudSet(p){ localStorage.setItem(CLOUD_LS, JSON.stringify(Object.assign(cloudCfg(),p||{}))); }
+function cloudFillForm(){
+  const c=cloudCfg();
+  const set=(id,v)=>{ const e=document.getElementById(id); if(!e) return; if(e.type==='checkbox') e.checked=!!v; else if(e.type!=='password'||!e.value) e.value=v||''; };
+  set('cloudOwner',c.owner); set('cloudRepo',c.repo); set('cloudPath',c.path);
+  if(c.token){ const t=document.getElementById('cloudToken'); if(t&&!t.value) t.value=c.token; }
+  const a=document.getElementById('cloudAuto'); if(a) a.checked=!!c.auto;
+  const s=document.getElementById('cloudShots'); if(s) s.checked=c.shots!==false;
+  cloudPaintStatus();
+}
+function cloudSaveCfgFromForm(){
+  const g=id=>(document.getElementById(id)||{}).value||'';
+  const auto=!!(document.getElementById('cloudAuto')||{}).checked;
+  const shots=(document.getElementById('cloudShots')||{}).checked!==false;
+  cloudSet({owner:g('cloudOwner').trim()||'yuuv1',repo:g('cloudRepo').trim()||'dashboard',path:g('cloudPath').trim()||'cloud/edgecontrol-sync.json',token:g('cloudToken').trim(),auto,shots});
+  cloudPaintStatus();
+}
+function cloudPaintStatus(extra){
+  const el=document.getElementById('cloudStatus'); if(!el) return;
+  const c=cloudCfg();
+  const on=c.token&&c.owner&&c.repo;
+  el.textContent=(extra?extra+' · ':'')+(on?(c.auto?'Nuvem ligada — envia sozinho ao salvar.':'Nuvem pronta — use Enviar / Trazer.'):'Cole o token GitHub neste celular e no PC (mesmo repo).')+(c.rev?' Último envio: '+c.rev:'');
+}
+function cloudOnLocalSave(){
+  try{ easyOnLocalSave(); }catch(e){}
+  const c=cloudCfg(); if(!c.auto||!c.token) return;
+  clearTimeout(_cloudTimer);
+  _cloudTimer=setTimeout(()=>cloudPush({manual:false}),2200);
+}
+function utf8ToB64(str){
+  const bytes=new TextEncoder().encode(str);
+  let bin='',i=0; const chunk=0x8000;
+  for(;i<bytes.length;i+=chunk) bin+=String.fromCharCode.apply(null, bytes.subarray(i,i+chunk));
+  return btoa(bin);
+}
+function b64ToUtf8(b64){
+  const bin=atob(b64.replace(/\n/g,''));
+  const bytes=new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i);
+  return new TextDecoder().decode(bytes);
+}
+async function cloudBuildPack(includeShots){
+  const imgs={};
+  if(includeShots){
+    const shots=await IMGDB.all();
+    const shotOwners=new Map();
+    (S.operations||[]).forEach(op=>opShotIds(op).forEach(id=>shotOwners.set(String(id),op.id)));
+    for(const r of shots){
+      try{
+        const data=await shotDataURL(r);
+        if(!data||!data.startsWith('data:image/')) continue;
+        imgs[r.id]={d:data,note:r.note||'',name:r.name||'',at:r.at||'',opId:shotOwners.get(String(r.id))||r.opId||null,marks:Array.isArray(r.marks)?r.marks:[],crop:r.crop||null,marksAt:r.marksAt||'',parentId:r.parentId||null,kind:r.kind||''};
+      }catch(e){}
+    }
+  }
+  return {__ec:3,exportedAt:new Date().toISOString(),state:S,shots:imgs,via:'github-cloud'};
+}
+async function cloudApi(method,url,body){
+  const c=cloudCfg();
+  const r=await fetch(url,{method,headers:{'Accept':'application/vnd.github+json','Authorization':'Bearer '+c.token,'X-GitHub-Api-Version':'2022-11-28'},body:body?JSON.stringify(body):undefined});
+  const txt=await r.text();
+  let j=null; try{ j=JSON.parse(txt); }catch(e){}
+  if(!r.ok) throw new Error((j&&j.message)||('HTTP '+r.status));
+  return j;
+}
+async function cloudPush(opts){
+  cloudSaveCfgFromForm();
+  const c=cloudCfg(); const manual=!!(opts&&opts.manual);
+  if(!c.token||!c.owner||!c.repo){ if(manual) toast('Preencha token, dono e repositório.','w'); return; }
+  if(_cloudBusy){ if(manual) toast('Nuvem ocupada…','w'); return; }
+  _cloudBusy=true; cloudPaintStatus('Enviando…');
+  try{
+    const pack=await cloudBuildPack(c.shots!==false);
+    const json=JSON.stringify(pack);
+    if(json.length>90000000) throw new Error('Backup grande demais para o GitHub. Desligue “Incluir prints” ou limpe a galeria.');
+    const content=utf8ToB64(json);
+    const api=`https://api.github.com/repos/${encodeURIComponent(c.owner)}/${encodeURIComponent(c.repo)}/contents/${c.path.split('/').map(encodeURIComponent).join('/')}`;
+    let sha=c.sha;
+    try{ const cur=await cloudApi('GET',api+'?t='+Date.now()); sha=cur&&cur.sha; }catch(e){ sha=undefined; }
+    const put=await cloudApi('PUT',api,{message:'chore(sync): EdgeControl '+pack.exportedAt,content,sha,branch:'main'});
+    cloudSet({sha:(put.content&&put.content.sha)||sha,rev:pack.exportedAt});
+    cloudPaintStatus('Enviado '+new Date().toLocaleString('pt-BR'));
+    if(manual) toast('Nuvem atualizada. Abra o celular e toque em Trazer, ou ligue o auto-sync.','s');
+  }catch(e){
+    cloudPaintStatus('Falha: '+(e.message||e));
+    if(manual) toast('Nuvem: '+(e.message||e),'e');
+  }
+  _cloudBusy=false;
+}
+async function cloudApplyPack(pack,silent){
+  const st=pack.state, pics=pack.shots||{};
+  if(!st||!st.settings||!Array.isArray(st.operations)) throw new Error('arquivo da nuvem inválido');
+  if(!silent && !confirm('Trazer '+st.operations.length+' operações da nuvem?\nOs dados deste aparelho serão substituídos.')) return false;
+  S=migrateState(st); ensureChartState();
+  if(!THEMES.some(t=>t.id===S.theme)) S.theme='default';
+  await migrateLegacyShots(false);
+  associateImportedShots(pics);
+  for(const [id,value] of Object.entries(pics)){
+    try{
+      const d=(value&&value.d)||(typeof value==='string'?value:'');
+      if(!d) continue;
+      const blob=await dataURLtoBlob(d);
+      await IMGDB.put({id,blob,dataUrl:d,w:0,h:0,size:blob.size,name:(value&&value.name)||'',note:(value&&value.note)||'',opId:(value&&value.opId)||null,at:(value&&value.at)||'',marks:(value&&value.marks)||[],crop:(value&&value.crop)||null,marksAt:(value&&value.marksAt)||'',parentId:(value&&value.parentId)||null,kind:(value&&value.kind)||''});
+    }catch(e){}
+  }
+  save();
+  applyTheme(S.theme||'default',{silent:true}); applyProfUI(); refreshAssetUI(); updateDash(); badge(); mtApplyAll();
+  return true;
+}
+async function cloudPull(opts){
+  cloudSaveCfgFromForm();
+  const c=cloudCfg(); const manual=!!(opts&&opts.manual);
+  if(!c.token||!c.owner||!c.repo){ if(manual) toast('Preencha token, dono e repositório.','w'); return; }
+  if(_cloudBusy) return;
+  _cloudBusy=true; cloudPaintStatus('Buscando…');
+  try{
+    const api=`https://api.github.com/repos/${encodeURIComponent(c.owner)}/${encodeURIComponent(c.repo)}/contents/${c.path.split('/').map(encodeURIComponent).join('/')}`;
+    const cur=await cloudApi('GET',api+'?t='+Date.now());
+    const txt=b64ToUtf8(cur.content||'');
+    const pack=JSON.parse(txt);
+    const remoteAt=pack.exportedAt||'';
+    if(!manual && c.rev && remoteAt && remoteAt<=c.rev){ cloudPaintStatus('Já está em dia.'); _cloudBusy=false; return; }
+    /* auto: nunca esmaga um painel local na primeira vez — só atualiza se já
+       conhecemos a nuvem (rev) e o arquivo remoto é mais novo. */
+    if(!manual && (S.operations||[]).length && !c.rev){ cloudPaintStatus('Há dados locais. Use “Trazer da nuvem” se quiser substituir.'); _cloudBusy=false; return; }
+    const ok=await cloudApplyPack(pack, !manual);
+    if(ok){
+      cloudSet({sha:cur.sha,rev:remoteAt||new Date().toISOString()});
+      cloudPaintStatus('Recebido '+new Date().toLocaleString('pt-BR'));
+      if(manual) toast('Dados da nuvem aplicados neste aparelho.','s');
+    }else cloudPaintStatus('Cancelado.');
+  }catch(e){
+    cloudPaintStatus('Falha: '+(e.message||e));
+    if(manual) toast('Nuvem: '+(e.message||e),'e');
+  }
+  _cloudBusy=false;
+}
+async function cloudBoot(){
+  cloudFillForm();
+  const c=cloudCfg();
+  if(c.auto&&c.token){ try{ await cloudPull({manual:false}); }catch(e){} }
+  try{ await easyBoot(); }catch(e){}
+}
+
+const EASY_LS='ecEasy';
+const EASY_API='https://jsonblob.com/api/jsonBlob';
+let _easyTimer=null,_easyBusy=false;
+function easyCfg(){
+  try{ return Object.assign({id:'',pin:'',auto:true,rev:''}, JSON.parse(localStorage.getItem(EASY_LS)||'{}')); }
+  catch(e){ return {id:'',pin:'',auto:true,rev:''}; }
+}
+function easySet(p){ localStorage.setItem(EASY_LS, JSON.stringify(Object.assign(easyCfg(),p||{}))); }
+function easyFillForm(){
+  const c=easyCfg();
+  const pin=document.getElementById('easyPin'); if(pin&&!pin.value) pin.value=c.pin||'';
+  const code=document.getElementById('easyCode'); if(code&&!code.value) code.value=c.id||'';
+  const a=document.getElementById('easyAuto'); if(a) a.checked=c.auto!==false;
+  easyPaint();
+}
+function easySaveForm(){
+  const pin=(document.getElementById('easyPin')||{}).value||'';
+  const id=((document.getElementById('easyCode')||{}).value||'').trim();
+  const auto=(document.getElementById('easyAuto')||{}).checked!==false;
+  easySet({pin,id,auto}); easyPaint();
+}
+function easyPaint(extra){
+  const el=document.getElementById('easyStatus'); if(!el) return;
+  const c=easyCfg();
+  el.textContent=(extra?extra+' · ':'')+(c.id?(c.auto?'Nuvem ligada. Código já salvo neste aparelho.':'Código salvo. Use Enviar / Trazer.'):'No PC: Criar nuvem. No celular: colar o código e Entrar.');
+}
+function easyCopyCode(){
+  easySaveForm();
+  const v=((document.getElementById('easyCode')||{}).value||easyCfg().id||'').trim();
+  if(!v){ toast('Ainda não há código. Clique em Criar nuvem.','w'); return; }
+  if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(v).then(()=>toast('Código copiado. Cole no celular.','s')).catch(()=>toast(v,'s'));
+  else toast(v,'s');
+}
+function easyOnLocalSave(){
+  const c=easyCfg(); if(!c.id||c.auto===false) return;
+  clearTimeout(_easyTimer);
+  _easyTimer=setTimeout(()=>easyPush(false),1800);
+}
+async function easyKey(pin){
+  const enc=new TextEncoder();
+  const base=await crypto.subtle.importKey('raw', enc.encode(String(pin||'edgecontrol')), 'PBKDF2', false, ['deriveKey']);
+  return crypto.subtle.deriveKey({name:'PBKDF2',salt:enc.encode('edgecontrol-easy-v1'),iterations:60000,hash:'SHA-256'}, base, {name:'AES-GCM',length:256}, false, ['encrypt','decrypt']);
+}
+function easyB64(buf){ const b=new Uint8Array(buf); let s=''; for(let i=0;i<b.length;i++) s+=String.fromCharCode(b[i]); return btoa(s); }
+function easyFromB64(s){ const bin=atob(s); const b=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) b[i]=bin.charCodeAt(i); return b; }
+async function easyWrap(pack,pin){
+  const iv=crypto.getRandomValues(new Uint8Array(12));
+  const key=await easyKey(pin);
+  const ct=await crypto.subtle.encrypt({name:'AES-GCM',iv}, key, new TextEncoder().encode(JSON.stringify(pack)));
+  return {ecEasy:1,iv:easyB64(iv),ct:easyB64(ct)};
+}
+async function easyUnwrap(body,pin){
+  if(!body||body.ecEasy!==1) return body;
+  const key=await easyKey(pin);
+  const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:easyFromB64(body.iv)}, key, easyFromB64(body.ct));
+  return JSON.parse(new TextDecoder().decode(pt));
+}
+function easyIdFromResponse(r){
+  const loc=r.headers.get('Location')||r.headers.get('location')||'';
+  const m=String(loc).match(/jsonBlob\/([^/?#]+)/i);
+  if(m) return m[1];
+  const x=r.headers.get('X-jsonblob')||r.headers.get('x-jsonblob');
+  return x||'';
+}
+async function easyCreate(){
+  easySaveForm();
+  const pin=((document.getElementById('easyPin')||{}).value||'').trim();
+  if(pin.length<4){ toast('Escolha um PIN de pelo menos 4 dígitos.','w'); return; }
+  if(_easyBusy) return;
+  _easyBusy=true; easyPaint('Criando…');
+  try{
+    const pack=await cloudBuildPack(false);
+    const body=await easyWrap(pack,pin);
+    const r=await fetch(EASY_API,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify(body)});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    let id=easyIdFromResponse(r);
+    if(!id){ const j=await r.clone().json().catch(()=>null); id=(j&& (j.id||j.blobId))||''; }
+    if(!id) throw new Error('O serviço não devolveu o código. Tente de novo.');
+    easySet({id,pin,auto:true,rev:pack.exportedAt});
+    const inp=document.getElementById('easyCode'); if(inp) inp.value=id;
+    easyPaint('Criada');
+    toast('Nuvem criada. Copie o código e cole no celular.','s');
+    easyCopyCode();
+  }catch(e){ easyPaint('Falha: '+(e.message||e)); toast('Não deu para criar a nuvem. '+ (e.message||e),'e'); }
+  _easyBusy=false;
+}
+async function easyJoin(){
+  easySaveForm();
+  const pin=((document.getElementById('easyPin')||{}).value||'').trim();
+  const id=((document.getElementById('easyCode')||{}).value||'').trim();
+  if(pin.length<4||!id){ toast('PIN e código são obrigatórios.','w'); return; }
+  easySet({id,pin,auto:true});
+  await easyPull(true);
+}
+async function easyPush(manual){
+  easySaveForm();
+  const c=easyCfg();
+  if(!c.id||!c.pin){ if(manual) toast('Crie a nuvem no PC ou entre com o código.','w'); return; }
+  if(_easyBusy) return;
+  _easyBusy=true; easyPaint('Enviando…');
+  try{
+    const pack=await cloudBuildPack(false);
+    const body=await easyWrap(pack,c.pin);
+    const r=await fetch(EASY_API+'/'+encodeURIComponent(c.id),{method:'PUT',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify(body)});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    easySet({rev:pack.exportedAt});
+    easyPaint('Enviado '+new Date().toLocaleString('pt-BR'));
+    if(manual) toast('Enviado. Abra o celular (ou Trazer).','s');
+  }catch(e){ easyPaint('Falha: '+(e.message||e)); if(manual) toast('Nuvem: '+(e.message||e),'e'); }
+  _easyBusy=false;
+}
+async function easyPull(manual){
+  easySaveForm();
+  const c=easyCfg();
+  if(!c.id||!c.pin){ if(manual) toast('Cole o código e o PIN.','w'); return; }
+  if(_easyBusy) return;
+  _easyBusy=true; easyPaint('Buscando…');
+  try{
+    const r=await fetch(EASY_API+'/'+encodeURIComponent(c.id)+'?t='+Date.now(),{headers:{'Accept':'application/json'}});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const body=await r.json();
+    const pack=await easyUnwrap(body,c.pin);
+    if(!pack||!pack.state) throw new Error('PIN errado ou código inválido.');
+    const remoteAt=pack.exportedAt||'';
+    if(!manual && (S.operations||[]).length && !c.rev){ easyPaint('Há dados locais. Use Trazer se quiser substituir.'); _easyBusy=false; return; }
+    if(!manual && c.rev && remoteAt && remoteAt<=c.rev){ easyPaint('Já está em dia.'); _easyBusy=false; return; }
+    const ok=await cloudApplyPack(pack, !manual);
+    if(ok){ easySet({rev:remoteAt||new Date().toISOString()}); easyPaint('Recebido '+new Date().toLocaleString('pt-BR')); if(manual) toast('Dados da nuvem neste aparelho.','s'); }
+    else easyPaint('Cancelado.');
+  }catch(e){ easyPaint('Falha: '+(e.message||e)); if(manual) toast('Nuvem: '+(e.message||e),'e'); }
+  _easyBusy=false;
+}
+async function easyBoot(){
+  easyFillForm();
+  const c=easyCfg();
+  if(c.id&&c.pin&&c.auto!==false){ try{ await easyPull(false); }catch(e){} }
+}
+
 async function init(){
   console.info('EdgeControl build: '+EC_BUILD);
   load();
@@ -9269,9 +8839,7 @@ async function init(){
   mtApplyAll();
   initPWA();
   maybeLoadDemoData();
-  /* hospedeiro de ferramentas (pasta /ferramentas): não bloqueia o init e,
-     sem a pasta, não faz absolutamente nada */
-  ecxInit();
+  try{ await cloudBoot(); }catch(e){ console.warn('nuvem:',e); }
 }
 /* ?demo=1 — carrega o backup de exemplo que mora na própria pasta (mesma
    origem), só para experimentar o estúdio sem dados próprios. Nunca roda no
