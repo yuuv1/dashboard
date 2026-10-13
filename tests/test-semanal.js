@@ -6,7 +6,7 @@
    MESMA língua do app:
 
      1. núcleo do relatório: o script extrai o bloco puro do app;
-     2. período: semana anterior (seg→dom), virada de mês/ano e fuso de SP;
+     2. período: semana corrente (seg→sex), virada de mês/ano e fuso de SP;
      3. nuvem: o que o app cifra (AES-GCM/PBKDF2 do easyWrap), o script
         decifra — e PIN errado falha;
      4. números: mesma semana calculada pelo app (rptModel) e pelo script
@@ -14,7 +14,7 @@
      5. e-mail e anexo: assunto, dia a dia, backup __ec:3 completo;
      6. envio: payload da Brevo (sem rede), erro da Brevo e limite de 20 MB;
      7. dry-run: monta o e-mail, grava o arquivo e não chama a rede;
-     8. workflow: cron de segunda e os secrets/variáveis que o script lê.
+     8. workflow: cron de sexta 21h e os secrets/variáveis que o script lê.
 
    Rodar:  node tests/test-semanal.js
    Requer: npm install  (jsdom + fake-indexeddb)
@@ -53,21 +53,23 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   try { S.extrairCore('<html>sem o bloco</html>'); } catch (e) { erro = e.message; }
   ok(/núcleo do relatório não encontrado/.test(erro), 'app sem o bloco é erro claro', erro);
 
-  /* ── 2. período: semana anterior ───────────────────────────────── */
-  console.log('\n── 2. período (semana anterior) ──');
+  /* ── 2. período: semana corrente (seg→sex) ─────────────────────── */
+  console.log('\n── 2. período (semana corrente, seg→sex) ──');
   const seg = iso => new Date(iso + 'T12:00:00Z').getUTCDay() === 1;
-  const dom = iso => new Date(iso + 'T12:00:00Z').getUTCDay() === 0;
+  const sex = iso => new Date(iso + 'T12:00:00Z').getUTCDay() === 5;
   const casos = [
-    ['2026-10-05', '2026-09-28', '2026-10-04'],   /* segunda comum */
-    ['2026-08-03', '2026-07-27', '2026-08-02'],   /* vira o mês */
-    ['2026-01-04', '2025-12-22', '2025-12-28'],   /* vira o ano (ref é domingo) */
-    ['2026-01-01', '2025-12-22', '2025-12-28'],   /* quinta da mesma semana */
-    ['2026-10-11', '2026-09-28', '2026-10-04']    /* domingo fecha a semana */
+    ['2026-10-09', '2026-10-05', '2026-10-09'],   /* sexta comum (dia do job) */
+    ['2026-10-05', '2026-10-05', '2026-10-09'],   /* segunda → semana começando */
+    ['2026-10-07', '2026-10-05', '2026-10-09'],   /* quarta da mesma semana */
+    ['2026-10-10', '2026-10-05', '2026-10-09'],   /* sábado → semana que acabou */
+    ['2026-10-11', '2026-10-05', '2026-10-09'],   /* domingo → semana que acabou */
+    ['2026-09-04', '2026-08-31', '2026-09-04'],   /* vira o mês */
+    ['2026-01-01', '2025-12-29', '2026-01-02']    /* vira o ano (ref é quinta) */
   ];
   casos.forEach(([ref, de, ate]) => {
     const p = S.periodoSemana(ref);
-    ok(p.from === de && p.to === ate && seg(p.from) && dom(p.to),
-      `ref ${ref} → ${de} a ${ate} (seg→dom)`, `${p.from} a ${p.to}`);
+    ok(p.from === de && p.to === ate && seg(p.from) && sex(p.to),
+      `ref ${ref} → ${de} a ${ate} (seg→sex)`, `${p.from} a ${p.to}`);
   });
   ok(S.hojeSP(Date.parse('2026-10-05T02:00:00Z')) === '2026-10-04', 'hojeSP usa o fuso de São Paulo (madrugada UTC)');
   ok(S.hojeSP(Date.parse('2026-10-05T12:00:00Z')) === '2026-10-05', 'hojeSP no meio do dia UTC');
@@ -118,8 +120,8 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   /* ── 4. números idênticos aos do app ───────────────────────────── */
   console.log('\n── 4. números da semana (paridade com o app) ──');
   ev(`S=${JSON.stringify(backup.state)};save();`);
-  const p = S.periodoSemana('2026-09-07');       /* → 31/08 a 06/09 */
-  ok(p.from === '2026-08-31' && p.to === '2026-09-06', 'semana escolhida para o teste', p.from + ' a ' + p.to);
+  const p = S.periodoSemana('2026-09-04');       /* sexta → 31/08 a 04/09 */
+  ok(p.from === '2026-08-31' && p.to === '2026-09-04', 'semana escolhida para o teste', p.from + ' a ' + p.to);
   const doScript = S.modeloSemana(core, backup.state, p.from, p.to);
   const doApp = JSON.parse(ev(`JSON.stringify((()=>{
     RPT.preset='custom';RPT.from=${JSON.stringify(p.from)};RPT.to=${JSON.stringify(p.to)};
@@ -150,8 +152,8 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   const info = { core, build: 'teste', quando: '05/10/2026, 09:00:00', anexo, semPrints: true, anexoLegenda: 'backup completo sem prints' };
   info.subject = S.assunto(doScript, info);
   const email = S.montarEmail(doScript, info);
-  ok(/^EdgeControl — semana 31\/08\/2026 a 06\/09\/2026 · \d+ ops · [+−]R\$/.test(email.subject), 'assunto com a semana e o resultado', email.subject);
-  ok(email.html.includes('31/08/2026 a 06/09/2026'), 'corpo traz o período');
+  ok(/^EdgeControl — semana 31\/08\/2026 a 04\/09\/2026 · \d+ ops · [+−]R\$/.test(email.subject), 'assunto com a semana e o resultado', email.subject);
+  ok(email.html.includes('31/08/2026 a 04/09/2026'), 'corpo traz o período');
   ok((email.html.match(/<tr>/g) || []).length > 5, 'corpo traz as tabelas do resumo');
   ok(/Dia a dia/.test(email.html), 'corpo traz o dia a dia');
   ok((email.html.match(/31\/08\/2026|01\/09\/2026|02\/09\/2026|03\/09\/2026/g) || []).length >= 1, 'dia a dia lista as datas da semana');
@@ -186,6 +188,31 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   ok(Object.keys(vinculado.shots).length === 2 && vinculado.shots['p-1'] && vinculado.shots['p-3'] && !vinculado.shots['p-9'],
     'entram os prints citados pela operação e os ligados por opId; os soltos ficam fora', Object.keys(vinculado.shots).join(','));
   fs.unlinkSync(comShots);
+  /* união nuvem + repo: a fresca da nuvem vence, o repo completa */
+  const uniao = S.unirShots({ 'a': { d: 'repo' }, 'b': { d: 'repo' } }, { 'a': { d: 'nuvem' } });
+  ok(uniao.a.d === 'nuvem' && uniao.b.d === 'repo', 'união: nuvem vence no conflito, repo completa o resto');
+  ok(Object.keys(S.unirShots()).length === 0, 'união vazia não quebra');
+  /* o job encontra sozinho o arquivo padrão da Nuvem GitHub no repo */
+  const cloudPadrao = path.join(RAIZ, 'cloud', 'edgecontrol-sync.json');
+  if (!fs.existsSync(cloudPadrao)) {
+    const packTmp = path.join(os.tmpdir(), 'ec-pack-uniao.json');
+    const saidaTmp = path.join(os.tmpdir(), 'ec-email-uniao.json');
+    fs.writeFileSync(packTmp, JSON.stringify({ __ec: 3, exportedAt: '2026-09-03T18:34:05.467Z', state: backup.state, shots: { 'n-1': { d: 'data:image/png;base64,AA' } } }));
+    fs.writeFileSync(cloudPadrao, JSON.stringify({ shots: { 'n-1': { d: 'velha' }, 'r-1': { d: 'data:image/png;base64,BB' } } }));
+    try {
+      await S.main({}, ['node', 'semanal.mjs', '--arquivo=' + packTmp, '--dry-run', '--saida=' + saidaTmp, '--semana=2026-09-04'],
+        { fetch: () => { throw new Error('não deveria chamar a rede'); }, core, app: path.join(RAIZ, 'edgecontrol-glass-v2.html'), log: () => {} });
+      const brutoUniao = JSON.parse(fs.readFileSync(saidaTmp, 'utf8'));
+      ok(brutoUniao.anexo.prints === 2, 'dry-run soma os prints da nuvem e do arquivo padrão do repo', String(brutoUniao.anexo.prints));
+    } finally {
+      if (fs.existsSync(packTmp)) fs.unlinkSync(packTmp);
+      if (fs.existsSync(saidaTmp)) fs.unlinkSync(saidaTmp);
+      fs.unlinkSync(cloudPadrao);
+    }
+    ok(!fs.existsSync(cloudPadrao), 'arquivo temporário do teste removido do repo');
+  } else {
+    ok(!!S.padraoPrints(), 'arquivo padrão da Nuvem GitHub existe no repo e o job o encontra', S.padraoPrints());
+  }
 
   /* ── 6. envio pela Brevo ───────────────────────────────────────── */
   console.log('\n── 6. envio (fetch dublado) ──');
@@ -216,11 +243,11 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   const saida = path.join(os.tmpdir(), 'ec-email-payload.json');
   if (fs.existsSync(saida)) fs.unlinkSync(saida);
   const r = await S.main({}, ['node', 'semanal.mjs', '--arquivo=' + packLocal, '--dry-run', '--saida=' + saida,
-    '--semana=2026-09-07'], { fetch: () => { throw new Error('não deveria chamar a rede'); }, core, app: path.join(RAIZ, 'edgecontrol-glass-v2.html'), log: () => {} });
-  ok(r.dryRun === true && r.semana === '31/08/2026 a 06/09/2026', 'dry-run devolve o resumo da semana', JSON.stringify(r.semana));
+    '--semana=2026-09-04'], { fetch: () => { throw new Error('não deveria chamar a rede'); }, core, app: path.join(RAIZ, 'edgecontrol-glass-v2.html'), log: () => {} });
+  ok(r.dryRun === true && r.semana === '31/08/2026 a 04/09/2026', 'dry-run devolve o resumo da semana', JSON.stringify(r.semana));
   const gravado = JSON.parse(fs.readFileSync(saida, 'utf8'));
   ok(gravado.dryRun === true && /EdgeControl — semana/.test(gravado.subject), 'arquivo do dry-run tem o assunto montado');
-  ok(gravado.semana.from === '2026-08-31' && gravado.semana.to === '2026-09-06', 'arquivo registra o período');
+  ok(gravado.semana.from === '2026-08-31' && gravado.semana.to === '2026-09-04', 'arquivo registra o período');
   ok(gravado.anexo.nome.startsWith('edgecontrol_backup_') && gravado.anexo.bytes > 1000, 'arquivo registra o anexo e o tamanho', gravado.anexo.nome);
   ok(/Operações/.test(gravado.html || ''), 'arquivo guarda o e-mail completo para inspeção');
   fs.unlinkSync(saida); fs.unlinkSync(packLocal);
@@ -232,7 +259,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     throw new Error('o dry-run não pode enviar e-mail');
   };
   const rNuvem = await S.main({ EC_NUVEM_CODIGO: 'blob-123', EC_NUVEM_PIN: '4821' },
-    ['node', 'semanal.mjs', '--dry-run', '--saida=' + saida, '--semana=2026-09-07'],
+    ['node', 'semanal.mjs', '--dry-run', '--saida=' + saida, '--semana=2026-09-04'],
     { fetch: fetchNuvem, core, app: path.join(RAIZ, 'edgecontrol-glass-v2.html'), log: () => {} });
   ok(urls.length === 1 && urls[0] === 'https://jsonblob.com/api/jsonBlob/blob-123', 'lê o blob certo da Nuvem fácil', urls[0]);
   ok(rNuvem.dryRun === true && fs.existsSync(saida), 'nuvem → e-mail montado (produção simulada)');
@@ -304,14 +331,14 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   };
   const rMisto = await S.main({ EC_EMAIL: 'eu@gmail.com', EC_REMETENTE: 'eu@gmail.com', BREVO_API_KEY: 'k',
     EC_WA_PHONE: '+5511999998888', EC_WA_KEY: '123' },
-    ['node', 'semanal.mjs', '--arquivo=' + packWa, '--semana=2026-09-07'],
+    ['node', 'semanal.mjs', '--arquivo=' + packWa, '--semana=2026-09-04'],
     { fetch: fetchMisto, core, app: path.join(RAIZ, 'edgecontrol-glass-v2.html'), log: () => {} });
   ok(rMisto.enviado === true, 'com o WhatsApp fora do ar, o e-mail continua sendo enviado');
   ok(chamadasWa.some(u => /brevo/.test(u)) && chamadasWa.some(u => /callmebot/.test(u)), 'tentou e-mail e depois WhatsApp');
   ok(rMisto.whatsapp && rMisto.whatsapp.ok === false && /500/.test(rMisto.whatsapp.erro), 'o resultado registra a falha do zap', JSON.stringify(rMisto.whatsapp));
   const saidaWa = path.join(os.tmpdir(), 'ec-payload-wa.json');
   await S.main({ EC_WA_PHONE: '+5511999998888', EC_WA_KEY: '123' },
-    ['node', 'semanal.mjs', '--arquivo=' + packWa, '--dry-run', '--saida=' + saidaWa, '--semana=2026-09-07'],
+    ['node', 'semanal.mjs', '--arquivo=' + packWa, '--dry-run', '--saida=' + saidaWa, '--semana=2026-09-04'],
     { fetch: () => { throw new Error('não deveria chamar a rede'); }, core, app: path.join(RAIZ, 'edgecontrol-glass-v2.html'), log: () => {} });
   const brutoWa = JSON.parse(fs.readFileSync(saidaWa, 'utf8'));
   ok(brutoWa.whatsapp && brutoWa.whatsapp.provider === 'callmebot' && /EdgeControl/.test(brutoWa.whatsapp.texto),
@@ -321,7 +348,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   /* ── 9. workflow ───────────────────────────────────────────────── */
   console.log('\n── 9. workflow do GitHub Actions ──');
   const yml = fs.readFileSync(WF, 'utf8');
-  ok(/cron:\s*'0 12 \* \* 1'/.test(yml), 'roda toda segunda (12:00 UTC = 09:00 de São Paulo)');
+  ok(/cron:\s*'0 0 \* \* 6'/.test(yml), 'roda toda sexta 21h (sábado 00:00 UTC = 21:00 de São Paulo)');
   ok(yml.includes('workflow_dispatch'), 'dá para disparar na mão ("Run workflow")');
   ok(/concurrency:/.test(yml) && /contents: read/.test(yml), 'sem execuções sobrepostas e com permissão mínima');
   ok(/node ferramentas\/email-backup\/semanal\.mjs/.test(yml), 'o workflow chama o script do backup semanal');
@@ -330,6 +357,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     .forEach(nome => ok(yml.includes(nome), 'workflow passa ' + nome));
   ok(!/xkeysib|senha|pin:/i.test(yml.replace(/EC_NUVEM_PIN/g, '')), 'nenhum segredo escrito no workflow');
   ok(/node tests\/test-semanal\.js/.test(yml), 'o workflow confere o núcleo antes de enviar');
+  ok(/npm install/.test(yml), 'o workflow instala as dependências antes do teste');
 
   /* ── extra: o guia e o cartão do app apontam para cá ───────────── */
   console.log('\n── extra: documentação e app ──');

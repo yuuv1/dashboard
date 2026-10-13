@@ -118,10 +118,10 @@ No EdgeControl (v2): **Configurações → 📧 Backup por e-mail**
 # Semanal automático (sem abrir o app)
 
 O que já existe neste repositório: **`.github/workflows/backup-semanal.yml`**, que
-toda segunda-feira às 09:00 (São Paulo) roda
+toda sexta-feira às 21:00 (São Paulo) roda
 `ferramentas/email-backup/semanal.mjs`: lê a **Nuvem fácil**, decifra com o
-código + PIN, monta os números da semana anterior com o **mesmo núcleo do
-relatório que mora no app** e envia o e-mail pela Brevo com o `.json` em anexo.
+código + PIN, monta os números da semana corrente (seg→sex) com o **mesmo núcleo do
+relatório que mora no app** e envia o e-mail pela Brevo com o `.json` (com prints) em anexo.
 
 Não precisa de Worker, nem de PC ligado, nem de app aberto — só de 3 segredos
 uma única vez.
@@ -139,8 +139,8 @@ uma única vez.
 | `BREVO_API_KEY` | a chave `xkeysib-…` da Brevo |
 
    (Opcional: em **Variables**, crie `EC_COM_PRINTS` com o caminho de um backup
-   `.json` do próprio repositório — ex.: `cloud/edgecontrol-sync.json` — para o
-   anexo da semana levar também os prints daquele arquivo.)
+   `.json` do próprio repositório para somar os prints dele aos da nuvem.
+   Sem isso o job já tenta sozinho `cloud/edgecontrol-sync.json` quando ele existe.)
 
 2. Confirme que o workflow está na branch principal (`main`). O agendador do
    GitHub só olha para o arquivo da branch padrão.
@@ -148,26 +148,37 @@ uma única vez.
    workflow**, marque **dry_run** (não envia nada) e, quando o job terminar,
    baixe o artifact **email-payload** para ver exatamente o e-mail montado.
    Sem o dry-run, o botão “Run workflow” envia de verdade.
-4. Pronto. Toda segunda-feira o e-mail chega sozinho. Se quiser conferir uma
+4. Pronto. Toda sexta-feira às 21h o e-mail chega sozinho. Se quiser conferir uma
    semana específica, use o campo **semana** (`AAAA-MM-DD`, qualquer dia dela).
 
-## O que chega toda segunda
+## O que chega toda sexta
 
-- **Assunto**: `EdgeControl — semana 28/09/2026 a 04/10/2026 · 12 ops · +R$ 340,00`
+- **Assunto**: `EdgeControl — semana 12/10/2026 a 16/10/2026 · 8 ops · +R$ 210,50`
 - **Corpo**: resumo da semana (com a comparação com a semana anterior),
   **dia a dia**, destaques por ativo/operacional e a leitura automática.
-- **Anexo**: `edgecontrol_backup_AAAA-MM-DD.json` — o backup completo e
+- **Anexo**: `edgecontrol_backup_AAAA-MM-DD.json` — o backup completo **com os prints**,
   importável (Configurações → Backup de Dados → Importar).
+
+## Em casa: juntar o backup sem apagar (trabalho → casa)
+
+Se você operou em outro aparelho durante a semana:
+
+1. Baixe o `.json` do e-mail de sexta no aparelho de casa.
+2. No EdgeControl de casa: **Configurações → 🔒 Backup de Dados → ➕ Somar backup**.
+3. Escolha o arquivo e confirme (“Nada será apagado”).
+
+As operações novas entram e as antigas continuam; as repetidas não duplicam;
+se alguma vier diferente da que já está aí, o app mantém a de casa e avisa.
+Só use “⬇ Importar substituindo tudo” se quiser apagar o de casa e ficar só com o arquivo.
 
 ## O que saber antes
 
-- **Sem prints por padrão**: a Nuvem fácil não carrega imagens (é ela que o job
-  lê, com código + PIN). Os prints continuam no aparelho e no envio manual
-  “📧 Enviar backup agora”. Para o semanal levar prints, use `EC_COM_PRINTS`
-  apontando para um backup `.json` que esteja no repositório.
+- **Prints incluídos**: a Nuvem fácil leva as imagens junto (é ela que o job
+  lê, com código + PIN). Se a galeria passar de 8 MB, o app sobe só os números
+  naquela vez e avisa — o e-mail sai mesmo assim, só sem as imagens.
 - **Cron é “melhor esforço”**: o GitHub pode atrasar 5–30 minutos em horários
   de pico; o e-mail chega no mesmo dia.
-- **Semana anterior seg→dom**: na segunda 05/10 o job envia 28/09 a 04/10.
+- **Semana corrente seg→sex**: na sexta 16/10 o job envia 12/10 a 16/10.
 - **Custo**: repositório privado tem 2.000 minutos/mês grátis; este job usa
   cerca de 1 minuto por semana (~5 no mês).
 - O workflow também roda `node tests/test-semanal.js` antes de enviar: se o
@@ -195,7 +206,7 @@ recebe só o **resumo da semana** (umas 8 linhas), para o celular apitar.
 | `EC_WA_PHONE` | **Secret** | seu número com DDI, ex.: `+5562999998888` |
 | `EC_WA_KEY` | **Secret** | a APIKEY que o bot mandou |
 
-Pronto: toda segunda o resumo chega também no WhatsApp. Para conferir antes,
+Pronto: toda sexta o resumo chega também no WhatsApp. Para conferir antes,
 rode o workflow com **dry_run** — o texto do zap aparece no artifact.
 
 > **Sendo sincero sobre o CallMeBot:** é um serviço gratuito e comunitário (não é
@@ -234,7 +245,7 @@ um anexo de e-mail. Se ainda assim quiser, o script já aceita:
 ## Como fica o texto
 
 ```
-📊 *EdgeControl* — semana 31/08/2026 a 06/09
+📊 *EdgeControl* — semana 31/08/2026 a 04/09
 Operações: 5  (5W / 0L)
 Acerto: 100,0%
 Resultado: *+R$ 120,99*  (+32,6%)
