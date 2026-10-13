@@ -2,14 +2,15 @@
 /* ══════════════════════════════════════════════════════════════════════
    EdgeControl — backup semanal por e-mail (roda sozinho, sem abrir o app)
 
-   O que faz, toda segunda de manhã:
+   O que faz, toda sexta às 21h (São Paulo):
      1. lê a Nuvem fácil (JSONBlob) e decifra o pacote com o código + PIN
-        (mesma AES-GCM/PBKDF2 que o app usa);
-     2. monta os números da semana anterior reutilizando o NÚCLEO PURO do
-        relatório que mora no próprio app (marcadores RPT-CORE-START … RPT-CORE-END);
+        (mesma AES-GCM/PBKDF2 que o app usa) — o pacote já traz os prints;
+     2. monta os números da semana corrente (seg→sex, a que acabou de fechar)
+        reutilizando o NÚCLEO PURO do relatório que mora no próprio app
+        (marcadores RPT-CORE-START … RPT-CORE-END);
      3. escreve o e-mail da semana (resumo + dia a dia + destaques);
-     4. anexa o backup completo .json (__ec:3, importável no app) e envia
-        pela Brevo;
+     4. anexa o backup completo .json (__ec:3, importável no app, com os
+        prints) e envia pela Brevo;
      5. se você configurou, manda também o resumo no WhatsApp
         (ferramentas/email-backup/whatsapp.mjs; falha no zap não derruba o e-mail).
 
@@ -31,8 +32,10 @@
      EC_SEMANA        semana de referência (AAAA-MM-DD, qualquer dia dela)
      EC_DRY_RUN       "true" para não enviar
      EC_ARQUIVO       usa um pacote local em vez da nuvem (testes/ensaio)
-     EC_COM_PRINTS    caminho de um backup .json (no repo) para juntar os
-                      prints ao anexo; sem isso o anexo sai sem imagens
+     EC_COM_PRINTS    caminho de um backup .json (no repo) para SOMAR prints
+                      ao anexo; opcional — sem isso valem os prints da Nuvem
+                      fácil, e o job ainda tenta sozinho o arquivo padrão
+                      cloud/edgecontrol-sync.json quando ele existir no repo
      EC_SEMPRE_ENVIAR "false" para pular a semana sem operações
 
    WhatsApp (opcional — veja o cabeçalho de whatsapp.mjs):
@@ -83,12 +86,15 @@ function deUTC(ms) { return new Date(ms).toISOString().slice(0, 10); }
 function soma(iso, dias) { return deUTC(utc(iso) + dias * DIA); }
 function diaSemana(iso) { return new Date(utc(iso)).getUTCDay(); }   /* 0=domingo */
 
-/* semana anterior (segunda a domingo) antes da semana de `ref` */
+/* semana corrente (segunda a sexta) da semana de `ref` — é a semana que
+   acabou de fechar quando o job roda na sexta às 21h. Num disparo manual
+   de fim de semana, devolve a semana que acabou; numa segunda, a semana
+   que está começando (em geral ainda vazia). */
 export function periodoSemana(refISO) {
   const ref = refISO || hojeSP();
   const dow = (diaSemana(ref) + 6) % 7;                 /* 0 = segunda */
   const segunda = soma(ref, -dow);
-  return { from: soma(segunda, -7), to: soma(segunda, -1), segundaAtual: segunda, ref };
+  return { from: segunda, to: soma(segunda, 4), segundaAtual: segunda, ref };
 }
 
 /* ── pacote da nuvem: {ecEasy:1, iv, ct} → objeto ──────────────────── */
@@ -135,6 +141,17 @@ export function montarAnexo(state, shots, exportedAt) {
   const pacote = { __ec: 3, exportedAt, state, shots: shots || {}, via: 'email-semanal' };
   const json = JSON.stringify(pacote);
   return { json, pacote, nome: 'edgecontrol_backup_' + exportedAt.slice(0, 10) + '.json' };
+}
+/* arquivo padrão da Nuvem GitHub dentro do repo: quando ele existe, o job
+   soma os prints dele aos da Nuvem fácil sem precisar configurar nada */
+const REPO = path.join(AQUI, '..', '..');
+export function padraoPrints() {
+  const p = path.join(REPO, 'cloud', 'edgecontrol-sync.json');
+  return fs.existsSync(p) ? p : '';
+}
+/* união dos prints: a nuvem (fresca) vence no conflito, o repo completa */
+export function unirShots(doRepo, daNuvem) {
+  return Object.assign({}, doRepo || {}, daNuvem || {});
 }
 export function juntarPrints(caminho, state) {
   if (!caminho || !fs.existsSync(caminho)) return { shots: {}, de: '' };
@@ -225,11 +242,11 @@ export function montarEmail(m, info) {
     '<ul style="margin:0;padding-left:18px;color:#5a6076;font:13px Arial,sans-serif;line-height:1.7;">' +
       '<li><strong style="color:#17203d;">' + esc(info.anexo.nome) + '</strong> — ' + info.anexoLegenda + '</li></ul>',
     '<h3 style="font:bold 14px Arial,sans-serif;margin:18px 0 6px;">Como restaurar</h3>',
-    '<p style="color:#5a6076;font:12px Arial,sans-serif;line-height:1.6;margin:0;">No EdgeControl: <strong>Configurações → 🔒 Backup de Dados → Importar</strong> e escolha o .json deste e-mail. Ele substitui os dados do aparelho — para sincronizar PC e celular no dia a dia, siga usando a <strong>Nuvem fácil</strong>.</p>',
+    '<p style="color:#5a6076;font:12px Arial,sans-serif;line-height:1.6;margin:0;">No EdgeControl: <strong>Configurações → 🔒 Backup de Dados → ➕ Somar backup</strong> e escolha o .json deste e-mail — as novas entram e as antigas continuam (só use “Importar substituindo tudo” se quiser apagar o que está aí). Para sincronizar PC e celular no dia a dia, siga usando a <strong>Nuvem fácil</strong>.</p>',
     '<hr style="border:none;border-top:1px solid #ececf3;margin:18px 0 10px;">',
     '<div style="color:#9aa0b4;font:11px Arial,sans-serif;line-height:1.6;">Gerado automaticamente pelo EdgeControl em ' + esc(info.quando) + '.' +
       ' Números do núcleo do relatório do app (build ' + esc(info.build) + ').' +
-      (info.semPrints ? ' Sem prints neste anexo: a nuvem fácil não carrega imagens — os prints continuam no aparelho e no envio manual “📧 Enviar backup agora”.' : '') +
+      (info.semPrints ? ' Sem prints neste anexo: nenhuma imagem chegou pela nuvem nesta semana — confira se o app salvou depois de anexar os prints (eles sobem sozinhos ao salvar).' : '') +
       '</div>',
     '</div>'
   ].join('');
@@ -244,7 +261,7 @@ export function montarEmail(m, info) {
       'Dias operados: ' + M.tradedDays
     ] : ['Nenhuma operação registrada nesta semana.']),
     '', 'Anexo: ' + info.anexo.nome + ' — ' + info.anexoLegenda,
-    'Restaurar: Configurações → Backup de Dados → Importar.',
+    'Restaurar: Configurações → Backup de Dados → Somar backup (junta sem apagar).',
     'Gerado automaticamente em ' + info.quando + '.'
   ].join('\n');
   return { subject: info.subject, html, text: texto };
@@ -320,10 +337,14 @@ export async function main(env = process.env, argv = process.argv, deps = {}) {
     log('· nuvem fácil lida (exportada em ' + (pack.exportedAt || '?') + ')');
   }
   const state = pack.state;
-  const shotsDoRepo = juntarPrints(cfg.comPrints, state);
-  const shots = Object.keys(shotsDoRepo.shots).length ? shotsDoRepo.shots : (pack.shots || {});
+  const caminhoPrints = cfg.comPrints || padraoPrints();
+  const shotsDoRepo = juntarPrints(caminhoPrints, state);
+  /* união: os prints frescos da Nuvem fácil valem mais; o arquivo do repo
+     (EC_COM_PRINTS ou o padrão da Nuvem GitHub) completa o que faltar */
+  const shots = unirShots(shotsDoRepo.shots, pack.shots);
+  if (caminhoPrints) log('· prints também do arquivo do repositório: ' + caminhoPrints);
 
-  /* 2. semana anterior + números */
+  /* 2. semana corrente (seg→sex) + números */
   const periodo = periodoSemana(cfg.semana);
   const m = modeloSemana(core, state, periodo.from, periodo.to);
   log('· semana ' + m.label + ': ' + m.M.n + ' operação(ões), resultado ' + core.rpMoney(m.M.net));
@@ -336,7 +357,7 @@ export async function main(env = process.env, argv = process.argv, deps = {}) {
     core, build, quando: new Date().toLocaleString('pt-BR', { timeZone: TZ }),
     anexo, semPrints: !temPrints,
     anexoLegenda: (temPrints ? Object.keys(shots).length + ' print(s) incluído(s)' : 'backup completo sem prints') +
-      (shotsDoRepo.de ? ' (imagens do arquivo do repositório)' : '') +
+      (shotsDoRepo.de ? ' (nuvem fácil + arquivo do repositório)' : (temPrints ? ' (da nuvem fácil)' : '')) +
       ' · ' + (anexo.json.length / 1024).toFixed(1).replace('.', ',') + ' KB · importável no app'
   };
   info.subject = assunto(m, info);

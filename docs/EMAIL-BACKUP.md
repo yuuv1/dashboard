@@ -12,7 +12,7 @@ da mensagem.
 |---|---|
 | **Quando** | **Manual**, pelo botão *📧 Enviar backup agora*. Nada é enviado sem você tocar; o app lembra quando passa de 7 dias. |
 | **Período** | **Período completo**, sempre desde a primeira operação até a última — não depende dos filtros da página do relatório. |
-| **Frequência pretendida** | Semanal (fechando a semana anterior). Como o envio é manual, o cartão mostra “⏰ Já faz N dias — bom momento para fechar a semana”. |
+| **Frequência pretendida** | Semanal (fechando a semana seg→sex, na sexta). Como o envio é manual, o cartão mostra “⏰ Já faz N dias — bom momento para fechar a semana”. |
 | **Conteúdo** | Resumo do período no corpo + **backup `.json` com os prints** em anexo. |
 | **Entrega** | Relay próprio (Cloudflare Worker) que guarda a chave da Brevo. **Nenhuma chave de e-mail no HTML.** |
 
@@ -134,9 +134,9 @@ O pedido depois do envio manual foi: “se tiver como deixar semanal automático
 sem eu precisar fazer coisas externas”. A resposta implementada:
 
 ```
-GitHub Actions (toda segunda, 09:00 de São Paulo)
+GitHub Actions (toda sexta, 21:00 de São Paulo)
    └─ lê a Nuvem fácil (JSONBlob) ──▶ decifra com código + PIN (AES-GCM/PBKDF2)
-      └─ núcleo puro do relatório do app (RPT-CORE) ──▶ números da semana anterior
+      └─ núcleo puro do relatório do app (RPT-CORE) ──▶ números da semana (seg→sex)
          └─ Brevo ──▶ e-mail com resumo + .json completo em anexo
 ```
 
@@ -164,14 +164,11 @@ compara os dois lado a lado (e o workflow roda esse teste antes de enviar).
 
 **Limites honestos:**
 
-- **Prints**: a Nuvem fácil não carrega imagens, então o anexo semanal sai sem
-  prints por padrão. Alternativa pronta: a variável `EC_COM_PRINTS` aponta para
-  um backup `.json` que esteja no repositório (ex.: o arquivo da Nuvem GitHub
-  com “Incluir prints” ligado) e as imagens entram no anexo.
+- **Prints**: a Nuvem fácil leva as imagens junto (desde o build `2026-10-13.1-sexta`), então o anexo de sexta já sai com prints sem configurar nada. Se a galeria passar de 8 MB, o app sobe só os números (e avisa na hora). Reforço opcional: a variável `EC_COM_PRINTS` aponta para um backup `.json` do repositório e as imagens dele se somam às da nuvem; o job também tenta sozinho `cloud/edgecontrol-sync.json` (Nuvem GitHub com “Incluir prints” ligado) quando ele existe.
 - **Cron do GitHub é “melhor esforço”** (atrasos de 5–30 min são comuns) e só
   roda a partir da branch padrão — logo, este job só começa a valer depois que
   o PR for mergeado no `main`.
-- **Semana anterior = segunda a domingo** (fuso `America/Sao_Paulo`).
+- **Semana corrente = segunda a sexta** (fuso `America/Sao_Paulo`): na sexta 21h o job fecha a semana que acabou de passar.
 - **Repositório privado**: 2.000 minutos/mês grátis; o job gasta ~1 min/semana.
 
 ### Aviso no WhatsApp
@@ -195,3 +192,31 @@ aviso no log, no `dry-run` e no resultado da execução, mas não falha.
 Código: `ferramentas/email-backup/whatsapp.mjs`. Testes: seção 8 de
 `tests/test-semanal.js` (formato do texto, detecção de provedor, corpo/URL de
 cada provedor e o caso “WhatsApp fora do ar”).
+
+---
+
+## Rotina trabalho → casa: somar sem apagar
+
+Se você opera em um aparelho (trabalho) e guarda o histórico em outro (casa):
+
+1. **No trabalho**, opere normalmente. O backup da semana chega no seu e-mail
+   toda sexta às 21h — ou mande na hora com “📧 Enviar backup agora”.
+2. **Em casa**, baixe o `.json` do e-mail e abra o EdgeControl.
+3. Vá em **Configurações → 🔒 Backup de Dados → ➕ Somar backup** e escolha o arquivo.
+4. Pronto: as operações novas entram, as antigas continuam.
+
+Regras da soma (sem letra miúda):
+
+- operação com id novo → entra;
+- operação igual a uma que já está aí → ignorada (não duplica);
+- mesmo id com conteúdo diferente → **conflito**: o app mantém o de casa e avisa quantos foram;
+- operação sem id (backup antigo) → comparada pela impressão digital (data, hora, valor, resultado, ativo);
+- **configurações de casa vencem** (capital inicial, metas, tema);
+- prints novos entram junto, vinculados às operações;
+- no fim o app mostra o resumo: `+N novas (T no total); X já existiam; C conflitos mantidos`.
+
+Use **⬇ Importar substituindo tudo** somente se quiser apagar o que está no
+aparelho e ficar só com o arquivo (recomeçar do zero).
+
+Testes: `tests/test-merge.js` (soma, conflito, duplicada, impressão digital,
+prints, configurações e o substituir intacto).

@@ -60,10 +60,10 @@ Os testes leem o app e as fixtures de `dados/backups/`. **Nenhum teste altera o 
 
 | Recurso | O que faz |
 |---|---|
-| *Configurações → 🔒 Backup de Dados* | exporta/importa o `.json` completo (com prints) |
+| *Configurações → 🔒 Backup de Dados* | exporta/importa o `.json` completo (com prints); “➕ Somar” junta o backup da semana sem apagar (trabalho → casa) |
 | ☁️ Nuvem fácil | sincroniza PC ↔ celular sozinho (código + PIN, sem token) |
 | 📧 Backup por e-mail | envio manual do período completo, com o `.json` em anexo |
-| ⏰ Semanal automático | GitHub Actions manda toda segunda (e-mail e, se quiser, WhatsApp) |
+| ⏰ Semanal automático | GitHub Actions manda toda sexta 21h (e-mail com prints e, se quiser, WhatsApp) |
 
 O backup semanal usa o **núcleo puro do relatório que mora dentro do app**
 (`RPT-CORE-START/END`), então os números do e-mail são os mesmos do relatório.

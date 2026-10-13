@@ -2356,7 +2356,8 @@ body.rpt-open{overflow:hidden;}
             <div class="set-tit">☁️ Nuvem fácil (PC ↔ celular)</div>
             <div style="font-size:11px;color:var(--lgray);line-height:1.6;margin-bottom:11px;">
               Sem token. No PC clique <strong>Criar nuvem</strong>, copie o código, cole no celular e
-              <strong>Entrar</strong>. Use o mesmo PIN nos dois. Os dados sobem sozinhos ao salvar.
+              <strong>Entrar</strong>. Use o mesmo PIN nos dois. Os dados (com os prints) sobem sozinhos
+              ao salvar — é daqui que o e-mail de sexta se alimenta.
             </div>
             <div class="fg"><label class="fl">PIN (mesmo nos dois aparelhos)</label>
               <input class="fi" id="easyPin" type="password" inputmode="numeric" placeholder="ex: 4821" autocomplete="off">
@@ -2423,7 +2424,7 @@ body.rpt-open{overflow:hidden;}
             </div>
             <div style="font-size:11px;color:var(--dim);line-height:1.6;margin-bottom:11px;padding:9px 10px;border:1px solid var(--line,#2a3345);border-radius:9px;">
               ✅ <strong>Semanal automático — nada para configurar aqui.</strong>
-              O GitHub já envia sozinho toda segunda de manhã (passo a passo em
+              O GitHub já envia sozinho toda sexta às 21h (passo a passo em
               <strong>ferramentas/email-backup/LEIA-ME.md</strong>). Só precisa das 5 chaves no GitHub,
               uma vez; e pode avisar também no <strong>WhatsApp</strong> (grátis, com o CallMeBot —
               mesma seção do LEIA-ME). Esta tela é apenas para o envio <strong>na hora, pelo app</strong>.
@@ -2478,10 +2479,11 @@ body.rpt-open{overflow:hidden;}
               <div style="font-size:11px;color:var(--lgray);line-height:1.6;margin-bottom:13px;">Exporte todos os seus dados em JSON. Importe para restaurar em qualquer dispositivo.</div>
               <div style="display:flex;flex-direction:column;gap:8px;">
                 <button class="btn-o" style="justify-content:center;padding:11px;font-size:12px;border-radius:11px;" onclick="exportData()">⬆ Exportar Dados (JSON)</button>
-                <div class="btn-s" style="justify-content:center;padding:11px;font-size:12px;border-radius:11px;cursor:pointer;" onclick="document.getElementById('impSet').click()">⬇ Importar Dados (JSON)</div>
+                <div class="btn-s" style="justify-content:center;padding:11px;font-size:12px;border-radius:11px;cursor:pointer;" onclick="_importMode='merge';document.getElementById('impSet').click()">➕ Somar backup (mantém o que tem)</div>
+                <div class="btn-o" style="justify-content:center;padding:11px;font-size:12px;border-radius:11px;cursor:pointer;opacity:.85;" onclick="_importMode='replace';document.getElementById('impSet').click()">⬇ Importar substituindo tudo</div>
                 <input type="file" id="impSet" class="h" accept=".json" onchange="importData(event)">
               </div>
-              <div style="margin-top:11px;padding-top:11px;border-top:1px solid color-mix(in srgb, var(--accent) 15%, transparent);font-size:10px;color:var(--lgray);line-height:1.5;">⚠️ <strong>Atenção:</strong> Ao importar, os dados atuais serão substituídos.</div>
+              <div style="margin-top:11px;padding-top:11px;border-top:1px solid color-mix(in srgb, var(--accent) 15%, transparent);font-size:10px;color:var(--lgray);line-height:1.5;">🔁 <strong>Trabalho → casa:</strong> opere onde estiver, receba o backup no e-mail e use <strong>➕ Somar backup</strong> aqui — as operações novas entram e as antigas continuam. Só use <strong>⬇ Importar substituindo tudo</strong> se quiser apagar o que está aqui e ficar só com o arquivo.</div>
             </div>
           </div>
 
@@ -6549,6 +6551,43 @@ function parseBackupJSON(text){
     throw firstError;
   }
 }
+let _importMode='replace';   /* 'replace' apaga tudo; 'merge' soma (rotina trabalho → casa) */
+/* impressão digital de uma operação: acha duplicadas quando o backup não tem
+   id estável (v1) ou confirma que o mesmo id é a mesma operação */
+function mergeKey(o){
+  o=o||{};
+  return [o.date||'',o.time||'',Number(o.value)||0,o.result||'',opAsset(o),opDirection(o),
+    (o.notes||'').trim(),(o.reason||'').trim(),(o.img||'').slice(0,64)].join('|');
+}
+function mergeSame(a,b){
+  if(!a||!b) return false;
+  if(String(a.id)!==String(b.id)) return false;
+  return mergeKey(a)===mergeKey(b);
+}
+/* Soma o backup ao estado atual SEM apagar nada.
+   · id novo → entra; · mesmo id + mesmo conteúdo → já tem, pula;
+   · mesmo id + conteúdo diferente → conflito: mantém o daqui e avisa;
+   · sem id estável (legacy_) → compara pela impressão digital.
+   Configurações (capital, metas, tema): as daqui vencem. */
+function mergeBackupState(localSt,incomingOps){
+  const ops=(localSt&&Array.isArray(localSt.operations)?localSt.operations:[]).slice();
+  const byId=new Map(), byKey=new Map();
+  ops.forEach(o=>{ byId.set(String(o.id),o); byKey.set(mergeKey(o),o); });
+  let added=0,skipped=0; const conflicts=[];
+  (incomingOps||[]).forEach((raw,i)=>{
+    const o=raw&&typeof raw==='object'?raw:{};
+    const id=String(o.id||'');
+    const hasId=id&&!/^legacy_/.test(id);
+    const local=hasId?byId.get(id):byKey.get(mergeKey(o));
+    if(local&&(hasId?mergeSame(local,o):true)){ skipped++; return; }
+    if(local&&hasId){ conflicts.push({id,date:o.date||'',time:o.time||''}); return; }
+    const nu={...o};
+    if(!hasId) nu.id='mrg_'+Date.now().toString(36)+'_'+i.toString(36)+Math.random().toString(36).slice(2,6);
+    if(byId.has(String(nu.id))) nu.id=String(nu.id)+'_2';
+    ops.push(nu); byId.set(String(nu.id),nu); byKey.set(mergeKey(nu),nu); added++;
+  });
+  return {operations:ops,added,skipped,conflicts};
+}
 async function importData(ev){
   const f=ev.target.files[0];
   if(!f){return;}
@@ -6578,12 +6617,26 @@ async function importData(ev){
     }
 
     const nOps=st.operations.length, nPics=Object.keys(pics).length;
-    if(!confirm(`Importar ${nOps} operações e ${nPics} prints?\n\nOs dados atuais serão substituídos.`)){
-      inputEl.value=''; return;
+    const mode=_importMode||'replace'; _importMode='replace';   /* volta ao seguro */
+    let mergeReport=null;
+    if(mode==='merge'){
+      const aqui=(S.operations||[]).length;
+      if(!confirm(`Somar ${nOps} operações do arquivo com as ${aqui} que já estão aqui?\n\nNada será apagado: só entra o que é novo.`)){
+        inputEl.value=''; return;
+      }
+      /* normaliza o arquivo antes de comparar (mesma régua dos dois lados) */
+      const inc=migrateState(st);
+      mergeReport=mergeBackupState(S,inc.operations);
+      /* mantém as configurações daqui; os catálogos (ativos, operacionais)
+         se refazem sozinhos com as operações somadas */
+      S=migrateState({...S,operations:mergeReport.operations});
+    }else{
+      if(!confirm(`Importar ${nOps} operações e ${nPics} prints?\n\nOs dados atuais serão substituídos.`)){
+        inputEl.value=''; return;
+      }
+      S=migrateState(st);
     }
-
     /* ── estado + migrações (inclusive type antigo → asset/direction) ── */
-    S=migrateState(st);
     ensureChartState();
     if(!THEMES.some(t=>t.id===S.theme)) S.theme='default';
     /* também converte o campo img dos backups v1 para IndexedDB + shots */
@@ -6639,8 +6692,11 @@ async function importData(ev){
     const legacyFailed=(legacyMigration.failed||[]).length;
     if(legacyFailed) details.push(`falha ao migrar ${legacyFailed} print(s) legado(s)`);
     if(failed) details.push(`falha em ${failed} print(s)`);
-    const msg=`Importado: ${nOps} operações${details.length?'. '+details.join('; '):'.'}`;
-    toast(msg,(failed||legacyFailed||unlinked)?'w':'s');
+    const nConfl=mergeReport?mergeReport.conflicts.length:0;
+    const msg=mergeReport
+      ? `Somado: +${mergeReport.added} nova(s) (${S.operations.length} no total)${mergeReport.skipped?'; '+mergeReport.skipped+' já existia(m)':''}${nConfl?'; '+nConfl+' conflito(s) mantido(s) como estavam':''}${details.length?'. '+details.join('; '):'.'}`
+      : `Importado: ${nOps} operações${details.length?'. '+details.join('; '):'.'}`;
+    toast(msg,(failed||legacyFailed||unlinked||nConfl)?'w':'s');
   }catch(err){
     toast('Erro ao importar: '+(err&&err.message?err.message:'desconhecido'),'e');
   }finally{
@@ -8586,7 +8642,7 @@ function chartsRefresh(){ if(isChartsActive()) renderCharts(); }
 /* ══════════════════════════════════════
    INIT
 ══════════════════════════════════════ */
-var EC_BUILD='2026-10-05.1-email';   /* digite EC_BUILD no console p/ ver a versão */
+var EC_BUILD='2026-10-13.2-soma';   /* digite EC_BUILD no console p/ ver a versão */
 
 /* ══════════════════════════════════════
    NUVEM GITHUB — mesmo backup no PC e no celular
@@ -8806,6 +8862,16 @@ function easyIdFromResponse(r){
   const x=r.headers.get('X-jsonblob')||r.headers.get('x-jsonblob');
   return x||'';
 }
+async function easyPackComPrints(){
+  const full=await cloudBuildPack(true);
+  /* margem conservadora: se a galeria deixar o pacote gigante, a nuvem sobe
+     só com os números para nunca travar — e o app avisa na hora */
+  if(JSON.stringify(full).length>8*1024*1024){
+    toast('Nuvem: prints acima de 8 MB — subindo só os números desta vez.','w');
+    return cloudBuildPack(false);
+  }
+  return full;
+}
 async function easyCreate(){
   easySaveForm();
   const pin=((document.getElementById('easyPin')||{}).value||'').trim();
@@ -8813,7 +8879,7 @@ async function easyCreate(){
   if(_easyBusy) return;
   _easyBusy=true; easyPaint('Criando…');
   try{
-    const pack=await cloudBuildPack(false);
+    const pack=await easyPackComPrints();
     const body=await easyWrap(pack,pin);
     const r=await fetch(EASY_API,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify(body)});
     if(!r.ok) throw new Error('HTTP '+r.status);
@@ -8843,7 +8909,7 @@ async function easyPush(manual){
   if(_easyBusy) return;
   _easyBusy=true; easyPaint('Enviando…');
   try{
-    const pack=await cloudBuildPack(false);
+    const pack=await easyPackComPrints();
     const body=await easyWrap(pack,c.pin);
     const r=await fetch(EASY_API+'/'+encodeURIComponent(c.id),{method:'PUT',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify(body)});
     if(!r.ok) throw new Error('HTTP '+r.status);
@@ -8950,7 +9016,7 @@ function emailPaintStatus(extra){
     const d=emailDaysSince(c.lastAt);
     if(d!==null&&d>=7) linhas.push('⏰ Já faz '+d+' dias — bom momento para fechar a semana.');
   }
-  if(c.aviso&&!c.lastAt&&c.worker&&c.to) linhas.push('Sugestão: enviar toda segunda-feira, fechando a semana anterior.');
+  if(c.aviso&&!c.lastAt&&c.worker&&c.to) linhas.push('Sugestão: o GitHub já fecha a semana sozinho toda sexta 21h — este botão é para um backup fora de hora.');
   el.innerHTML=linhas.map(l=>escHtml(l)).join('<br>');
 }
 
@@ -9188,7 +9254,7 @@ function emailHtml(m,info){
     (info.semPrints?'<p style="color:#b45309;font:12px Arial,sans-serif;margin:10px 0 0;">O backup deste e-mail foi <strong>sem prints</strong> (tamanho); as imagens vão nos .zip das próximas partes.</p>':'')+
       (dst?'<p style="color:#b45309;font:12px Arial,sans-serif;margin:6px 0 0;">Atenção:'+escHtml(dst)+'</p>':''),
     '<h3 style="font:bold 14px Arial,sans-serif;color:#17203d;margin:18px 0 6px;">Como restaurar</h3>',
-    '<p style="color:#5a6076;font:12px Arial,sans-serif;line-height:1.6;margin:0;">No EdgeControl: <strong>Configurações → 🔒 Backup de Dados → Importar</strong> e escolha o .json deste e-mail (ele substitui os dados do aparelho). Para só sincronizar PC e celular, use a <strong>Nuvem fácil</strong> (código + PIN).</p>',
+    '<p style="color:#5a6076;font:12px Arial,sans-serif;line-height:1.6;margin:0;">No EdgeControl: <strong>Configurações → 🔒 Backup de Dados → ➕ Somar backup</strong> e escolha o .json deste e-mail (as novas entram e as antigas continuam). Só use “Importar substituindo tudo” se quiser apagar o que está aqui. Para sincronizar PC e celular no dia a dia, use a <strong>Nuvem fácil</strong> (código + PIN).</p>',
     '<hr style="border:none;border-top:1px solid #ececf3;margin:18px 0 10px;">',
     '<div style="color:#9aa0b4;font:11px Arial,sans-serif;line-height:1.6;">Gerado por EdgeControl build '+escHtml(EC_BUILD)+
       ' em '+escHtml(new Date().toLocaleString('pt-BR'))+'. Período: '+escHtml(m.label)+
@@ -9214,7 +9280,7 @@ function emailText(m,info){
     'Anexos:',
     ...anexos.map(a=>' - '+a.name+' ('+emailBytes(a.bytes)+')'),
     '',
-    'Restaurar: Configurações → Backup de Dados → Importar (o .json substitui os dados do aparelho).',
+    'Restaurar: Configurações → Backup de Dados → Somar backup (junta sem apagar; “substituindo tudo” só se quiser apagar o que está aqui).',
     'Gerado por EdgeControl '+EC_BUILD+' em '+new Date().toLocaleString('pt-BR')+'.'
   ].join('\n');
 }
