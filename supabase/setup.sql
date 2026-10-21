@@ -2,6 +2,8 @@
 -- Run once in Supabase Dashboard > SQL Editor > New query.
 -- Keep the prints bucket PRIVATE. The client must never use service_role.
 
+do $ec_setup$
+begin
 create table if not exists public.ec_user_state (
   user_id uuid primary key references auth.users(id) on delete cascade,
   payload jsonb not null default '{}'::jsonb,
@@ -139,3 +141,5 @@ create policy ec_prints_delete_own on storage.objects
     bucket_id = 'edgecontrol-prints'
     and (storage.foldername(name))[1] = (select auth.uid()::text)
   );
+end;
+$ec_setup$;
