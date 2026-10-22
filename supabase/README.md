@@ -26,4 +26,14 @@ O editor deste projeto aceita **uma instrução SQL por execução** e não acei
 12. `setup/12-create-private-print-bucket.sql`
 13. `setup/13-policy-private-prints.sql`
 
-O setup só cria a estrutura vazia e as permissões privadas. Não importa, apaga nem altera os dados atualmente salvos no navegador. O app ainda precisará receber a integração Supabase antes de sincronizar operações e prints.
+O setup só cria a estrutura vazia e as permissões privadas. Não importa, apaga nem altera os dados atualmente salvos no navegador.
+
+## Integração do app
+
+O app usa `runtime-config.js` com a Project URL e a publishable key (chave pública, própria para frontend). Nunca coloque `service_role` neste arquivo. `app-sync.js` usa a biblioteca oficial Supabase JS local em `vendor/`, para que o shell do PWA continue abrindo sem depender de um CDN.
+
+No app publicado, abra **Configurações → Supabase — sincronização online**, informe seu e-mail e solicite o link de acesso. Ao abrir o link no mesmo aparelho, o app sincroniza o estado, operações e arquivos dos prints. A sincronização também tenta novamente ao salvar, ao voltar à internet, ao retornar para a aba e periodicamente enquanto o app está aberto. Falhas mantêm os dados locais e aparecem no status.
+
+Na primeira conexão, se a conta estiver vazia, os dados locais são enviados. Se já houver dados na nuvem, operações diferentes são mescladas por ID; edições e exclusões locais pendentes usam timestamps para resolver o conflito, e prints ausentes são transferidos. O bucket de prints permanece privado por usuário.
+
+Antes de sincronizar pela primeira vez, mantenha o backup JSON completo exportado do app até verificar operações e prints no segundo aparelho. A integração ainda não substitui esse backup de segurança.
