@@ -1887,6 +1887,30 @@ body.rpt-open{overflow:hidden;}
   .card,.donut-card,.rec-card,.an-card,.an-st,.set-card{border-color:var(--hair);box-shadow:0 4px 14px rgba(25,32,65,.07);}
   .set-card{border-radius:16px;padding:14px;background:var(--card);}
   .set-tit{font-size:13px;}
+  #page-operations .ops-hd>div:last-child{width:100%;}
+  #page-operations .ops-hd>div:last-child .btn-o{flex:1;justify-content:center;}
+  #page-operations .ops-fil .fil-row{display:grid;grid-template-columns:1fr 1fr;gap:7px;padding:9px;}
+  #page-operations .ops-fil .fil-row .fi{width:100%!important;min-width:0;}
+  #page-operations .ops-fil .fil-row .btn-o{grid-column:1/-1;justify-content:center;}
+  #page-operations .ops-tbl .card{padding:0;border:0;background:transparent;box-shadow:none;}
+  #page-operations .tbl-sc{overflow:visible;}
+  #page-operations .ops-tbl table,#page-operations #opsTb{display:block;width:100%;}
+  #page-operations .ops-tbl thead{display:none;}
+  #page-operations #opsTb>tr{display:block;width:100%;}
+  #page-operations #opsTb>tr>td{display:block;width:100%;padding:0;border:0;white-space:normal;}
+  .op-mobile-card{margin:0 0 10px;padding:14px;border:1px solid var(--hair);border-radius:16px;background:var(--surf);
+    box-shadow:0 4px 14px rgba(25,32,65,.07);cursor:pointer;}
+  .op-mobile-top,.op-mobile-middle{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+  .op-mobile-title{font-size:13px;font-weight:750;min-width:0;overflow:hidden;text-overflow:ellipsis;}
+  .op-mobile-date{font-size:10px;color:var(--dim);margin-top:4px;}
+  .op-mobile-middle{margin-top:12px;}
+  .op-mobile-value{font:800 20px 'Space Grotesk',sans-serif;letter-spacing:-.4px;}
+  .op-mobile-value.win{color:var(--green);}.op-mobile-value.loss{color:var(--red);}.op-mobile-value.draw{color:var(--lgray);}
+  .op-mobile-tags{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:10px;}
+  .op-mobile-tags>span{padding:4px 7px;border-radius:8px;background:color-mix(in srgb,var(--accent) 7%,var(--surf));color:var(--lgray);font-size:10px;}
+  .op-mobile-reason{margin-top:9px;color:var(--lgray);font-size:11px;line-height:1.45;overflow-wrap:anywhere;}
+  .op-mobile-actions{display:flex;gap:7px;margin-top:11px;padding-top:10px;border-top:1px solid var(--hair);}
+  .op-mobile-actions .btn-s{flex:1;justify-content:center;min-height:38px;}
   .nav-item,.btn-o,.btn-s,.hbtn,.gc-btn,.slot-dot{touch-action:manipulation;}
   #gAutoBtn{display:none!important;}
   #hdr .hbtn{width:36px;height:36px;min-height:36px;}
@@ -3352,6 +3376,7 @@ function syncMetalUI(){
    Prints ficam como Blob binário — o localStorage
    (~5 MB) estoura com 3 ou 4 imagens.
 ══════════════════════════════════════ */
+let _shotMaintenanceDone=false,_shotMaintenancePromise=null;
 const IMGDB={
   _db:null,
   open(){
@@ -3462,8 +3487,17 @@ async function storeShot(file,opts={}){
    É usado na inicialização para que um estado antigo volte a enxergar seus
    prints antes de qualquer tela ser aberta. */
 async function reconcileShots(){
-  const all=await IMGDB.all(),records={};
-  all.forEach(r=>{records[r.id]=r;});
+  /* Normalmente todos os prints já têm vínculo. Leia só as chaves (não os
+     Blobs inteiros) e abra registros individualmente apenas para órfãos. */
+  const linked=new Set((S.operations||[]).flatMap(op=>opShotIds(op).map(String)));
+  const keys=await IMGDB.keys(),missing=keys.filter(id=>!linked.has(String(id)));
+  if(!missing.length) return {associated:0,ambiguous:0,owners:new Map()};
+  const records={};
+  for(let i=0;i<missing.length;i++){
+    const rec=await IMGDB.get(missing[i]);
+    if(rec) records[String(rec.id)]=rec;
+    if(i&&i%30===0) await new Promise(resolve=>setTimeout(resolve,0));
+  }
   const association=associateImportedShots(records);
   if(association.associated) save();
   return association;
@@ -4108,12 +4142,34 @@ function editOp(id){
 }
 let opsRenderLimit=80,opsRenderSource=null;
 function opsLoadMore(){opsRenderLimit+=50;renderOps(opsRenderSource);}
+function mobileOpRow(op,index){
+  const id=jsStr(op.id),asset=opAsset(op)||'Operação',direction=opDirection(op),emotions=opEmotions(op);
+  const isWin=op.result==='WIN',isLoss=op.result==='LOSS',sign=isWin?'+':isLoss?'−':'';
+  const cls=isWin?'win':isLoss?'loss':'draw',media=[];
+  const shotCount=opShotIds(op).length;
+  if(shotCount) media.push('📸 '+shotCount);
+  if(op.img) media.push('🖼️');
+  if(op.yt) media.push('🎬');
+  return `<tr class="op-mobile-row" onclick="openDet(${id})"><td colspan="10">
+    <article class="op-mobile-card">
+      <div class="op-mobile-top"><div class="op-mobile-title">${escHtml(asset)}${direction?` <span class="op-mobile-direction">${directionBadgeHTML(direction)}</span>`:''}</div><div class="op-mobile-date">${escHtml(op.date||'—')} · ${escHtml(op.time||'—')}</div></div>
+      <div class="op-mobile-middle"><div class="op-mobile-value ${cls}">${sign}${fmtBRL(op.value)}</div><div class="op-mobile-result ${cls}">${resultBadgeHTML(op.result)}</div></div>
+      <div class="op-mobile-tags">${op.plan==='yes'?'<span>✅ Seguiu o plano</span>':op.plan==='no'?'<span>❌ Saiu do plano</span>':''}${media.length?`<span>${media.join(' · ')}</span>`:''}${emotions.length?`<span>🧠 ${escHtml(emotions.join(', '))}</span>`:''}</div>
+      ${op.reason?`<div class="op-mobile-reason">${escHtml(op.reason)}</div>`:''}
+      <div class="op-mobile-actions"><button type="button" class="btn-s xs" onclick="event.stopPropagation();openDet(${id})">Detalhes</button><button type="button" class="btn-s xs" onclick="event.stopPropagation();editOp(${id})">Editar</button><button type="button" class="btn-s xs" aria-label="Excluir operação" onclick="event.stopPropagation();curId=${id};delOp()">Excluir</button></div>
+    </article>
+  </td></tr>`;
+}
 function renderOps(filt){
   const ops=filt!==undefined?filt:chronoOps(S.operations).reverse();
   opsRenderSource=ops;
   const mobile=isCompactViewport(),visible=mobile?ops.slice(0,opsRenderLimit):ops;
   const tb=document.getElementById('opsTb');
   if(!ops.length){tb.innerHTML=`<tr><td colspan="10" style="text-align:center;padding:28px;color:var(--lgray);"><div style="font-size:22px;margin-bottom:5px;">📋</div>Nenhuma operação.</td></tr>`;return;}
+  if(mobile){
+    tb.innerHTML=visible.map(mobileOpRow).join('')+(visible.length<ops.length?`<tr><td colspan="10" style="padding:12px;text-align:center;"><button class="btn-s xs" style="min-height:40px;" onclick="event.stopPropagation();opsLoadMore()">Carregar mais 50 (${ops.length-visible.length} restantes)</button></td></tr>`:'');
+    return;
+  }
   tb.innerHTML=visible.map((op,i)=>{
     const rb=resultBadgeHTML(op.result),asset=opAsset(op),direction=opDirection(op);
     const pb=op.plan==='yes'?'<span class="badge byes">✅</span>':op.plan==='no'?'<span class="badge bno">❌</span>':'—';
@@ -6135,6 +6191,7 @@ function initShotZone(){
 async function refreshDetShots(){
   const box=document.getElementById('detShots');
   if(!box) return;
+  await ensureShotMaintenance();
   const op=S.operations.find(o=>o.id===curId);
   const ids=opShotIds(op);
   if(!ids.length){ box.innerHTML='<div style="font-size:11px;color:var(--dim);">—</div>'; return; }
@@ -6156,9 +6213,10 @@ function jsStr(v){return escHtml(JSON.stringify(String(v??'')));}
    GALERIA DE PRINTS
 ══════════════════════════════════════ */
 let galCache=[];
-async function openGallery(){ await renderGallery(); showMod('galleryMod'); }
+async function openGallery(){ await ensureShotMaintenance(); await renderGallery(); showMod('galleryMod'); }
 /* v2: atalho das Configurações → abre o estúdio no print mais recente */
 async function openLastShotStudio(){
+  await ensureShotMaintenance();
   await renderGallery();
   if(!galCache.length){ toast('Nenhum print salvo ainda — anexe um em qualquer operação.','w'); return; }
   closeMod('galleryMod');
@@ -6286,11 +6344,19 @@ function makeZip(files){
 ══════════════════════════════════════ */
 function updateDash(){
   const s=S.settings,ops=S.operations;
-  /* "hoje" tem que ser a data LOCAL: toISOString() é UTC e, no fuso do Brasil,
-     entre 00:00 e 03:00 devolve o dia anterior — stop/meta/alertas saíam errados. */
-  const today=localInputDate(new Date()),tOps=ops.filter(o=>o.date===today);
-  const profT=tOps.filter(o=>o.result==='WIN').reduce((a,o)=>a+o.value,0);
-  const lossT=tOps.filter(o=>o.result==='LOSS').reduce((a,o)=>a+o.value,0);
+  /* "Hoje" é a data LOCAL: toISOString() usa UTC e, no fuso do Brasil,
+     entre 00:00 e 03:00 poderia apontar para o dia anterior. */
+  const today=localInputDate(new Date());
+  /* Um passe só para as métricas: evita refiltrar a lista inteira várias vezes
+     em cada atualização do Dashboard, especialmente em aparelhos modestos. */
+  let profT=0,lossT=0,wins=0,loss=0,tG=0,tL=0,bw=0,wl=0,minDate='',maxDate='';
+  for(const o of ops){
+    const value=Number(o.value)||0;
+    if(o.result==='WIN'){wins++;tG+=value;if(value>bw)bw=value;if(o.date===today)profT+=value;}
+    else if(o.result==='LOSS'){loss++;tL+=value;if(value>wl)wl=value;if(o.date===today)lossT+=value;}
+    if(o.date){const date=String(o.date);if(!minDate||date<minDate)minDate=date;if(date>maxDate)maxDate=date;}
+  }
+  const tot=ops.length,wr=tot>0?wins/tot*100:0;
   /* Meta e stop são % do capital do INÍCIO do dia (âncora), não do capital que já
      subiu com os ganhos de hoje — senão a meta foge conforme você acerta.
      capital de início do dia = capital atual − resultado líquido de hoje. */
@@ -6319,9 +6385,9 @@ function updateDash(){
   document.getElementById('tgtBar').style.width=tp+'%';document.getElementById('tgtPct').textContent=tp.toFixed(0)+'%';
   document.getElementById('dashProfT').textContent=fmtBRL(profT);
 
-  /* sequência de losses atual (ordem cronológica) — usada no circuit breaker */
-  const _chBrk=chronoOps(ops);let lossStreak=0;
-  for(let i=_chBrk.length-1;i>=0;i--){if(_chBrk[i].result==='LOSS')lossStreak++;else break;}
+  /* Uma ordenação cronológica compartilhada pelo circuit breaker, streak e recentes. */
+  const chrono=chronoOps(ops);let lossStreak=0;
+  for(let i=chrono.length-1;i>=0;i--){if(chrono[i].result==='LOSS')lossStreak++;else break;}
   const maxLossLimit=Math.max(1,parseInt(s.maxLosses)||3);
 
   const ab=document.getElementById('alertBar');
@@ -6332,29 +6398,23 @@ function updateDash(){
   else if(sp>=70){ab.style.display='flex';ab.className='abar al-w';ab.innerHTML=`⚠️ Atenção! Você já consumiu ${sp.toFixed(0)}% do stop loss diário. Opere com cautela.`;document.getElementById('statusTxt').textContent='Atenção ao risco!';}
   else{ab.style.display='none';document.getElementById('statusTxt').textContent='Operando normalmente';}
 
-  const tot=ops.length,wins=ops.filter(o=>o.result==='WIN').length,loss=ops.filter(o=>o.result==='LOSS').length,wr=tot>0?wins/tot*100:0;
-  const tG=ops.filter(o=>o.result==='WIN').reduce((a,o)=>a+o.value,0),tL=ops.filter(o=>o.result==='LOSS').reduce((a,o)=>a+o.value,0);
   const pf=tL>0?tG/tL:(tG>0?Infinity:0);
   document.getElementById('stTotal').textContent=tot;
   document.getElementById('stWR').textContent=wr.toFixed(1)+'%';
   document.getElementById('stWL').textContent=`${wins}W / ${loss}L`;
   const pfEl=document.getElementById('stPF');pfEl.textContent=pf===Infinity?'∞':pf.toFixed(2);pfEl.style.color=pf>=1.5?PAL.up:pf>=1?PAL.warn:PAL.down;
   let streak=0,st='';
-  const chrono=chronoOps(ops);
   if(chrono.length>0){st=chrono[chrono.length-1].result;for(let i=chrono.length-1;i>=0;i--){if(chrono[i].result===st)streak++;else break;}}
   document.getElementById('stStreak').textContent=streak>0?streak+'x':'—';
   document.getElementById('stStreak').style.color=st==='WIN'?PAL.up:st==='LOSS'?PAL.down:PAL.ink;
   document.getElementById('stStreakT').textContent=streak>0?(st==='WIN'?'🔥 Sequência de Wins':'❄️ Sequência de Losses'):'—';
-  const bw=wins>0?Math.max(...ops.filter(o=>o.result==='WIN').map(o=>o.value)):0;
-  const wl=loss>0?Math.max(...ops.filter(o=>o.result==='LOSS').map(o=>o.value)):0;
   document.getElementById('stBW').textContent=fmtBRL(bw);
   document.getElementById('stWL2').textContent=fmtBRL(wl);
-  const validDates=ops.map(o=>o.date).filter(Boolean).sort();
-  document.getElementById('statsRng').textContent=validDates.length?`${validDates[0]} → ${validDates[validDates.length-1]}`:'—';
-  renderRec(ops);chartsRefresh();badge();renderTicker();
+  document.getElementById('statsRng').textContent=minDate?`${minDate} → ${maxDate}`:'—';
+  renderRec(ops,chrono);chartsRefresh();badge();renderTicker();
 }
-function renderRec(ops){
-  const c=document.getElementById('recOps'),r=chronoOps(ops).reverse().slice(0,5);
+function renderRec(ops,sorted){
+  const c=document.getElementById('recOps'),r=(sorted||chronoOps(ops)).slice(-5).reverse();
   if(!r.length){c.innerHTML=`<div style="text-align:center;padding:16px;color:var(--lgray);font-size:11px;"><div style="font-size:20px;margin-bottom:3px;">📭</div>Nenhuma operação</div>`;return;}
   c.innerHTML=r.map(op=>{
     const cl=op.result==='WIN'?PAL.up:PAL.down,sg=op.result==='WIN'?'+':'-',v=op.value;
@@ -6610,7 +6670,9 @@ function associateImportedShots(pics){
 async function migrateLegacyShots(persist=true){
   const ops=Array.isArray(S&&S.operations)?S.operations:[];
   let changed=false,migrated=0; const failed=[];
-  for(const op of ops){
+  for(let i=0;i<ops.length;i++){
+    const op=ops[i];
+    if(i&&i%6===0) await new Promise(resolve=>setTimeout(resolve,0));
     const img=typeof op.img==='string'?op.img.trim():'';
     if(!img.startsWith('data:image/')) continue;
     const id=legacyShotId(op);
@@ -6640,6 +6702,20 @@ async function migrateLegacyShots(persist=true){
   }
   if(changed&&persist) save();
   return {changed,migrated,failed};
+}
+async function ensureShotMaintenance(){
+  if(_shotMaintenanceDone) return;
+  if(!_shotMaintenancePromise){
+    _shotMaintenancePromise=(async()=>{
+      try{
+        await migrateLegacyShots();
+        await reconcileShots();
+        _shotMaintenanceDone=true;
+      }catch(e){ console.warn('manutenção de prints:',e); }
+      finally{ _shotMaintenancePromise=null; }
+    })();
+  }
+  await _shotMaintenancePromise;
 }
 /* Backups produzidos por IA às vezes chegam com BOM, explicação ou cercas ```json. */
 function parseBackupJSON(text){
@@ -8478,7 +8554,7 @@ const SLOT_DEF={
 };
 const slotIdx={main:0,assert:0,plan:0};
 const slotCur={main:null,assert:null,plan:null};
-let slotTimer=null;
+let slotTimer=null,_mobileChartObserver=null;
 function gDef(id){ return GCHARTS.find(c=>c.id===id); }
 function gNet(o){ return o.result==='WIN'?(+o.value||0):(o.result==='LOSS'?-(+o.value||0):0); }
 function gISO(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
@@ -8493,7 +8569,7 @@ function gFilter(ops){
 }
 function slotFixed(sid){ return (S.charts&&S.charts.fixed&&S.charts.fixed[sid])||null; }
 function isChartsActive(){ const p=document.getElementById('page-dashboard'); return !!(p&&p.classList.contains('active')); }
-function fadeBody(body){ if(!body) return; body.classList.remove('fade'); void body.offsetWidth; body.classList.add('fade'); }
+function fadeBody(body){ if(!body||isCompactViewport()) return; body.classList.remove('fade'); void body.offsetWidth; body.classList.add('fade'); }
 const GCB={};
 function gCanvas(body){ let c=body.querySelector('canvas'); if(!c){ body.innerHTML=''; c=document.createElement('canvas'); body.appendChild(c); } return c; }
 function gNoData(body,id,msg){ dk('gc_'+id); body.innerHTML='<div class="gc-empty">'+msg+'</div>'; return []; }
@@ -8672,9 +8748,37 @@ function slotRender(sid){
   try{ leg=GCB[showId]?GCB[showId](gFilter(S.operations),body):null; }
   catch(e){ console.warn('slot '+sid+':',e); }
   slotLegend(sid,leg);
+  body.dataset.chartRendered='1';
   if(changed) fadeBody(body);
 }
-function slotRenderAll(){ for(const sid in SLOT_DEF) slotRender(sid); }
+function slotRenderAll(){
+  if(isCompactViewport()&&'IntersectionObserver' in window){
+    if(!_mobileChartObserver){
+      _mobileChartObserver=new IntersectionObserver(entries=>{
+        for(const entry of entries){
+          const body=entry.target,sid=body.dataset.chartSlot;
+          body.dataset.chartInView=entry.isIntersecting?'1':'0';
+          if(entry.isIntersecting&&sid&&(!body.dataset.chartRendered||body.dataset.chartNeedsRefresh)){
+            delete body.dataset.chartNeedsRefresh;
+            slotRender(sid);
+          }
+        }
+      },{root:document.getElementById('content'),rootMargin:'180px 0px'});
+    }
+    for(const sid in SLOT_DEF){
+      const body=document.getElementById('slotBody_'+sid);
+      if(!body) continue;
+      body.dataset.chartSlot=sid;
+      if(body.dataset.chartRendered){
+        if(body.dataset.chartInView==='1') slotRender(sid);
+        else body.dataset.chartNeedsRefresh='1';
+      }else _mobileChartObserver.observe(body);
+    }
+    return;
+  }
+  if(_mobileChartObserver){_mobileChartObserver.disconnect();_mobileChartObserver=null;}
+  for(const sid in SLOT_DEF) slotRender(sid);
+}
 function slotJump(sid,idx){
   if(!SLOT_DEF[sid]) return;
   slotIdx[sid]=((idx%SLOT_DEF[sid].charts.length)+SLOT_DEF[sid].charts.length)%SLOT_DEF[sid].charts.length;
@@ -8771,7 +8875,7 @@ function chartsRefresh(){ if(isChartsActive()) renderCharts(); }
 /* ══════════════════════════════════════
    INIT
 ══════════════════════════════════════ */
-var EC_BUILD='2026-10-22.2-mobile';   /* digite EC_BUILD no console p/ ver a versão */
+var EC_BUILD='2026-10-22.3-mobile';   /* digite EC_BUILD no console p/ ver a versão */
 
 /* ══════════════════════════════════════
    NUVEM GITHUB — mesmo backup no PC e no celular
@@ -9561,14 +9665,18 @@ function configureMobileCharts(){
   Chart.defaults.animation=false;
   Chart.defaults.devicePixelRatio=Math.min(window.devicePixelRatio||1,1.35);
 }
+function yieldFirstPaint(){
+  return new Promise(resolve=>{
+    if(window.requestAnimationFrame) window.requestAnimationFrame(()=>setTimeout(resolve,0));
+    else setTimeout(resolve,0);
+  });
+}
 async function init(){
   console.info('EdgeControl build: '+EC_BUILD);
   configureMobileCharts();
   load();
-  /* Migra e reconcilia prints legados antes de montar o primeiro relatório.
-     A limpeza de órfãos é manual: não podemos apagar um print na abertura. */
-  try{ await migrateLegacyShots(); await reconcileShots(); }
-  catch(e){ console.warn('migração/reconciliação de prints:',e); }
+  /* Mostra o painel com os dados locais primeiro; a manutenção antiga de prints
+     pode levar tempo em aparelhos modestos e não deve deixar a tela em branco. */
   rptInitFromState();
   applyTheme(S.theme||'default',{silent:true});
   applyProfUI();
@@ -9578,6 +9686,10 @@ async function init(){
   badge();
   mtApplyAll();
   initPWA();
+  await yieldFirstPaint();
+  /* Migra/reconcilia sem bloquear a primeira pintura. Nunca apaga prints órfãos
+     automaticamente; essa limpeza continua sendo uma ação explícita da galeria. */
+  await ensureShotMaintenance();
   maybeLoadDemoData();
   try{ await cloudBoot(); }catch(e){ console.warn('nuvem:',e); }
   try{ await emailBoot(); }catch(e){ console.warn('email:',e); }

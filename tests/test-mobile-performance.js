@@ -11,6 +11,11 @@ assert.match(html, /#bg::before,#bg::after,#bg \.sph,#bg \.glow\{display:none!im
 assert.match(html, /function configureMobileCharts\(\)[\s\S]*?Chart\.defaults\.animation=false[\s\S]*?devicePixelRatio=Math\.min/, 'mobile charts disable animation and cap canvas pixel ratio');
 assert.match(html, /function slotStart\(\)[\s\S]*?isCompactViewport\(\)/, 'mobile pauses automatic chart reconstruction');
 assert.match(html, /let opsRenderLimit=80[\s\S]*?opsLoadMore/, 'mobile operations table renders in batches');
+assert.match(html, /function mobileOpRow\([\s\S]*?op-mobile-card[\s\S]*?Detalhes[\s\S]*?Editar/, 'mobile operations use readable cards with direct actions');
+assert.match(html, /function yieldFirstPaint\([\s\S]*?requestAnimationFrame[\s\S]*?async function init\([\s\S]*?updateDash\(\)[\s\S]*?await yieldFirstPaint\(\)[\s\S]*?ensureShotMaintenance\(\)/, 'startup paints local dashboard before print migration');
+assert.match(html, /async function reconcileShots\([\s\S]*?IMGDB\.keys\(\)[\s\S]*?IMGDB\.get\(/, 'print reconciliation reads only unlinked records');
+assert.match(html, /async function openGallery\(\)[\s\S]*?ensureShotMaintenance\(\)/, 'opening print gallery waits for background migration to preserve legacy prints');
+assert.match(html, /function slotRenderAll\([\s\S]*?IntersectionObserver/, 'off-screen charts are deferred on compact screens');
 assert.match(html, /if\(mobile\) return;\s*\/\/ tira o marquee/, 'mobile ticker avoids forced reflow and continuous marquee');
 assert.match(sync, /mobile \? 180000 : 60000/, 'mobile sync polling is less frequent');
 assert.match(sync, /const stateChanged = stable\(mergedState\) !== stable\(localState\)/, 'unchanged cloud sync does not rerender the dashboard');
