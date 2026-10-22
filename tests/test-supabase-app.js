@@ -106,6 +106,7 @@ async function endToEndCloudRoundTrip() {
       addEventListener() {}, setInterval() {}, toast() {}
     };
     let state = localState;
+    let blobReads = 0;
     const shots = new Map(localShots.map(shot => [shot.id, shot]));
     const elements = new Map();
     const doc = { hidden: false, getElementById: id => elements.get(id) || null, addEventListener() {} };
@@ -118,12 +119,12 @@ async function endToEndCloudRoundTrip() {
     api.configure({
       getState: () => state,
       getShots: async () => Array.from(shots.values()),
-      getBlob: async rec => rec.blob,
+      getBlob: async rec => { blobReads++; return rec.blob; },
       putShot: async rec => { shots.set(String(rec.id), rec); },
       applyState: next => { state = next; },
       refresh() {}, persist() {}
     });
-    return { api, getState: () => state, shots };
+    return { api, getState: () => state, shots, getBlobReads: () => blobReads };
   }
   const firstShot = { id: 'shot-1', blob: new Blob(['image-bytes'], { type: 'image/jpeg' }), name: 'chart.jpg', note: 'entrada', at: '2026-10-22', opId: 'op-1', marks: [], crop: null };
   const first = makeApp({ settings: { initialCapital: 1000 }, operations: [{ id: 'op-1', pnl: 25 }] }, [firstShot]);
@@ -132,6 +133,9 @@ async function endToEndCloudRoundTrip() {
   assert.equal(db.ec_user_state.length, 1, 'first device uploads settings/state');
   assert.equal(db.ec_shots.length, 1, 'first device uploads print metadata');
   assert.equal(files.size, 1, 'print image is stored in private Storage');
+  const readsAfterFirstSync = first.getBlobReads();
+  await first.api.syncNow();
+  assert.equal(first.getBlobReads(), readsAfterFirstSync, 'routine sync reuses the cached print hash instead of reopening image blobs');
 
   const second = makeApp({ settings: { initialCapital: 0 }, operations: [] }, []);
   await second.api.boot();

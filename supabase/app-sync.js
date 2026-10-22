@@ -20,7 +20,14 @@
     const n = Date.parse(value || '');
     return Number.isFinite(n) ? n : 0;
   };
-  const stable = value => JSON.stringify(value === undefined ? null : value);
+  function stable(value) {
+    const normalize = v => {
+      if (Array.isArray(v)) return v.map(normalize);
+      if (v && typeof v === 'object') return Object.keys(v).sort().reduce((out, key) => { out[key] = normalize(v[key]); return out; }, {});
+      return v;
+    };
+    return JSON.stringify(normalize(value === undefined ? null : value));
+  }
   function options() {
     try { return Object.assign({ auto: true }, JSON.parse(localStorage.getItem(OPTIONS_KEY) || '{}')); }
     catch (_) { return { auto: true }; }
@@ -226,48 +233,59 @@
         const prior = (meta.shotHashes || {})[id];
         const priorHash = prior && typeof prior === 'object' ? prior.sha256 : prior;
         const priorMetadata = prior && typeof prior === 'object' ? prior.metadata : '';
-        let localHash = priorHash && priorMetadata === metadataFingerprint ? priorHash : '';
-        const blob = await adapter.getBlob(localRow);
-        if (!blob || !blob.size || !String(blob.type || '').startsWith('image/')) {
-          if (!remoteRow) throw new Error('O print ' + id + ' não tem um arquivo de imagem legível.');
-          continue;
+        const metadataMatches = priorMetadata === metadataFingerprint || priorMetadata === JSON.stringify(metadata);
+        const hasSource = !!((localRow.blob && typeof localRow.blob.arrayBuffer === 'function') || typeof localRow.dataUrl === 'string');
+        const cachedValid = !!(priorHash && metadataMatches && hasSource);
+        let localHash = cachedValid ? priorHash : '';
+        let blob = null;
+        if (!localHash) {
+          blob = await adapter.getBlob(localRow);
+          if (blob && blob.size && String(blob.type || '').startsWith('image/')) localHash = await digest(blob);
+          else blob = null;
         }
-        if (!localHash) localHash = await digest(blob);
-        const localChanged = !priorHash || priorHash !== localHash || (priorMetadata && priorMetadata !== metadataFingerprint);
-        const remoteSame = remoteRow && remoteRow.sha256 === localHash;
-        if (!remoteSame && (localChanged || !remoteRow)) {
-          const path = remoteRow && remoteRow.object_path || objectPath(userId, id);
-          const { error: uploadError } = await sb.storage.from(BUCKET).upload(path, blob, {
-            upsert: true, contentType: blob.type || 'image/jpeg', cacheControl: '3600'
-          });
-          if (uploadError) throw uploadError;
-          const rec = {
-            user_id: userId, shot_id: id, object_path: path, metadata: shotMetadata(localRow),
-            sha256: localHash, updated_at: nowIso(), deleted: false
-          };
-          const { error: rowError } = await sb.from('ec_shots').upsert(rec, { onConflict: 'user_id,shot_id' });
-          if (rowError) throw rowError;
-          uploaded++;
+        const localChanged = !priorHash || (localHash && priorHash !== localHash) || (priorMetadata && !metadataMatches);
+        const remoteSame = !!(remoteRow && localHash && remoteRow.sha256 === localHash);
+        if (remoteSame && hasSource) {
           hashes[id] = { sha256: localHash, metadata: metadataFingerprint };
+          if (stable(metadata) !== stable(remoteRow.metadata || {})) {
+            const { error: rowError } = await sb.from('ec_shots').upsert({
+              user_id: userId, shot_id: id, object_path: remoteRow.object_path,
+              metadata, sha256: localHash, updated_at: nowIso(), deleted: false
+            }, { onConflict: 'user_id,shot_id' });
+            if (rowError) throw rowError;
+          }
           continue;
         }
-        if (remoteRow && !remoteSame && !localChanged) {
+        if (remoteRow && (!localChanged || !blob || !hasSource)) {
           const { data: remoteBlob, error: downloadError } = await sb.storage.from(BUCKET).download(remoteRow.object_path);
           if (downloadError) throw downloadError;
           const restored = Object.assign({ id, blob: remoteBlob, size: remoteBlob.size }, remoteRow.metadata || {});
           await adapter.putShot(restored);
           hashes[id] = { sha256: remoteRow.sha256, metadata: stable(shotMetadata(restored)) };
           downloaded++;
-        } else {
-          hashes[id] = { sha256: localHash, metadata: metadataFingerprint };
-          if (remoteRow && stable(shotMetadata(localRow)) !== stable(remoteRow.metadata || {})) {
-            const { error: rowError } = await sb.from('ec_shots').upsert({
-              user_id: userId, shot_id: id, object_path: remoteRow.object_path,
-              metadata: shotMetadata(localRow), sha256: localHash, updated_at: nowIso(), deleted: false
-            }, { onConflict: 'user_id,shot_id' });
-            if (rowError) throw rowError;
-          }
+          continue;
         }
+        if (!blob) {
+          blob = await adapter.getBlob(localRow);
+          if (!blob || !blob.size || !String(blob.type || '').startsWith('image/')) {
+            if (!remoteRow) throw new Error('O print ' + id + ' não tem um arquivo de imagem legível.');
+            continue;
+          }
+          localHash = await digest(blob);
+        }
+        const path = remoteRow && remoteRow.object_path || objectPath(userId, id);
+        const { error: uploadError } = await sb.storage.from(BUCKET).upload(path, blob, {
+          upsert: true, contentType: blob.type || 'image/jpeg', cacheControl: '3600'
+        });
+        if (uploadError) throw uploadError;
+        const rec = {
+          user_id: userId, shot_id: id, object_path: path, metadata,
+          sha256: localHash, updated_at: nowIso(), deleted: false
+        };
+        const { error: rowError } = await sb.from('ec_shots').upsert(rec, { onConflict: 'user_id,shot_id' });
+        if (rowError) throw rowError;
+        uploaded++;
+        hashes[id] = { sha256: localHash, metadata: metadataFingerprint };
       } else if (remoteRow && !remoteRow.deleted) {
         const { data: remoteBlob, error: downloadError } = await sb.storage.from(BUCKET).download(remoteRow.object_path);
         if (downloadError) throw downloadError;
@@ -332,11 +350,13 @@
       root.__EC_SUPABASE_APPLYING = true;
       try {
         const mergedState = Object.assign({}, chosenState, { operations: merged.operations });
-        adapter.applyState(mergedState);
-        adapter.persist();
+        const stateChanged = stable(mergedState) !== stable(localState);
+        if (stateChanged) {
+          adapter.applyState(mergedState);
+          adapter.persist();
+        }
         const shotResult = await syncShots(sb, userId, started);
-        if (adapter.refresh) adapter.refresh();
-        adapter.persist();
+        if (shotResult.downloaded && adapter.refresh) adapter.refresh();
         const latest = readMeta();
         clearSyncedChanges(started, latest, shotResult.hashes);
         const totalOps = merged.operations.length;
@@ -366,9 +386,10 @@
       document.addEventListener('visibilitychange', () => {
         if (!document.hidden && session && options().auto !== false) sync(false);
       });
+      const mobile = !!(root.matchMedia && root.matchMedia('(max-width: 820px)').matches);
       root.setInterval(() => {
         if (!document.hidden && navigator.onLine && session && options().auto !== false) sync(false);
-      }, 60000);
+      }, mobile ? 180000 : 60000);
     }
     if (!authSubscription) {
       const result = sb.auth.onAuthStateChange((event, nextSession) => {
