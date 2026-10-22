@@ -1,0 +1,21 @@
+const fs = require('node:fs');
+const path = require('node:path');
+const assert = require('node:assert/strict');
+const html = fs.readFileSync(path.join(__dirname, '..', 'edgecontrol-glass-v2.html'), 'utf8');
+const sync = fs.readFileSync(path.join(__dirname, '..', 'supabase', 'app-sync.js'), 'utf8');
+const pages = fs.readFileSync(path.join(__dirname, '..', '.github', 'workflows', 'pages.yml'), 'utf8');
+
+assert.match(html, /@media \(max-width:820px\)[\s\S]*?#sidebar\{position:absolute;[\s\S]*?bottom:/, 'mobile navigation is fixed to the bottom safe area');
+assert.match(html, /nav-label-short[^}]*display:none/, 'short mobile navigation labels are hidden on desktop by default');
+assert.match(html, /#bg::before,#bg::after,#bg \.sph,#bg \.glow\{display:none!important/, 'mobile turns off expensive animated background layers');
+assert.match(html, /function configureMobileCharts\(\)[\s\S]*?Chart\.defaults\.animation=false[\s\S]*?devicePixelRatio=Math\.min/, 'mobile charts disable animation and cap canvas pixel ratio');
+assert.match(html, /function slotStart\(\)[\s\S]*?isCompactViewport\(\)/, 'mobile pauses automatic chart reconstruction');
+assert.match(html, /let opsRenderLimit=80[\s\S]*?opsLoadMore/, 'mobile operations table renders in batches');
+assert.match(html, /if\(mobile\) return;\s*\/\/ tira o marquee/, 'mobile ticker avoids forced reflow and continuous marquee');
+assert.match(sync, /mobile \? 180000 : 60000/, 'mobile sync polling is less frequent');
+assert.match(sync, /const stateChanged = stable\(mergedState\) !== stable\(localState\)/, 'unchanged cloud sync does not rerender the dashboard');
+assert.match(sync, /const cachedValid = !!\(priorHash && metadataMatches && hasSource\)/, 'unchanged prints reuse cached hashes');
+assert.match(html, /<script defer src="\.\/vendor\/chart\.umd\.min\.js"><\/script>/, 'Chart.js loads locally without blocking HTML parsing');
+assert.doesNotMatch(html, /cdn\.jsdelivr\.net\/npm\/chart\.js/, 'no external Chart.js dependency remains');
+assert.match(pages, /cp vendor\/chart\.umd\.min\.js vendor\/chartjs-LICENSE\.txt/, 'Pages deploy includes local Chart.js and its license');
+console.log('✅ Mobile UX/performance: bottom navigation, low-power rendering, paginated operations and local assets');

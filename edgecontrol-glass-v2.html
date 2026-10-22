@@ -4,11 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>EdgeControl v2 — Gestão de Capital</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="./vendor/supabase.min.js"></script>
-<script src="./supabase/runtime-config.js"></script>
-<script src="./supabase/app-sync.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script defer src="./vendor/chart.umd.min.js"></script>
+<script defer src="./vendor/supabase.min.js"></script>
+<script defer src="./supabase/runtime-config.js"></script>
+<script defer src="./supabase/app-sync.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet"></noscript>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 :root{
@@ -129,6 +132,7 @@ html,body{width:100vw;height:100vh;overflow:hidden;font-family:'Inter',sans-seri
 .sb-nav{padding:9px 8px;flex:1;overflow-y:auto;}
 .nav-sec{font-size:9px;font-weight:700;color:var(--lgray);opacity:.9;letter-spacing:1.4px;text-transform:uppercase;padding:7px 8px 4px;}
 .nav-item{display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:11px;cursor:pointer;transition:all .18s;margin-bottom:3px;color:var(--lgray);font-size:12.5px;font-weight:600;position:relative;}
+.nav-label-short{display:none;}
 .nav-item:hover{background:color-mix(in srgb,var(--surf) 60%,transparent);color:var(--white);}
 .nav-item.active{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;box-shadow:0 6px 18px color-mix(in srgb,var(--accent) 34%,transparent);}
 .nav-item.active .nav-icon{background:rgba(255,255,255,.22);color:#fff;}
@@ -1841,6 +1845,66 @@ body.rpt-open{overflow:hidden;}
   .rcov-k b{font-size:17px;}
 }
 
+/* Mobile refresh: navegação inferior, superfícies leves e menos trabalho de GPU. */
+@media (max-width:820px){
+  #app{padding:calc(8px + env(safe-area-inset-top)) 10px 0;gap:0;height:100dvh;}
+  #sidebar{position:absolute;left:12px;right:12px;bottom:calc(8px + env(safe-area-inset-bottom));z-index:60;
+    width:auto;min-width:0;height:68px;min-height:68px;flex-direction:row;align-items:center;padding:6px 7px;gap:0;
+    border-radius:22px;overflow:hidden;background:var(--surf);backdrop-filter:none;-webkit-backdrop-filter:none;
+    border:1px solid color-mix(in srgb,var(--accent) 12%,var(--hair));box-shadow:0 10px 30px rgba(22,29,58,.16);}
+  .sb-logo,.sb-profile,.sb-bot{display:none!important;}
+  .sb-nav{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:3px;width:100%;padding:0;overflow:visible;}
+  .nav-sec,.nav-label-full{display:none!important;}
+  .nav-label-short{display:inline!important;}
+  .nav-item{position:relative;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:3px;
+    min-width:0;height:54px;margin:0;padding:4px 1px;border-radius:15px;font-size:9px;line-height:1.1;
+    white-space:nowrap;color:var(--lgray);font-weight:650;box-shadow:none;}
+  .nav-item.active{background:color-mix(in srgb,var(--accent) 10%,var(--surf));color:var(--accent);box-shadow:none;}
+  .nav-icon,.nav-item.active .nav-icon{width:22px;height:22px;border-radius:8px;background:transparent;box-shadow:none;font-size:14px;color:inherit;}
+  .nav-badge{position:absolute;top:1px;right:calc(50% - 23px);margin:0;padding:1px 4px;font-size:8px;line-height:1.2;}
+  #main{width:100%;height:100%;min-height:0;gap:7px;padding-bottom:0;}
+  #hdr{min-height:48px;height:48px;padding:0 12px;border-radius:16px;background:var(--surf);backdrop-filter:none;-webkit-backdrop-filter:none;
+    border-color:var(--hair);box-shadow:0 3px 12px rgba(22,29,58,.07);}
+  .bc span:first-child,.bc>span:nth-child(2){display:none;}
+  .bc .cur{font-size:14px;letter-spacing:-.2px;}
+  .upill{display:none;}
+  #content{overscroll-behavior-y:contain;scrollbar-width:none;}
+  #content::-webkit-scrollbar{display:none;}
+  .page.active{padding:0 0 calc(94px + env(safe-area-inset-bottom));}
+  .pg-title{font-size:20px;letter-spacing:-.45px;}
+  .pg-sub{font-size:11px;line-height:1.45;}
+  .dash-head{padding:2px 2px 10px;align-items:center;}
+  .ticker{height:34px;margin:0 0 8px;border-radius:11px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;
+    background:color-mix(in srgb,var(--surf) 94%,transparent);box-shadow:none;}
+  .ticker::-webkit-scrollbar{display:none;}
+  .ticker-inner{width:max-content;animation:none!important;gap:6px;padding:0 8px;}
+  .tk-item{height:24px;padding:0 9px;border-radius:8px;font-size:11px;box-shadow:none;}
+  .tk-item.tk-empty{font-size:11px;}
+  #bg{background:var(--bg);}
+  #bg::before,#bg::after,#bg .sph,#bg .glow{display:none!important;animation:none!important;filter:none!important;}
+  .gl,#hdr,.card,.donut-card,.rec-card,.an-card,.an-st,.set-card,.ops-tbl thead tr,.abar,.mod,.mhd,.mft{
+    -webkit-backdrop-filter:none!important;backdrop-filter:none!important;}
+  .card,.donut-card,.rec-card,.an-card,.an-st,.set-card{border-color:var(--hair);box-shadow:0 4px 14px rgba(25,32,65,.07);}
+  .set-card{border-radius:16px;padding:14px;background:var(--card);}
+  .set-tit{font-size:13px;}
+  .nav-item,.btn-o,.btn-s,.hbtn,.gc-btn,.slot-dot{touch-action:manipulation;}
+  #gAutoBtn{display:none!important;}
+  #hdr .hbtn{width:36px;height:36px;min-height:36px;}
+  .slot-body.fade,.metal,.metal::before,.metal::after,.pulse,.ov.acc::after{animation:none!important;}
+  .r1>*,.r2>*,.r3>*,.an-top>*,.an-bot>*,.an-sr>*{margin-bottom:10px;}
+  .card,.ov,.donut-card,.rec-card,.an-card,.an-st,.set-card{margin-bottom:10px;}
+  #fab{right:16px;bottom:calc(91px + env(safe-area-inset-bottom));box-shadow:0 8px 22px color-mix(in srgb,var(--accent) 28%,transparent);}
+  .fi,.btn-o,.btn-s{min-height:42px;}
+  .btn-o.xs,.btn-s.xs{min-height:38px;}
+}
+@media (max-width:390px){
+  #sidebar{left:8px;right:8px;height:64px;min-height:64px;padding:5px;}
+  .nav-item{height:52px;font-size:8.5px;}
+  #hdr{padding:0 9px;}
+  #hdr .hbtn{width:28px;height:28px;min-height:28px;}
+  .dash-head .btn-o,.dash-head .btn-s{padding:6px 8px;font-size:9px;}
+}
+
 </style>
 </head>
 <body>
@@ -1871,12 +1935,12 @@ body.rpt-open{overflow:hidden;}
   </div>
   <nav class="sb-nav">
     <div class="nav-sec">Menu</div>
-    <div class="nav-item active" onclick="nav('dashboard',this)"><span class="nav-icon">⊞</span> Dashboard</div>
-    <div class="nav-item" id="navOps" onclick="nav('operations',this)"><span class="nav-icon">📋</span> Operações <span class="nav-badge" id="opsBadge">0</span></div>
-    <div class="nav-item" onclick="nav('analytics',this)"><span class="nav-icon">📊</span> Analytics</div>
-    <div class="nav-item" id="navReport" onclick="nav('report',this)"><span class="nav-icon">📄</span> Relatório</div>
+    <div class="nav-item active" onclick="nav('dashboard',this)" aria-label="Dashboard"><span class="nav-icon">⊞</span><span class="nav-label">Dashboard</span></div>
+    <div class="nav-item" id="navOps" onclick="nav('operations',this)" aria-label="Operações"><span class="nav-icon">📋</span><span class="nav-label">Operações</span><span class="nav-badge" id="opsBadge">0</span></div>
+    <div class="nav-item" onclick="nav('analytics',this)" aria-label="Analytics"><span class="nav-icon">📊</span><span class="nav-label">Analytics</span></div>
+    <div class="nav-item" id="navReport" onclick="nav('report',this)" aria-label="Relatório"><span class="nav-icon">📄</span><span class="nav-label">Relatório</span></div>
     <div class="nav-sec" style="margin-top:6px;">Sistema</div>
-    <div class="nav-item" id="navSettings" onclick="nav('settings',this)"><span class="nav-icon">⚙️</span> Configurações</div>
+    <div class="nav-item" id="navSettings" onclick="nav('settings',this)" aria-label="Configurações"><span class="nav-icon">⚙️</span><span class="nav-label nav-label-full">Configurações</span><span class="nav-label nav-label-short">Ajustes</span></div>
   </nav>
   <div class="sb-bot">
     <div class="uc">
@@ -3482,7 +3546,7 @@ function nav(page,el){
   if(page==='dashboard') updateDash();
   if(page==='settings'){ loadSetForm(); syncMetalUI(); syncThemeUI(); syncCycleUI(); updGalStats(); paintPWA(); }
   mtApplyAll();
-  if(page==='operations'){ refreshAssetUI();renderOps(); syncOpsUsd(); }
+  if(page==='operations'){ opsRenderLimit=80;refreshAssetUI();renderOps();syncOpsUsd(); }
   if(page==='analytics') updateAn();
   if(page==='report') rptLoadPage();
 }
@@ -3750,7 +3814,8 @@ function renderTicker(){
   const on=S.settings.tickerOn!==false;
   if(!on){ wrap.style.display='none'; return; }
   wrap.style.display='block';
-  const ops=[...S.operations].sort((a,b)=>(b.date||'').localeCompare(a.date||'')||(b.time||'').localeCompare(a.time||'')).slice(0,40);
+  const mobile=isCompactViewport();
+  const ops=[...S.operations].sort((a,b)=>(b.date||'').localeCompare(a.date||'')||(b.time||'').localeCompare(a.time||'')).slice(0,mobile?10:40);
   let html='';
   if(!ops.length){
     html='<span class="tk-item tk-empty">Sem operações ainda — registre a primeira.</span>';
@@ -3763,10 +3828,11 @@ function renderTicker(){
       const tip=escHtml(`${dd} ${o.time||''} · ${dir} · ${w?'WIN':'LOSS'}${emos.length?' · '+emos.join(', '):''}`);
       return `<span class="tk-item ${w?'win':'loss'}" title="${tip}">${dd} ${escHtml(dir)} · ${w?'WIN':'LOSS'} <span class="tk-v">${w?'+':'-'}${fmtBRL(o.value)}</span></span>`;
     }).join('');
-    html=seg+seg;
+    html=mobile?seg:seg+seg;
   }
   inner.innerHTML=html;
   inner.style.animation='none';
+  if(mobile) return;                    // tira o marquee e o reflow forçado do celular
   void inner.offsetWidth;
   const speed=(S.settings.tickerSpeed>0)?S.settings.tickerSpeed:40;
   const w=inner.scrollWidth;
@@ -4040,11 +4106,15 @@ function editOp(id){
   draftShots=opShotIds(op); renderShotGrid(); syncValLabel();
   showMod('newOpModal'); initShotZone();
 }
+let opsRenderLimit=80,opsRenderSource=null;
+function opsLoadMore(){opsRenderLimit+=50;renderOps(opsRenderSource);}
 function renderOps(filt){
   const ops=filt!==undefined?filt:chronoOps(S.operations).reverse();
+  opsRenderSource=ops;
+  const mobile=isCompactViewport(),visible=mobile?ops.slice(0,opsRenderLimit):ops;
   const tb=document.getElementById('opsTb');
   if(!ops.length){tb.innerHTML=`<tr><td colspan="10" style="text-align:center;padding:28px;color:var(--lgray);"><div style="font-size:22px;margin-bottom:5px;">📋</div>Nenhuma operação.</td></tr>`;return;}
-  tb.innerHTML=ops.map((op,i)=>{
+  tb.innerHTML=visible.map((op,i)=>{
     const rb=resultBadgeHTML(op.result),asset=opAsset(op),direction=opDirection(op);
     const pb=op.plan==='yes'?'<span class="badge byes">✅</span>':op.plan==='no'?'<span class="badge bno">❌</span>':'—';
     const ns=opShotIds(op).length;
@@ -4065,15 +4135,16 @@ function renderOps(filt){
         <span onclick="event.stopPropagation();curId=${jsStr(op.id)};delOp()" style="cursor:pointer;font-size:13px;">🗑️</span>
       </div></td>
     </tr>`;
-  }).join('');
+  }).join('')+(mobile&&visible.length<ops.length?`<tr><td colspan="10" style="padding:12px;text-align:center;"><button class="btn-s xs" style="min-height:40px;" onclick="opsLoadMore()">Carregar mais 50 (${ops.length-visible.length} restantes)</button></td></tr>`:'');
 }
 function applyFilter(){
+  opsRenderLimit=80;
   const d=document.getElementById('fDate').value,r=document.getElementById('fRes').value,t=document.getElementById('fType').value,p=document.getElementById('fPlan').value;
   let f=chronoOps(S.operations).reverse();
   if(d)f=f.filter(o=>o.date===d);if(r)f=f.filter(o=>o.result===r);if(t)f=f.filter(o=>opAsset(o)===t);if(p)f=f.filter(o=>o.plan===p);
   renderOps(f);
 }
-function clearFilter(){['fDate','fRes','fType','fPlan'].forEach(id=>document.getElementById(id).value='');renderOps();}
+function clearFilter(){opsRenderLimit=80;['fDate','fRes','fType','fPlan'].forEach(id=>document.getElementById(id).value='');renderOps();}
 function badge(){document.getElementById('opsBadge').textContent=S.operations.length;}
 function syncOpsUsd(){const e=document.getElementById('opsUsdEl');if(e)e.textContent='R$ '+S.settings.usdRate.toFixed(2);}
 
@@ -8627,9 +8698,12 @@ function slotStep(){
   }
   if(!any) slotStop();                      // todos fixados: para o cronômetro
 }
+function isCompactViewport(){ return !!(window.matchMedia&&window.matchMedia('(max-width: 820px)').matches); }
 function slotStart(){
   slotStop();
-  if(!S.charts||!S.charts.auto){ syncAutoBtn(); return; }
+  /* No telefone, recriar gráficos a cada poucos segundos pesa na CPU e na bateria.
+     As bolinhas continuam permitindo trocar de gráfico manualmente. */
+  if(!S.charts||!S.charts.auto||isCompactViewport()){ syncAutoBtn(); return; }
   slotTimer=setInterval(slotStep,Math.max(3,(S.charts.autoSec||6))*1000);
   syncAutoBtn();
 }
@@ -8697,7 +8771,7 @@ function chartsRefresh(){ if(isChartsActive()) renderCharts(); }
 /* ══════════════════════════════════════
    INIT
 ══════════════════════════════════════ */
-var EC_BUILD='2026-10-22.1-supabase';   /* digite EC_BUILD no console p/ ver a versão */
+var EC_BUILD='2026-10-22.2-mobile';   /* digite EC_BUILD no console p/ ver a versão */
 
 /* ══════════════════════════════════════
    NUVEM GITHUB — mesmo backup no PC e no celular
@@ -9481,8 +9555,15 @@ async function emailBoot(){
   try{ emailFillForm(); }catch(e){}
 }
 
+function configureMobileCharts(){
+  if(!isCompactViewport()||typeof Chart==='undefined') return;
+  /* Canvas retina 3x + animações longas são caros em aparelhos modestos. */
+  Chart.defaults.animation=false;
+  Chart.defaults.devicePixelRatio=Math.min(window.devicePixelRatio||1,1.35);
+}
 async function init(){
   console.info('EdgeControl build: '+EC_BUILD);
+  configureMobileCharts();
   load();
   /* Migra e reconcilia prints legados antes de montar o primeiro relatório.
      A limpeza de órfãos é manual: não podemos apagar um print na abertura. */

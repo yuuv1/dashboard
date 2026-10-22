@@ -16,6 +16,8 @@ no navegador, funciona offline (PWA) e guarda tudo no próprio aparelho.
 | `edgecontrol-glass.html` | v1 intacta (não mexer) |
 | `index.html` · `404.html` · `sw.js` | entrada do site e service worker (PWA/offline) |
 | `icones-app/` | ícones do PWA |
+| `vendor/` | Chart.js e Supabase JS locais, usados pelo app sem depender de CDN |
+| `supabase/` | configuração pública, sincronização e guia do setup/auth privado |
 | `EdgeControl.bat` | **instalador/servidor local no Windows** (duplo clique) |
 | `_public/` | pacote pronto para arrastar no [Netlify Drop](https://app.netlify.com/drop) |
 | `dados/backups/` | **seus backups `.json`** e as fixtures dos testes (veja `dados/LEIA-ME.md`) |
@@ -29,6 +31,7 @@ no navegador, funciona offline (PWA) e guarda tudo no próprio aparelho.
 - Instalar no Windows: [`docs/COMO-INSTALAR.txt`](docs/COMO-INSTALAR.txt)
 - Nuvem (PC ↔ celular): [`docs/NUVEM-GITHUB.md`](docs/NUVEM-GITHUB.md)
 - Estúdio de Prints: [`docs/PRINT-STUDIO-v2.md`](docs/PRINT-STUDIO-v2.md)
+- Supabase (login e sincronização privada): [`supabase/README.md`](supabase/README.md)
 - Backup por e-mail (manual e semanal): [`docs/EMAIL-BACKUP.md`](docs/EMAIL-BACKUP.md) + [`ferramentas/email-backup/LEIA-ME.md`](ferramentas/email-backup/LEIA-ME.md)
 
 ---
@@ -48,8 +51,8 @@ PIN, crie a nuvem e entre com o código no outro aparelho.
 
 ```bash
 npm install          # jsdom + fake-indexeddb (só para os testes)
-npm test             # 9 suítes: núcleo, DOM, impressão, temas, importação,
-                     # estúdio de prints, e-mail, relay e backup semanal
+npm test             # 14 suítes: app/DOM, impressão, importação, PWA,
+                     # sincronização Supabase e desempenho móvel
 npm run test:email   # só a suíte de e-mail (fetch dublado, nada é enviado)
 node ferramentas/preview-serve.js   # servidor local em http://0.0.0.0:8080
 ```
@@ -61,7 +64,8 @@ Os testes leem o app e as fixtures de `dados/backups/`. **Nenhum teste altera o 
 | Recurso | O que faz |
 |---|---|
 | *Configurações → 🔒 Backup de Dados* | exporta/importa o `.json` completo (com prints); “➕ Somar” junta o backup da semana sem apagar (trabalho → casa) |
-| ☁️ Nuvem fácil | sincroniza PC ↔ celular sozinho (código + PIN, sem token) |
+| ☁️ Nuvem fácil | sincroniza PC ↔ celular pelo fluxo legado (código + PIN) |
+| ☁️ Supabase | sincroniza operações e prints entre aparelhos com login por e-mail e Storage privado |
 | 📧 Backup por e-mail | envio manual do período completo, com o `.json` em anexo |
 | ⏰ Semanal automático | GitHub Actions manda toda sexta 21h (e-mail com prints e, se quiser, WhatsApp) |
 
@@ -71,8 +75,8 @@ O backup semanal usa o **núcleo puro do relatório que mora dentro do app**
 ## Publicar
 
 - **GitHub Pages:** o workflow `.github/workflows/pages.yml` publica `index.html`,
-  `edgecontrol-glass-v2.html`, `edgecontrol-glass.html`, `sw.js` e `404.html` a cada
-  push na `main`.
+  `edgecontrol-glass-v2.html`, `edgecontrol-glass.html`, `sw.js`, `404.html`, os assets
+  locais em `vendor/` e o runtime em `supabase/` a cada push na `main`.
 - **Netlify:** arraste `_public/`.
 - Ao mudar o app, atualize também `_public/index.html` (é a cópia usada no Netlify).
 
