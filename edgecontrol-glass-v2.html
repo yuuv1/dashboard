@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>EdgeControl v2 — Gestão de Capital</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="./vendor/supabase.min.js"></script>
+<script src="./supabase/runtime-config.js"></script>
+<script src="./supabase/app-sync.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
@@ -2352,6 +2355,31 @@ body.rpt-open{overflow:hidden;}
             <div style="font-size:10px;color:var(--dim);line-height:1.55;margin-top:9px;">No Dashboard, cada bloco de gráfico alterna sozinho entre os seus gráficos, com fade-in. As bolinhas escolhem um na hora e o 📌 fixa o gráfico do bloco. O 7d/Tudo do topo vale para todos eles.</div>
           </div>
 
+          <div class="set-card" id="sbCloudCard">
+            <div class="set-tit">☁️ Supabase — sincronização online</div>
+            <div style="font-size:11px;color:var(--lgray);line-height:1.6;margin-bottom:10px;">
+              Entre com seu e-mail para manter operações e prints na sua nuvem privada. O app continua salvando neste aparelho se ficar offline e tenta sincronizar quando a conexão voltar.
+            </div>
+            <div id="sbLoginBox">
+              <div class="fg"><label class="fl" for="sbEmail">Seu e-mail</label>
+                <input class="fi" id="sbEmail" type="email" autocomplete="email" placeholder="voce@exemplo.com">
+              </div>
+              <button class="btn-o xs" onclick="sbSendLoginLink()">✉️ Enviar link de acesso</button>
+            </div>
+            <div id="sbAccountBox" style="display:none;">
+              <div style="font-size:11px;color:var(--green);margin:5px 0 9px;">Conectado como <strong id="sbAccountEmail"></strong></div>
+              <div class="toggle-row">
+                <label class="tgl"><input type="checkbox" id="sbAuto" checked onchange="sbSaveOptions()"><div class="tgl-track"></div><div class="tgl-thumb"></div></label>
+                <span style="font-size:12px;font-weight:600;color:var(--white);">Sincronizar automaticamente</span>
+              </div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
+                <button class="btn-o xs" onclick="sbSyncNow(true)">🔄 Sincronizar agora</button>
+                <button class="btn-s xs" onclick="sbSignOut()">Sair</button>
+              </div>
+            </div>
+            <div id="sbStatus" role="status" aria-live="polite" style="font-size:10.5px;color:var(--dim);line-height:1.5;margin-top:9px;">Pronto para conectar. Os dados atuais permanecem neste aparelho.</div>
+          </div>
+
           <div class="set-card">
             <div class="set-tit">☁️ Nuvem fácil (PC ↔ celular)</div>
             <div style="font-size:11px;color:var(--lgray);line-height:1.6;margin-bottom:11px;">
@@ -3419,11 +3447,16 @@ function load(){
 let _saveFailWarned=false;
 function save(){
   try{
+    const previous=localStorage.getItem('ec7');
+    try{ if(window.ECSupabaseApp) window.ECSupabaseApp.trackLocalChanges(previous,S); }catch(err){}
     localStorage.setItem('ec7',JSON.stringify(S));
     _saveFailWarned=false;
     const e=document.getElementById('sumSync');
     if(e) e.textContent=new Date().toLocaleString('pt-BR');
-    try{ if(typeof cloudOnLocalSave==='function') cloudOnLocalSave(); }catch(err){}
+    if(!window.__EC_SUPABASE_APPLYING){
+      try{ if(typeof cloudOnLocalSave==='function') cloudOnLocalSave(); }catch(err){}
+      try{ if(window.ECSupabaseApp) window.ECSupabaseApp.onLocalSave(); }catch(err){}
+    }
   }catch(e){
     /* QuotaExceededError: o armazenamento encheu (ex.: avatar muito grande).
        Antes o erro era engolido em silêncio e o usuário perdia dados sem saber. */
@@ -8664,7 +8697,7 @@ function chartsRefresh(){ if(isChartsActive()) renderCharts(); }
 /* ══════════════════════════════════════
    INIT
 ══════════════════════════════════════ */
-var EC_BUILD='2026-10-13.2-soma';   /* digite EC_BUILD no console p/ ver a versão */
+var EC_BUILD='2026-10-22.1-supabase';   /* digite EC_BUILD no console p/ ver a versão */
 
 /* ══════════════════════════════════════
    NUVEM GITHUB — mesmo backup no PC e no celular
@@ -8818,6 +8851,23 @@ async function cloudBoot(){
   const c=cloudCfg();
   if(c.auto&&c.token){ try{ await cloudPull({manual:false}); }catch(e){} }
   try{ await easyBoot(); }catch(e){}
+  try{
+    if(window.ECSupabaseApp){
+      window.ECSupabaseApp.configure({
+        getState:()=>S,
+        getShots:()=>IMGDB.all(),
+        getBlob:rec=>shotBlob(rec),
+        putShot:rec=>{revokeImgURL(rec.id);return IMGDB.put(rec);},
+        applyState:st=>{
+          S=migrateState(st); ensureChartState();
+          applyTheme(S.theme||'default',{silent:true}); applyProfUI(); refreshAssetUI(); updateDash(); badge(); mtApplyAll();
+        },
+        refresh:()=>{refreshAssetUI();updateDash();badge();},
+        persist:()=>save()
+      });
+      await window.ECSupabaseApp.boot();
+    }
+  }catch(e){ console.warn('Supabase:',e); }
 }
 
 const EASY_LS='ecEasy';
