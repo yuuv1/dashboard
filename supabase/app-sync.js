@@ -76,7 +76,7 @@
     const auto = document.getElementById('sbAuto');
     if (login) login.style.display = logged ? 'none' : 'block';
     if (account) account.style.display = logged ? 'block' : 'none';
-    if (email) email.textContent = session.user.email || 'conta conectada';
+    if (email) email.textContent = (session && session.user && session.user.email) || 'conta conectada';
     if (auto) auto.checked = options().auto !== false;
   }
   function normalizeError(error) {

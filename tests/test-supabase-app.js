@@ -93,13 +93,13 @@ async function endToEndCloudRoundTrip() {
       }
     }
   };
-  function makeApp(localState, localShots) {
+  function makeApp(localState, localShots, hasSession = true) {
     const mem = new Map();
     const ls = { getItem: k => mem.get(k) || null, setItem: (k, v) => mem.set(k, String(v)) };
     const win = {
       EC_SUPABASE_CONFIG: { url: 'https://example.supabase.co', publishableKey: 'sb_publishable_test', storageBucket: 'edgecontrol-prints' },
       supabase: { createClient: () => Object.assign({}, backend, { auth: {
-        async getSession() { return { data: { session: { user: { id: 'user-1', email: 'test@example.com' } } }, error: null }; },
+        async getSession() { return { data: { session: hasSession ? { user: { id: 'user-1', email: 'test@example.com' } } : null }, error: null }; },
         onAuthStateChange() { return { data: { subscription: { unsubscribe() {} } } }; },
         async signOut() { return { error: null }; }, async signInWithOtp() { return { error: null }; }
       } }) },
@@ -108,7 +108,10 @@ async function endToEndCloudRoundTrip() {
     let state = localState;
     let blobReads = 0;
     const shots = new Map(localShots.map(shot => [shot.id, shot]));
-    const elements = new Map();
+    const elements = new Map([
+      ['sbLoginBox', { style: {} }], ['sbAccountBox', { style: {} }], ['sbAccountEmail', { textContent: '' }],
+      ['sbAuto', { checked: false }], ['sbStatus', { textContent: '', style: {} }]
+    ]);
     const doc = { hidden: false, getElementById: id => elements.get(id) || null, addEventListener() {} };
     const ctx = {
       window: win, localStorage: ls, document: doc, navigator: { onLine: true }, crypto: require('node:crypto').webcrypto,
@@ -124,7 +127,7 @@ async function endToEndCloudRoundTrip() {
       applyState: next => { state = next; },
       refresh() {}, persist() {}
     });
-    return { api, getState: () => state, shots, getBlobReads: () => blobReads };
+    return { api, getState: () => state, shots, elements, getBlobReads: () => blobReads };
   }
   const firstShot = { id: 'shot-1', blob: new Blob(['image-bytes'], { type: 'image/jpeg' }), name: 'chart.jpg', note: 'entrada', at: '2026-10-22', opId: 'op-1', marks: [], crop: null };
   const first = makeApp({ settings: { initialCapital: 1000 }, operations: [{ id: 'op-1', pnl: 25 }] }, [firstShot]);
@@ -142,6 +145,11 @@ async function endToEndCloudRoundTrip() {
   assert.equal(second.getState().operations.length, 1, 'second device downloads cloud operations');
   assert.equal(second.getState().settings.initialCapital, 1000, 'second device receives cloud settings');
   assert.equal(second.shots.size, 1, 'second device downloads the print into IndexedDB');
+
+  const signedOut = makeApp({ settings: {}, operations: [] }, [], false);
+  await signedOut.api.boot();
+  assert.equal(signedOut.elements.get('sbLoginBox').style.display, 'block', 'logged-out device sees the email login form');
+  assert.match(signedOut.elements.get('sbStatus').textContent, /Pronto para conectar/, 'missing session is handled without throwing while reading user');
 }
 
 endToEndCloudRoundTrip().then(() => {
