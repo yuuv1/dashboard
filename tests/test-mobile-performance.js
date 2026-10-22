@@ -16,11 +16,13 @@ assert.match(html, /function yieldFirstPaint\([\s\S]*?requestAnimationFrame[\s\S
 assert.match(html, /async function reconcileShots\([\s\S]*?IMGDB\.keys\(\)[\s\S]*?IMGDB\.get\(/, 'print reconciliation reads only unlinked records');
 assert.match(html, /async function openGallery\(\)[\s\S]*?ensureShotMaintenance\(\)/, 'opening print gallery waits for background migration to preserve legacy prints');
 assert.match(html, /function slotRenderAll\([\s\S]*?IntersectionObserver/, 'off-screen charts are deferred on compact screens');
+assert.match(html, /renderRec\(ops,chrono\);chartsRefresh\(\);badge\(\);renderTicker\(chrono\)/, 'dashboard reuses its chronological sort for the ticker');
 assert.match(html, /if\(mobile\) return;\s*\/\/ tira o marquee/, 'mobile ticker avoids forced reflow and continuous marquee');
 assert.match(sync, /mobile \? 180000 : 60000/, 'mobile sync polling is less frequent');
 assert.match(sync, /const stateChanged = stable\(mergedState\) !== stable\(localState\)/, 'unchanged cloud sync does not rerender the dashboard');
 assert.match(sync, /const cachedValid = !!\(priorHash && metadataMatches && hasSource\)/, 'unchanged prints reuse cached hashes');
-assert.match(html, /<script defer src="\.\/vendor\/chart\.umd\.min\.js"><\/script>/, 'Chart.js loads locally without blocking HTML parsing');
+assert.doesNotMatch(html, /<script[^>]+src="\.\/vendor\/chart\.umd\.min\.js"/, 'Chart.js is not a blocking startup script');
+assert.match(html, /function ensureChartLibrary\([\s\S]*?script\.src='\.\/vendor\/chart\.umd\.min\.js'[\s\S]*?function scheduleChartLoad\([\s\S]*?requestIdleCallback/, 'Chart.js loads locally only after the first screen is ready');
 assert.doesNotMatch(html, /cdn\.jsdelivr\.net\/npm\/chart\.js/, 'no external Chart.js dependency remains');
 assert.match(pages, /cp vendor\/chart\.umd\.min\.js vendor\/chartjs-LICENSE\.txt/, 'Pages deploy includes local Chart.js and its license');
 console.log('✅ Mobile UX/performance: bottom navigation, low-power rendering, paginated operations and local assets');

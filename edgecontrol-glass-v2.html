@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>EdgeControl v2 — Gestão de Capital</title>
-<script defer src="./vendor/chart.umd.min.js"></script>
 <script defer src="./vendor/supabase.min.js"></script>
 <script defer src="./supabase/runtime-config.js"></script>
 <script defer src="./supabase/app-sync.js"></script>
@@ -351,6 +350,7 @@ tbody tr:last-child td{border-bottom:none;}
 .slot-dot:hover{opacity:.85;}
 .slot-dot.on{background:var(--accent);opacity:1;transform:scale(1.3);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 26%,transparent);}
 .slot-body{flex:1;min-height:0;position:relative;width:100%;}
+.slot-body[data-chart-loading]::after{content:'Carregando gráfico…';position:absolute;inset:0;display:grid;place-items:center;color:var(--dim);font-size:11px;pointer-events:none;}
 .slot-body.fade{animation:slotFade var(--slot-fade,.8s) cubic-bezier(.33,1,.68,1);}
 @keyframes slotFade{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
 .gc-btn{width:24px;height:24px;border-radius:8px;border:1px solid var(--border);background:color-mix(in srgb,var(--surf) 70%,transparent);color:var(--lgray);cursor:pointer;font-size:11px;display:inline-flex;align-items:center;justify-content:center;transition:all .15s;padding:0;}
@@ -2078,7 +2078,7 @@ body.rpt-open{overflow:hidden;}
               </div>
             </div>
             <div class="cbd" style="padding-top:2px;">
-              <div class="slot-body" id="slotBody_main"><canvas></canvas></div>
+              <div class="slot-body" id="slotBody_main" data-chart-loading><canvas></canvas></div>
               <div class="donut-legend" id="slotLegend_main" style="display:none;"></div>
             </div>
           </div>
@@ -2093,7 +2093,7 @@ body.rpt-open{overflow:hidden;}
                 <button class="gc-btn" id="slotPin_assert" onclick="slotPin('assert')" title="Fixar este gráfico (para o rodízio)">📌</button>
               </div>
             </div>
-            <div class="slot-body" id="slotBody_assert"><canvas></canvas></div>
+            <div class="slot-body" id="slotBody_assert" data-chart-loading><canvas></canvas></div>
             <div class="donut-legend" id="slotLegend_assert"></div>
           </div>
           <div class="donut-card" style="padding:10px 13px;">
@@ -2104,7 +2104,7 @@ body.rpt-open{overflow:hidden;}
                 <button class="gc-btn" id="slotPin_plan" onclick="slotPin('plan')" title="Fixar este gráfico (para o rodízio)">📌</button>
               </div>
             </div>
-            <div class="slot-body" id="slotBody_plan"><canvas></canvas></div>
+            <div class="slot-body" id="slotBody_plan" data-chart-loading><canvas></canvas></div>
             <div class="donut-legend" id="slotLegend_plan"></div>
           </div>
           <div class="rec-card">
@@ -3842,14 +3842,14 @@ function emotionPerformance(ops){return performanceBins(ops,opEmotions,false);}
 /* ══════════════════════════════════════
    FAIXA DE RESULTADOS (ticker no topo)
 ══════════════════════════════════════ */
-function renderTicker(){
+function renderTicker(sorted){
   const wrap=document.getElementById('ticker'), inner=document.getElementById('tickerInner');
   if(!wrap||!inner) return;
   const on=S.settings.tickerOn!==false;
   if(!on){ wrap.style.display='none'; return; }
   wrap.style.display='block';
-  const mobile=isCompactViewport();
-  const ops=[...S.operations].sort((a,b)=>(b.date||'').localeCompare(a.date||'')||(b.time||'').localeCompare(a.time||'')).slice(0,mobile?10:40);
+  const mobile=isCompactViewport(),limit=mobile?10:40;
+  const ops=sorted?sorted.slice(-limit).reverse():[...S.operations].sort((a,b)=>(b.date||'').localeCompare(a.date||'')||(b.time||'').localeCompare(a.time||'')).slice(0,limit);
   let html='';
   if(!ops.length){
     html='<span class="tk-item tk-empty">Sem operações ainda — registre a primeira.</span>';
@@ -6411,7 +6411,7 @@ function updateDash(){
   document.getElementById('stBW').textContent=fmtBRL(bw);
   document.getElementById('stWL2').textContent=fmtBRL(wl);
   document.getElementById('statsRng').textContent=minDate?`${minDate} → ${maxDate}`:'—';
-  renderRec(ops,chrono);chartsRefresh();badge();renderTicker();
+  renderRec(ops,chrono);chartsRefresh();badge();renderTicker(chrono);
 }
 function renderRec(ops,sorted){
   const c=document.getElementById('recOps'),r=(sorted||chronoOps(ops)).slice(-5).reverse();
@@ -6425,6 +6425,32 @@ function renderRec(ops,sorted){
 /* ══════════════════════════════════════
    CHARTS
 ══════════════════════════════════════ */
+let _chartLibraryPromise=null,_chartLoadScheduled=false;
+function ensureChartLibrary(){
+  if(window.Chart) return Promise.resolve(window.Chart);
+  if(_chartLibraryPromise) return _chartLibraryPromise;
+  _chartLibraryPromise=new Promise((resolve,reject)=>{
+    const script=document.createElement('script');
+    script.src='./vendor/chart.umd.min.js';script.async=true;
+    script.onload=()=>window.Chart?resolve(window.Chart):reject(new Error('Chart.js não inicializou'));
+    script.onerror=()=>reject(new Error('Não consegui carregar os gráficos'));
+    document.head.appendChild(script);
+  }).catch(error=>{_chartLibraryPromise=null;throw error;});
+  return _chartLibraryPromise;
+}
+function scheduleChartLoad(){
+  if(window.Chart||_chartLoadScheduled) return;
+  _chartLoadScheduled=true;
+  const load=()=>ensureChartLibrary().then(()=>{
+    _chartLoadScheduled=false;configureMobileCharts();
+    const active=document.querySelector('.page.active');
+    if(active?.id==='page-dashboard') renderCharts();
+    else if(active?.id==='page-analytics') updateAn();
+    else if(active?.id==='page-report') rptLoadPage();
+  }).catch(error=>{_chartLoadScheduled=false;console.warn('gráficos:',error);});
+  if(window.requestIdleCallback) window.requestIdleCallback(load,{timeout:900});
+  else setTimeout(load,180);
+}
 const CD={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},
   tooltip:{backgroundColor:()=>PAL.tooltipBg||'rgba(255,255,255,.96)',borderColor:()=>PAL.grid,borderWidth:1,titleColor:()=>PAL.ink,bodyColor:()=>PAL.muted,padding:10,cornerRadius:10,displayColors:false,
     titleFont:{family:'Inter',weight:'700',size:11},bodyFont:{family:'Inter',size:11}}}};
@@ -6435,6 +6461,7 @@ function setCP(p){S.cp=p;renderCharts();document.getElementById('btnW').classNam
    ANALYTICS
 ══════════════════════════════════════ */
 function updateAn(){
+  if(!window.Chart){ scheduleChartLoad(); return; }
   const ops=chronoOps(S.operations);   // curva de capital e gráficos em ordem cronológica
   const tI=ops.reduce((a,o)=>a+o.value,0),tG=ops.filter(o=>o.result==='WIN').reduce((a,o)=>a+o.value,0),tL=ops.filter(o=>o.result==='LOSS').reduce((a,o)=>a+o.value,0),net=tG-tL;
   document.getElementById('anI').textContent=fmtBRL(tI);document.getElementById('anG').textContent=fmtBRL(tG);document.getElementById('anL').textContent=fmtBRL(tL);
@@ -7653,6 +7680,7 @@ function rptModel(){
    PÁGINA DO RELATÓRIO (controles dentro do app)
 ══════════════════════════════════════════════════════════ */
 function rptLoadPage(){
+  if(!window.Chart){ scheduleChartLoad(); return; }
   rptInitFromState();
   rptBuildChips();
   rptBuildThemes();
@@ -8749,6 +8777,7 @@ function slotRender(sid){
   catch(e){ console.warn('slot '+sid+':',e); }
   slotLegend(sid,leg);
   body.dataset.chartRendered='1';
+  body.removeAttribute('data-chart-loading');
   if(changed) fadeBody(body);
 }
 function slotRenderAll(){
@@ -8812,7 +8841,10 @@ function slotStart(){
   syncAutoBtn();
 }
 function slotStop(){ if(slotTimer){ clearInterval(slotTimer); slotTimer=null; } syncAutoBtn(); }
-function renderCharts(){ slotRenderAll(); slotStart(); }
+function renderCharts(){
+  if(!window.Chart){ scheduleChartLoad(); return; }
+  slotRenderAll(); slotStart();
+}
 function syncAutoBtn(){
   const b=document.getElementById('gAutoBtn'); if(!b) return;
   const on=!!(S.charts&&S.charts.auto);
@@ -8870,12 +8902,12 @@ function cycleFadeChange(el){
   const fv=document.getElementById('cycleFadeVal'); if(fv) fv.textContent=S.charts.fadeSec.toFixed(1)+' s';
   applySlotFade(); save();
 }
-function chartsRefresh(){ if(isChartsActive()) renderCharts(); }
+function chartsRefresh(){ if(!isChartsActive()) return; if(!window.Chart){ scheduleChartLoad(); return; } renderCharts(); }
 
 /* ══════════════════════════════════════
    INIT
 ══════════════════════════════════════ */
-var EC_BUILD='2026-10-22.3-mobile';   /* digite EC_BUILD no console p/ ver a versão */
+var EC_BUILD='2026-10-22.4-mobile';   /* digite EC_BUILD no console p/ ver a versão */
 
 /* ══════════════════════════════════════
    NUVEM GITHUB — mesmo backup no PC e no celular
