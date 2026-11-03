@@ -93,7 +93,21 @@ Quem é dono ainda pode entrar com **e-mail + senha** ou **link no e-mail** para
 o PIN. No iPhone o link abre no Safari (sessão separada do app instalado) — por isso o
 caminho recomendado em todo aparelho é **código + PIN**.
 
-### Segurança do modelo
+### Sincronização automática (o que o usuário espera)
+
+- **Ao abrir**: o app entra como *aparelho do site* (`runtime-config.js →
+  deviceLogin`), que é **membro** desta conta. Ninguém digita nada: o painel já
+  baixa operações, ajustes e prints.
+- **Ao alterar**: `save()` avisa o sincronizador, que 1,6 s depois empurra a
+  mudança (operação, ajuste e print — o arquivo vai para o bucket).
+- **Para receber**: puxa a cada 60 s no celular / 45 s no computador, ao voltar
+  o foco, ao abrir o app e quando a internet volta.
+- **Quem abriu com os dados publicados** (`dados/padrao*.json`) marca
+  `seededAt`: na primeira sincronização a **nuvem manda**, para não empurrar
+  ajustes antigos nem ressuscitar operação apagada em outro aparelho.
+- **Apagar** vira tombstone (`deleted`) e não volta em outro aparelho.
+
+## Segurança do modelo
 
 - `anon` não tem acesso a nada: tabelas, funções e bucket são fechados.
 - O PIN é guardado com `crypt()` (bfcrypt) e **10 tentativas erradas em 15 min bloqueiam**

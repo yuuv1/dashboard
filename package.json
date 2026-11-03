@@ -4,7 +4,7 @@
   "private": true,
   "description": "EdgeControl - painel de operações em um único HTML. v1: edgecontrol-glass.html (intacta). v2: edgecontrol-glass-v2.html com o Estúdio de Prints (zoom + anotações não-destrutivas). Testes de desenvolvimento não fazem parte do app publicado.",
   "scripts": {
-    "test": "node tests/test-core.js && node tests/test-dom.js && node tests/test-print-css.js && node tests/test-themes.js && node tests/test-import.js && node tests/test-merge.js && node tests/test-print-studio.js && node tests/test-email.js && node tests/test-email-worker.js && node tests/test-semanal.js && node tests/test-sw.js && node tests/test-pwa-manifest.js && node tests/test-supabase-schema.js && node tests/test-supabase-app.js && node tests/test-supabase-pairing.js && node tests/test-seed.js && node tests/test-mobile-performance.js",
+    "test": "node tests/test-core.js && node tests/test-dom.js && node tests/test-print-css.js && node tests/test-themes.js && node tests/test-import.js && node tests/test-merge.js && node tests/test-print-studio.js && node tests/test-email.js && node tests/test-email-worker.js && node tests/test-semanal.js && node tests/test-sw.js && node tests/test-pwa-manifest.js && node tests/test-supabase-schema.js && node tests/test-supabase-app.js && node tests/test-supabase-pairing.js && node tests/test-seed.js && node tests/test-sync-two-devices.js && node tests/test-mobile-performance.js",
     "test:sw": "node tests/test-sw.js",
     "test:supabase": "node tests/test-supabase-schema.js",
     "test:core": "node tests/test-core.js",
@@ -21,7 +21,8 @@
     "test:pwa": "node tests/test-pwa-manifest.js",
     "test:pairing": "node tests/test-supabase-pairing.js",
     "test:seed": "node tests/test-seed.js",
-    "build:seed": "node ferramentas/build-seed.js"
+    "build:seed": "node ferramentas/build-seed.js",
+    "test:sync": "node tests/test-sync-two-devices.js"
   },
   "devDependencies": {
     "fake-indexeddb": "^6.2.5",

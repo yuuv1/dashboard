@@ -29,7 +29,7 @@ assert.match(html, /async function openGallery\(\)[\s\S]*?ensureShotMaintenance\
 assert.match(html, /function slotRenderAll\([\s\S]*?IntersectionObserver/, 'off-screen charts are deferred on compact screens');
 assert.match(html, /renderRec\(ops,chrono\);chartsRefresh\(\);badge\(\);renderTicker\(chrono\)/, 'dashboard reuses its chronological sort for the ticker');
 assert.match(html, /if\(mobile\) return;\s*\/\/ tira o marquee/, 'mobile ticker avoids forced reflow and continuous marquee');
-assert.match(sync, /mobile \? 180000 : 60000/, 'mobile sync polling is less frequent');
+assert.match(sync, /mobile \? 60000 : 45000/, 'polling: 60 s no celular, 45 s no computador (mudança aparece rápido no outro aparelho)');
 assert.match(sync, /const stateChanged = stable\(mergedState\) !== stable\(localState\)/, 'unchanged cloud sync does not rerender the dashboard');
 assert.match(sync, /const cachedValid = !!\(priorHash && metadataMatches && hasSource\)/, 'unchanged prints reuse cached hashes');
 assert.doesNotMatch(html, /<script[^>]+src="\.\/vendor\/chart\.umd\.min\.js"/, 'Chart.js is not a blocking startup script');
