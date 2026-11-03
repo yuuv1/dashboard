@@ -2,6 +2,22 @@
 
 Tudo aqui é **dado**, não código. Nada nesta pasta é publicado junto do app.
 
+## `padrao.json` + `padrao-estado.json` — o que o site abre por padrão
+
+Gerados por `npm run build:seed <backup.json>` a partir do backup exportado do app.
+É o que faz **o painel publicado abrir já preenchido** em qualquer navegador novo:
+
+| Arquivo | Para quê |
+|---|---|
+| `padrao-estado.json` (~30 KB) | operações + ajustes, baixado **antes** da primeira pintura |
+| `padrao.json` (~3,5 MB) | backup completo; em segundo plano leva os prints para o IndexedDB |
+
+⚠️ **Estes dois arquivos são públicos** (repositório público + GitHub Pages). Quem tiver o
+link do site vê as operações e os prints neles, como em qualquer página pública.
+Quem já usa o app em um aparelho **não é sobrescrito** (`ecSeeded` no localStorage).
+O acesso à nuvem (Supabase) continua fechado por PIN — o que é público é só o retrato
+publicado neste arquivo.
+
 ## `backups/`
 
 Seis exportações reais do painel (`Configurações → 🔒 Backup de Dados → Exportar`),
