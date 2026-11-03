@@ -16,8 +16,8 @@ instalável e sincronização Supabase ligada. No celular: abra o link e escolha
 |---|---|
 | App | `edgecontrol-glass-v2.html` publicado no Pages a cada push |
 | PWA | `manifest.webmanifest` + `sw.js` (pré-cache do app, gráficos e módulos Supabase) → abre offline |
-| Nuvem | Supabase `muktpljlzzavcvhqdxco` (região us-east-1), login por e-mail e Storage privado |
-| Login | *Configurações → ☁️ Supabase*: 1º aparelho pelo link do e-mail (+ salvar senha), os outros com e-mail + senha |
+| Nuvem | Supabase `muktpljlzzavcvhqdxco` (us-east-1): pareamento por **código + PIN**, RLS por conta e Storage privado |
+| Entrar | *Configurações → ☁️ Nuvem*: código `EC-7K4M-9Q2X` (já preenchido) + **PIN de 6 números** — sem e-mail, sem link |
 
 ---
 
@@ -58,8 +58,9 @@ servidor local e abre o app no navegador (dá para instalar como aplicativo).
 **Sem instalar nada:** arraste a pasta `_public/` para <https://app.netlify.com/drop>
 e use o link gerado no PC e no celular.
 
-**Dados no PC e no celular:** no app, *Configurações → ☁️ Nuvem fácil* — escolha um
-PIN, crie a nuvem e entre com o código no outro aparelho.
+**Dados no PC e no celular:** no app, *Configurações → ☁️ Nuvem* — digite o **código da
+conta** (já vem preenchido) e o **PIN** uma vez em cada aparelho. Depois disso o app abre
+já sincronizado, sem e-mail e sem link.
 
 ## Desenvolver e testar
 

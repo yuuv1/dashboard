@@ -4,9 +4,12 @@
   const CONFIG = root.EC_SUPABASE_CONFIG || {};
   const META_KEY = 'ecSupabaseSyncMeta';
   const OPTIONS_KEY = 'ecSupabaseOptions';
+  const DEVICE_KEY = 'ecDeviceCred';
+  const HOME_KEY = 'ecHomeAccount';
   const BUCKET = CONFIG.storageBucket || 'edgecontrol-prints';
   let client = null;
   let session = null;
+  let homeId = '';
   let adapter = null;
   let busy = false;
   let queued = false;
@@ -68,16 +71,82 @@
     });
     return client;
   }
+  function randomToken(size) {
+    const bytes = new Uint8Array(size || 8);
+    if (root.crypto && root.crypto.getRandomValues) root.crypto.getRandomValues(bytes);
+    else for (let i = 0; i < bytes.length; i++) bytes[i] = Math.floor(Math.random() * 256);
+    return Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
+  }
+  function readDeviceCred() {
+    try { return JSON.parse(localStorage.getItem(DEVICE_KEY) || 'null'); } catch (_) { return null; }
+  }
+  function writeDeviceCred(cred) {
+    try { localStorage.setItem(DEVICE_KEY, JSON.stringify(cred)); } catch (_) { /* modo privado */ }
+  }
+  function readHome() {
+    try { return localStorage.getItem(HOME_KEY) || ''; } catch (_) { return ''; }
+  }
+  function writeHome(id) {
+    try { if (id) localStorage.setItem(HOME_KEY, String(id)); else localStorage.removeItem(HOME_KEY); } catch (_) { /* modo privado */ }
+  }
   function paintAccount() {
     const logged = !!(session && session.user);
+    const paired = !!(logged && homeId);
     const login = document.getElementById('sbLoginBox');
     const account = document.getElementById('sbAccountBox');
     const email = document.getElementById('sbAccountEmail');
     const auto = document.getElementById('sbAuto');
-    if (login) login.style.display = logged ? 'none' : 'block';
-    if (account) account.style.display = logged ? 'block' : 'none';
-    if (email) email.textContent = (session && session.user && session.user.email) || 'conta conectada';
+    const owner = document.getElementById('sbOwnerBox');
+    const code = document.getElementById('sbAccountCode');
+    if (login) login.style.display = paired ? 'none' : 'block';
+    if (account) account.style.display = paired ? 'block' : 'none';
+    if (email) email.textContent = (session && session.user && session.user.email) || 'aparelho conectado';
     if (auto) auto.checked = options().auto !== false;
+    if (owner) owner.style.display = (logged && !paired) ? 'block' : 'none';
+    if (code) code.textContent = displayCode || '••••';
+  }
+  let displayCode = '';
+
+  /* Sessão do aparelho: cada aparelho tem a própria conta técnica (sem e-mail
+     visível ao usuário). Ela só dá acesso depois de um pareamento com
+     código + PIN — o vínculo vive em ec_members e é checado pelas políticas. */
+  async function ensureDeviceSession(sb) {
+    if (session && session.user) return session;
+    const cred = readDeviceCred();
+    if (cred && cred.email && cred.password && typeof sb.auth.signInWithPassword === 'function') {
+      try {
+        const attempt = await sb.auth.signInWithPassword({ email: cred.email, password: cred.password });
+        if (!attempt.error && attempt.data && attempt.data.session) {
+          session = attempt.data.session;
+          return session;
+        }
+      } catch (_) { /* segue para criar um novo */ }
+    }
+    if (typeof sb.auth.signUp !== 'function') throw new Error('módulo de login indisponível');
+    const password = randomToken(16) + randomToken(8);
+    const email = 'aparelho-' + randomToken(10) + '@edgecontrol.app';
+    const created = await sb.auth.signUp({ email, password });
+    if (created.error) throw created.error;
+    if (!created.data || !created.data.session) throw new Error('o servidor não devolveu a sessão do aparelho');
+    session = created.data.session;
+    writeDeviceCred({ email, password });
+    paintAccount();
+    return session;
+  }
+  async function resolveHome(sb) {
+    if (homeId) return homeId;
+    const saved = readHome();
+    if (!session) return null;
+    if (typeof sb.rpc === 'function') {
+      try {
+        const { data, error } = await sb.rpc('ec_home');
+        if (error) throw error;
+        if (data) { homeId = String(data); writeHome(homeId); return homeId; }
+        return null;
+      } catch (_) { /* projeto antigo, sem a função: usa o próprio usuário */ }
+    }
+    homeId = session.user.id;
+    return homeId;
   }
   function normalizeError(error) {
     if (!error) return 'erro desconhecido';
@@ -143,6 +212,69 @@
     } catch (error) {
       showStatus('Não consegui salvar a senha: ' + normalizeError(error), true);
     }
+  }
+  async function pairDevice() {
+    const codeEl = document.getElementById('sbCode');
+    const pinEl = document.getElementById('sbPin');
+    const code = (codeEl && codeEl.value || '').trim().toUpperCase();
+    const pin = (pinEl && pinEl.value || '').replace(/\D/g, '');
+    if (!code || code.length < 4) { showStatus('Digite o código da conta (EC-XXXX-XXXX).', true); return; }
+    if (!/^\d{6}$/.test(pin)) { showStatus('O PIN tem 6 números.', true); return; }
+    const sb = getClient();
+    if (!sb) { showStatus('O módulo Supabase não carregou. Recarregue o app quando estiver online.', true); return; }
+    showStatus('Conectando este aparelho…');
+    try {
+      await ensureDeviceSession(sb);
+      const { data, error } = await sb.rpc('ec_pair', { p_code: code, p_pin: pin });
+      if (error) throw error;
+      if (!data) throw new Error('código ou PIN inválido');
+      homeId = String(data);
+      writeHome(homeId);
+      if (pinEl) pinEl.value = '';
+      if (codeEl) codeEl.value = '';
+      paintAccount();
+      showStatus('Conectado. Baixando seus dados da nuvem…');
+      await sync(false);
+    } catch (error) {
+      showStatus('Não consegui conectar: ' + normalizeError(error), true);
+    }
+  }
+  /* Dono da conta: define (ou troca) o PIN de 6 números — o código é gerado
+     uma vez e mostrado na tela para digitar nos outros aparelhos. */
+  async function savePin() {
+    /* dois campos na tela (dono e conta conectada); usa o que estiver preenchido */
+    const fields = ['sbPinNew', 'sbPinNew2'].map(id => document.getElementById(id));
+    const el = fields.find(field => field && field.value) || fields[0];
+    const pin = (el && el.value || '').replace(/\D/g, '');
+    if (!/^\d{6}$/.test(pin)) { showStatus('Escolha um PIN com 6 números.', true); return; }
+    const sb = getClient();
+    if (!sb) { showStatus('O módulo Supabase não carregou. Recarregue o app quando estiver online.', true); return; }
+    const current = session;
+    if (!current || !current.user) { showStatus('Entre com seu e-mail neste aparelho antes de criar o PIN.', true); return; }
+    try {
+      const { data, error } = await sb.rpc('ec_new_account', { p_pin: pin });
+      if (error) throw error;
+      displayCode = data || '';
+      homeId = current.user.id;
+      writeHome(homeId);
+      if (el) el.value = '';
+      paintAccount();
+      showStatus('PIN salvo. Código da conta: ' + displayCode + ' — digite esse código e o PIN nos outros aparelhos.');
+      await sync(false);
+    } catch (error) {
+      showStatus('Não consegui salvar o PIN: ' + normalizeError(error), true);
+    }
+  }
+  async function loadAccountCode() {
+    const sb = getClient();
+    if (!sb || !session || typeof sb.rpc !== 'function') return '';
+    try {
+      const { data, error } = await sb.rpc('ec_code');
+      if (error) throw error;
+      displayCode = data || '';
+      paintAccount();
+      return displayCode;
+    } catch (_) { return ''; }
   }
   async function signOut() {
     const sb = getClient();
@@ -356,7 +488,7 @@
     const started = readMeta();
     showStatus('Sincronizando operações e prints…');
     try {
-      const userId = session.user.id;
+      const userId = homeId || session.user.id;
       const localState = adapter.getState();
       const localOps = Array.isArray(localState.operations) ? localState.operations : [];
       const [{ data: stateRows, error: stateError }, { data: remoteOps, error: opError }] = await Promise.all([
@@ -415,6 +547,10 @@
   }
   async function boot(appAdapter) {
     adapter = appAdapter || adapter;
+    /* O código da conta é público (serve só para identificar a conta em todos
+       os aparelhos); o PIN continua sendo o segredo digitado pelo usuário. */
+    const codeField = document.getElementById('sbCode');
+    if (codeField && !codeField.value && CONFIG.accountCode) codeField.value = CONFIG.accountCode;
     const sb = getClient();
     if (!sb) {
       showStatus('Supabase não carregou. O app continua salvando localmente; conecte à internet e recarregue.', true);
@@ -445,9 +581,24 @@
       const { data, error } = await sb.auth.getSession();
       if (error) throw error;
       session = data && data.session || null;
+      /* Sem sessão salva, tenta as credenciais do próprio aparelho (pareado antes). */
+      if (!session) {
+        const cred = readDeviceCred();
+        if (cred && cred.email) {
+          try { session = await ensureDeviceSession(sb); } catch (_) { session = null; }
+        }
+      }
       paintAccount();
-      if (session && options().auto !== false) await sync(false);
-      else if (!session) showStatus('Pronto para conectar. Os dados atuais permanecem neste aparelho.');
+      const home = await resolveHome(sb);
+      if (session && home) {
+        if (session.user && session.user.id === home) loadAccountCode();
+        if (options().auto !== false) await sync(false);
+        else showStatus('Pronto para sincronizar. Toque em “Sincronizar agora”.');
+      } else if (session) {
+        showStatus('Aparelho conectado. Informe o código e o PIN da sua conta para ver os dados.');
+      } else {
+        showStatus('Pronto para conectar: informe o código e o PIN da sua conta.');
+      }
     } catch (error) { showStatus('Não consegui conferir a sessão: ' + normalizeError(error), true); }
   }
 
@@ -457,6 +608,9 @@
     trackLocalChanges(previousRaw, nextState) { stampLocalChanges(previousRaw, nextState); },
     onLocalSave,
     sendLoginLink,
+    pairDevice,
+    savePin,
+    loadAccountCode,
     passwordSignIn,
     savePassword,
     signOut,
@@ -465,6 +619,8 @@
     _mergeOperationRows: mergeOperationRows
   };
   root.sbSendLoginLink = sendLoginLink;
+  root.sbPairDevice = pairDevice;
+  root.sbSavePin = savePin;
   root.sbPasswordSignIn = passwordSignIn;
   root.sbSavePassword = savePassword;
   root.sbSignOut = signOut;

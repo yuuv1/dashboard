@@ -70,10 +70,13 @@ const at = value => new Date(value).toISOString();
 
 {
   const html = fs.readFileSync(path.join(__dirname, '..', 'edgecontrol-glass-v2.html'), 'utf8');
-  assert.match(html, /id="sbPassword"/, 'o card Supabase tem campo de senha');
-  assert.match(html, /id="sbNewPassword"/, 'o card Supabase permite criar senha');
+  assert.match(html, /id="sbCode"/, 'o card tem campo do código da conta');
+  assert.match(html, /id="sbPin"/, 'o card tem campo do PIN');
+  assert.match(html, /onclick="sbPairDevice\(\)"/, 'botão de entrar neste aparelho está ligado');
+  assert.match(html, /id="sbPinNew"/, 'o dono pode criar/trocar o PIN');
+  assert.match(html, /onclick="sbSavePin\(\)"/, 'botão de salvar PIN está ligado');
+  assert.match(html, /id="sbPassword"/, 'login por e-mail + senha continua disponível como opção');
   assert.match(html, /onclick="sbPasswordSignIn\(\)"/, 'botão de entrar com senha está ligado');
-  assert.match(html, /onclick="sbSavePassword\(\)"/, 'botão de salvar senha está ligado');
 }
 
 async function endToEndCloudRoundTrip() {
