@@ -4,22 +4,26 @@ const assert = require('node:assert/strict');
 
 const dir = path.join(__dirname, '..', 'supabase', 'setup');
 const files = fs.readdirSync(dir).filter(name => name.endsWith('.sql')).sort();
-assert.equal(files.length, 14, 'setup contains the 14 ordered SQL steps');
+assert.equal(files.length, 30, 'setup contains the 30 ordered SQL steps');
 
 for (const [i, file] of files.entries()) {
   assert.equal(file.slice(0, 2), String(i + 1).padStart(2, '0'), `step ${i + 1} is numbered in order`);
   const sql = fs.readFileSync(path.join(dir, file), 'utf8').trim();
   assert.ok(sql.length > 0, `${file} is not empty`);
-  assert.equal((sql.match(/;/g) || []).length, 1, `${file} contains one SQL statement`);
+  /* Funções usam $$ ... $$: os ponto-e-vírgulas de dentro do corpo não contam
+     como novas instruções. */
+  const outsideBodies = sql.replace(/\$\$[\s\S]*?\$\$/g, '');
+  assert.equal((outsideBodies.match(/;/g) || []).length, 1, `${file} contains one SQL statement`);
   assert.doesNotMatch(sql, /^do\b/i, `${file} does not use unsupported DO syntax`);
 }
 
 const all = files.map(f => fs.readFileSync(path.join(dir, f), 'utf8')).join('\n');
-for (const name of ['ec_user_state', 'ec_operations', 'ec_shots', 'edgecontrol-prints']) {
+for (const name of ['ec_user_state', 'ec_operations', 'ec_shots', 'edgecontrol-prints', 'ec_accounts', 'ec_members', 'ec_pair', 'ec_new_account']) {
   assert.ok(all.includes(name), `setup includes ${name}`);
 }
 for (const policy of ['ec_user_state_own', 'ec_operations_own', 'ec_shots_own', 'ec_prints_own']) {
   assert.ok(all.includes(policy), `setup includes RLS policy ${policy}`);
 }
 assert.match(all, /public\s*=\s*false/i, 'prints bucket is private');
-console.log('✅ Supabase setup: 14 passos, uma instrução por query, RLS, bucket privado e anon sem acesso');
+assert.match(all, /revoke all on function public\.ec_pair/, 'funções de pareamento não ficam expostas ao anon');
+console.log('✅ Supabase setup: 30 passos, uma instrução por query, RLS, bucket privado, anon sem acesso e pareamento por código + PIN');

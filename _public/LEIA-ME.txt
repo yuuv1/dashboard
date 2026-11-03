@@ -15,18 +15,18 @@ PUBLICAR ESTA PASTA EM OUTRO LUGAR (Netlify Drop)
 2. Arraste ESTA PASTA (_public)
 3. Copie o link ….netlify.app e abra no PC e no celular
 
-NUVEM (mesmos dados em todos os aparelhos)
-1. No app: Configurações → ☁️ Supabase — sincronização online
-2. Digite seu e-mail → "Enviar link de acesso"
-3. Abra o link recebido no MESMO aparelho → entra sozinho
-4. Repita no outro aparelho com o mesmo e-mail
+NUVEM (mesmos dados em todos os aparelhos) — sem e-mail
+1. No app: Configurações -> Nuvem
+2. O código da conta já vem preenchido (EC-7K4M-9Q2X)
+3. Digite o PIN de 6 números -> "Entrar neste aparelho"
+4. Repita a mesma coisa em cada aparelho novo
 
-O que sobe: operações, configurações e prints (bucket privado).
-Sem internet o app continua salvando no aparelho e sincroniza depois.
+Depois disso o app abre já sincronizado e envia sozinho o que você salvar.
+O PIN é o segredo: não compartilhe. Para trocar, use "Trocar o PIN da conta".
+
+Nuvem alternativa (sem conta): Configurações -> Nuvem fácil (código + PIN).
+Backup por e-mail: Configurações -> Backup por e-mail.
+Guia do repositório: README.md · supabase/README.md · docs/
 
 Esta pasta já leva tudo o que o app precisa para funcionar sem CDN:
   index.html, sw.js, manifest.webmanifest, vendor/, supabase/, icones-app/
-
-Nuvem alternativa sem login: Configurações → Nuvem fácil (código + PIN).
-Backup por e-mail: Configurações → Backup por e-mail.
-Guia do repositório: README.md · supabase/README.md · docs/

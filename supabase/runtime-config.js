@@ -3,5 +3,8 @@
 window.EC_SUPABASE_CONFIG = Object.freeze({
   url: 'https://muktpljlzzavcvhqdxco.supabase.co',
   publishableKey: 'sb_publishable_r8ETvsY_vJ0MbwXma8xgog_Gs7jtgyz',
-  storageBucket: 'edgecontrol-prints'
+  storageBucket: 'edgecontrol-prints',
+  /* Código público da conta: identifica a conta em todos os aparelhos. O
+     segredo é o PIN (6 números), digitado pelo usuário — nunca este arquivo. */
+  accountCode: 'EC-7K4M-9Q2X'
 });

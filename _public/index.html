@@ -2616,27 +2616,52 @@ body.rpt-open{overflow:hidden;}
           </div>
 
           <div class="set-card" id="sbCloudCard">
-            <div class="set-tit">☁️ Supabase — sincronização online</div>
+            <div class="set-tit">☁️ Nuvem — seus dados em todos os aparelhos</div>
             <div style="font-size:11px;color:var(--lgray);line-height:1.6;margin-bottom:10px;">
-              Entre com seu e-mail para manter operações e prints na sua nuvem privada. No primeiro aparelho use o <strong>link do e-mail</strong> e salve uma <strong>senha</strong>; nos outros, entre com e-mail + senha e tudo aparece na hora. O app continua salvando neste aparelho se ficar offline e sincroniza quando a conexão voltar.
+              Uma vez por aparelho: digite o <strong>código da conta</strong> e o <strong>PIN de 6 números</strong>.
+              Depois disso o app abre já sincronizado — sem link, sem e-mail. Continua funcionando offline
+              e envia sozinho quando a internet volta.
             </div>
             <div id="sbLoginBox">
-              <div class="fg"><label class="fl" for="sbEmail">Seu e-mail</label>
-                <input class="fi" id="sbEmail" type="email" autocomplete="email" placeholder="voce@exemplo.com">
+              <div class="fg"><label class="fl" for="sbCode">Código da conta</label>
+                <input class="fi" id="sbCode" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="EC-XXXX-XXXX">
               </div>
-              <button class="btn-o xs" onclick="sbSendLoginLink()">✉️ Enviar link de acesso</button>
-              <details class="sb-pass">
-                <summary>Já tenho senha — entrar sem e-mail</summary>
-                <div class="fg" style="margin-top:9px;"><label class="fl" for="sbPassword">Senha</label>
-                  <input class="fi" id="sbPassword" type="password" autocomplete="current-password" placeholder="sua senha">
-                </div>
-                <button class="btn-s xs" onclick="sbPasswordSignIn()">🔑 Entrar com senha</button>
-                <div class="sb-hint">Funciona dentro do app instalado, onde o link do e-mail às vezes abre fora.</div>
-              </details>
+              <div class="fg"><label class="fl" for="sbPin">PIN (6 números)</label>
+                <input class="fi" id="sbPin" type="password" inputmode="numeric" maxlength="6" autocomplete="off" placeholder="••••••">
+              </div>
+              <button class="btn-o xs" style="width:100%;justify-content:center;" onclick="sbPairDevice()">🔓 Entrar neste aparelho</button>
+              <div class="sb-hint">O código é o mesmo em todos os aparelhos. O PIN é o segredo — não compartilhe.</div>
+
+              <div id="sbOwnerBox" style="display:none;">
+                <details class="sb-pass">
+                  <summary>Esqueci o PIN / sou o dono da conta</summary>
+                  <div class="fg" style="margin-top:9px;"><label class="fl" for="sbPinNew">Novo PIN (6 números)</label>
+                    <input class="fi" id="sbPinNew" type="password" inputmode="numeric" maxlength="6" autocomplete="off" placeholder="••••••">
+                  </div>
+                  <button class="btn-s xs" onclick="sbSavePin()">🔑 Criar / trocar PIN</button>
+                  <div class="sb-hint">Este aparelho está conectado como dono: ao salvar, o código da conta aparece aqui e você usa ele + o PIN nos outros aparelhos.</div>
+                </details>
+                <details class="sb-pass">
+                  <summary>Entrar com e-mail e senha (opcional)</summary>
+                  <div class="fg" style="margin-top:9px;"><label class="fl" for="sbEmail">Seu e-mail</label>
+                    <input class="fi" id="sbEmail" type="email" autocomplete="email" placeholder="voce@exemplo.com">
+                  </div>
+                  <div class="fg"><label class="fl" for="sbPassword">Senha</label>
+                    <input class="fi" id="sbPassword" type="password" autocomplete="current-password" placeholder="sua senha">
+                  </div>
+                  <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                    <button class="btn-s xs" onclick="sbPasswordSignIn()">🔑 Entrar com senha</button>
+                    <button class="btn-s xs" onclick="sbSendLoginLink()">✉️ Enviar link</button>
+                  </div>
+                </details>
+              </div>
             </div>
             <div id="sbAccountBox" style="display:none;">
               <div style="font-size:11px;color:var(--green);margin:5px 0 9px;">Conectado como <strong id="sbAccountEmail"></strong></div>
-              <div class="toggle-row">
+              <div class="drow" style="background:rgba(79,70,229,.07);border-radius:10px;padding:8px 10px;">
+                <span class="dkey">Código da conta</span><span class="dval" id="sbAccountCode" style="font-weight:700;letter-spacing:.5px;">••••</span>
+              </div>
+              <div class="toggle-row" style="margin-top:8px;">
                 <label class="tgl"><input type="checkbox" id="sbAuto" checked onchange="sbSaveOptions()"><div class="tgl-track"></div><div class="tgl-thumb"></div></label>
                 <span style="font-size:12px;font-weight:600;color:var(--white);">Sincronizar automaticamente</span>
               </div>
@@ -2645,15 +2670,15 @@ body.rpt-open{overflow:hidden;}
                 <button class="btn-s xs" onclick="sbSignOut()">Sair</button>
               </div>
               <details class="sb-pass">
-                <summary>Definir/trocar senha deste e-mail</summary>
-                <div class="fg" style="margin-top:9px;"><label class="fl" for="sbNewPassword">Nova senha (mínimo 6)</label>
-                  <input class="fi" id="sbNewPassword" type="password" autocomplete="new-password" placeholder="••••••">
+                <summary>Trocar o PIN da conta</summary>
+                <div class="fg" style="margin-top:9px;"><label class="fl" for="sbPinNew2">Novo PIN (6 números)</label>
+                  <input class="fi" id="sbPinNew2" type="password" inputmode="numeric" maxlength="6" autocomplete="off" placeholder="••••••">
                 </div>
-                <button class="btn-s xs" onclick="sbSavePassword()">💾 Salvar senha</button>
-                <div class="sb-hint">Com a senha salva, o próximo aparelho entra sem esperar e-mail.</div>
+                <button class="btn-s xs" onclick="sbSavePin()">💾 Salvar PIN</button>
+                <div class="sb-hint">O código continua o mesmo; só o PIN muda.</div>
               </details>
             </div>
-            <div id="sbStatus" role="status" aria-live="polite" style="font-size:10.5px;color:var(--dim);line-height:1.5;margin-top:9px;">Pronto para conectar. Os dados atuais permanecem neste aparelho.</div>
+            <div id="sbStatus" role="status" aria-live="polite" style="font-size:10.5px;color:var(--dim);line-height:1.5;margin-top:9px;">Pronto para conectar: informe o código e o PIN da sua conta.</div>
           </div>
 
           <div class="set-card">
