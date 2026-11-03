@@ -4,6 +4,16 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>EdgeControl v2 — Gestão de Capital</title>
+<link rel="manifest" href="./manifest.webmanifest">
+<meta name="theme-color" content="#dfe3f2">
+<meta name="application-name" content="EdgeControl">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="EdgeControl">
+<link rel="icon" href="./icones-app/favicon.png" sizes="any" type="image/png">
+<link rel="icon" href="./icones-app/icon-192.png" sizes="192x192" type="image/png">
+<link rel="apple-touch-icon" href="./icones-app/icon-180.png">
 <script defer src="./vendor/supabase.min.js"></script>
 <script defer src="./supabase/runtime-config.js"></script>
 <script defer src="./supabase/app-sync.js"></script>
@@ -7405,28 +7415,34 @@ function initIcons(){
 
 function buildManifest(){
   const theme=getComputedStyle(document.documentElement).getPropertyValue('--bg').trim()||'#dfe3f2';
-  const mf={
-    name:'EdgeControl — Gestão de Capital',
-    short_name:'EdgeControl',
-    description:'Diário de trade e gestão de risco para opções binárias.',
-    start_url:location.href.split('#')[0],
-    scope:'./',
-    display:'standalone',
-    orientation:'any',
-    background_color:'#171b33',
-    theme_color:theme,
-    lang:'pt-BR',
-    icons:[
-      {src:ICONS.i192,sizes:'192x192',type:'image/webp',purpose:'any'},
-      {src:ICONS.i512,sizes:'512x512',type:'image/webp',purpose:'any'},
-      {src:ICONS.m512,sizes:'512x512',type:'image/webp',purpose:'maskable'}
-    ]
-  };
-  const blob=new Blob([JSON.stringify(mf)],{type:'application/manifest+json'});
-  const url=URL.createObjectURL(blob);
-  let l=document.querySelector('link[rel="manifest"]');
-  if(!l){l=document.createElement('link');l.rel='manifest';document.head.appendChild(l);}
-  l.href=url;
+  /* Com `manifest.webmanifest` publicado, o navegador lê o arquivo real — é o
+     que permite instalar o app. O manifest em Blob fica só como reserva para
+     quando o HTML é aberto solto (file://), onde não existe arquivo ao lado. */
+  const link=document.querySelector('link[rel="manifest"]');
+  const hasStatic=!!(link && !/^blob:/i.test(link.getAttribute('href')||''));
+  if(!hasStatic){
+    const mf={
+      name:'EdgeControl — Gestão de Capital',
+      short_name:'EdgeControl',
+      description:'Diário de trade e gestão de risco para opções binárias.',
+      start_url:location.href.split('#')[0],
+      scope:'./',
+      display:'standalone',
+      orientation:'any',
+      background_color:'#171b33',
+      theme_color:theme,
+      lang:'pt-BR',
+      icons:[
+        {src:ICONS.i192,sizes:'192x192',type:'image/webp',purpose:'any'},
+        {src:ICONS.i512,sizes:'512x512',type:'image/webp',purpose:'any'},
+        {src:ICONS.m512,sizes:'512x512',type:'image/webp',purpose:'maskable'}
+      ]
+    };
+    const blob=new Blob([JSON.stringify(mf)],{type:'application/manifest+json'});
+    const url=URL.createObjectURL(blob);
+    if(!link){const l=document.createElement('link');l.rel='manifest';document.head.appendChild(l);link=l;}
+    link.href=url;
+  }
   let m=document.querySelector('meta[name="theme-color"]');
   if(!m){m=document.createElement('meta');m.name='theme-color';document.head.appendChild(m);}
   m.content=theme;
@@ -7439,9 +7455,37 @@ function buildManifest(){
    navegador guarda a página em cache. */
 const SW_FILENAME='sw.js';
 const SW_SRC=`/* EdgeControl SW */
-const CACHE='edgecontrol-v3';
-self.addEventListener('install',e=>self.skipWaiting());
-self.addEventListener('activate',e=>e.waitUntil(self.clients.claim()));
+const CACHE='edgecontrol-v4';
+/* Casca do app: garante que a primeira abertura offline já tenha o painel e
+   os módulos locais (Supabase e gráficos), sem depender de CDN. */
+const CORE=[
+  './',
+  './index.html',
+  './edgecontrol-glass-v2.html',
+  './manifest.webmanifest',
+  './vendor/supabase.min.js',
+  './vendor/chart.umd.min.js',
+  './supabase/runtime-config.js',
+  './supabase/app-sync.js',
+  './icones-app/icon-192.png',
+  './icones-app/icon-512.png'
+];
+self.addEventListener('install',e=>{
+  e.waitUntil((async()=>{
+    try{
+      const c=await caches.open(CACHE);
+      await Promise.all(CORE.map(url=>c.add(new Request(url,{cache:'reload'})).catch(()=>{})));
+    }catch(_){/* sem cache o app continua abrindo pela rede */}
+    await self.skipWaiting();
+  })());
+});
+self.addEventListener('activate',e=>e.waitUntil((async()=>{
+  try{
+    const keys=await caches.keys();
+    await Promise.all(keys.filter(k=>k!==CACHE&&k.indexOf('edgecontrol-')===0).map(k=>caches.delete(k)));
+  }catch(_){/* nada a limpar */}
+  await self.clients.claim();
+})()));
 self.addEventListener('fetch',e=>{
   const req=e.request;
   if(req.method!=='GET') return;
@@ -7473,7 +7517,7 @@ self.addEventListener('fetch',e=>{
         if(cached) return cached;
         /* Only document navigations may fall back to the app shell. */
         if(req.mode==='navigate'){
-          const shell=(await c.match('./')) || (await c.match('./index.html'));
+          const shell=(await c.match('./edgecontrol-glass-v2.html')) || (await c.match('./index.html')) || (await c.match('./'));
           if(shell) return shell;
         }
       }catch(_){/* storage may also be unavailable while offline */}
@@ -7556,18 +7600,34 @@ async function initPWA(){
   if(!('serviceWorker' in navigator)){ pwaState='unsupported'; paintPWA(); return; }
   // guarda a página no cache mesmo sem SW (ajuda o navegador a servi-la offline)
   try{
-    const c=await caches.open('edgecontrol-v3');
+    const c=await caches.open('edgecontrol-v4');
     await c.add(location.href.split('#')[0]).catch(()=>{});
   }catch(e){}
   try{
-    const probe=await fetch(SW_FILENAME,{method:'HEAD'});
-    if(!probe.ok) throw new Error('sem sw.js');
-    swReg=await navigator.serviceWorker.register('./'+SW_FILENAME,{scope:'./'});
+    /* updateViaCache:'none' faz o navegador buscar o sw.js novo direto na rede:
+       uma publicação nova do painel não fica presa em cache antigo. */
+    swReg=await navigator.serviceWorker.register('./'+SW_FILENAME,{scope:'./',updateViaCache:'none'});
     pwaState='full';
+    if(swReg&&swReg.update){
+      swReg.update().catch(()=>{});
+      /* Recarrega uma única vez quando um SW novo assume o controle, para o
+         usuário não continuar vendo o HTML antigo depois de um deploy. */
+      let reloaded=false;
+      navigator.serviceWorker.addEventListener('controllerchange',()=>{
+        if(reloaded) return;
+        reloaded=true;
+        if(!sessionStorage.getItem('ecSwReloaded')){
+          sessionStorage.setItem('ecSwReloaded','1');
+          setTimeout(()=>location.reload(),600);
+        }
+      });
+    }
   }catch(e){
     pwaState='partial';
   }
   paintPWA();
+  /* revalida o estado quando o app volta do segundo plano (rede pode ter voltado) */
+  document.addEventListener('visibilitychange',()=>{ if(!document.hidden) paintPWA(); });
 }
 
 window.addEventListener('beforeinstallprompt',e=>{

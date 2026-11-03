@@ -1,7 +1,35 @@
 /* EdgeControl SW */
-const CACHE='edgecontrol-v3';
-self.addEventListener('install',e=>self.skipWaiting());
-self.addEventListener('activate',e=>e.waitUntil(self.clients.claim()));
+const CACHE='edgecontrol-v4';
+/* Casca do app: garante que a primeira abertura offline já tenha o painel e
+   os módulos locais (Supabase e gráficos), sem depender de CDN. */
+const CORE=[
+  './',
+  './index.html',
+  './edgecontrol-glass-v2.html',
+  './manifest.webmanifest',
+  './vendor/supabase.min.js',
+  './vendor/chart.umd.min.js',
+  './supabase/runtime-config.js',
+  './supabase/app-sync.js',
+  './icones-app/icon-192.png',
+  './icones-app/icon-512.png'
+];
+self.addEventListener('install',e=>{
+  e.waitUntil((async()=>{
+    try{
+      const c=await caches.open(CACHE);
+      await Promise.all(CORE.map(url=>c.add(new Request(url,{cache:'reload'})).catch(()=>{})));
+    }catch(_){/* sem cache o app continua abrindo pela rede */}
+    await self.skipWaiting();
+  })());
+});
+self.addEventListener('activate',e=>e.waitUntil((async()=>{
+  try{
+    const keys=await caches.keys();
+    await Promise.all(keys.filter(k=>k!==CACHE&&k.indexOf('edgecontrol-')===0).map(k=>caches.delete(k)));
+  }catch(_){/* nada a limpar */}
+  await self.clients.claim();
+})()));
 self.addEventListener('fetch',e=>{
   const req=e.request;
   if(req.method!=='GET') return;
@@ -33,7 +61,7 @@ self.addEventListener('fetch',e=>{
         if(cached) return cached;
         /* Only document navigations may fall back to the app shell. */
         if(req.mode==='navigate'){
-          const shell=(await c.match('./')) || (await c.match('./index.html'));
+          const shell=(await c.match('./edgecontrol-glass-v2.html')) || (await c.match('./index.html')) || (await c.match('./'));
           if(shell) return shell;
         }
       }catch(_){/* storage may also be unavailable while offline */}

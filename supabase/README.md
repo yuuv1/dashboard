@@ -7,7 +7,7 @@ O editor deste projeto aceita **uma instrução SQL por execução** e não acei
 1. Abra [SQL Editor do projeto](https://supabase.com/dashboard/project/muktpljlzzavcvhqdxco/sql/new).
 2. Abra o arquivo `01-create-user-state.sql` pelo índice no GitHub, copie o SQL e cole no editor.
 3. Clique em **Run**. Quando terminar sem erro, apague o conteúdo do editor e repita com o próximo arquivo.
-4. Continue em ordem até `13-policy-private-prints.sql`.
+4. Continue em ordem até `14-revoke-anon-grants.sql`.
 5. Se algum passo der erro, pare e anote o número do arquivo e a mensagem. Não repita os passos que já terminaram com sucesso.
 
 ## Ordem
@@ -25,8 +25,28 @@ O editor deste projeto aceita **uma instrução SQL por execução** e não acei
 11. `setup/11-grant-table-access.sql`
 12. `setup/12-create-private-print-bucket.sql`
 13. `setup/13-policy-private-prints.sql`
+14. `setup/14-revoke-anon-grants.sql`
 
 O setup só cria a estrutura vazia e as permissões privadas. Não importa, apaga nem altera os dados atualmente salvos no navegador.
+
+## Estado do projeto publicado
+
+Projeto: **`dashboard`** — ref `muktpljlzzavcvhqdxco`, região `us-east-1`.
+
+| Item | Situação |
+|---|---|
+| `ec_user_state`, `ec_operations`, `ec_shots` | criadas, RLS ligada |
+| Políticas | uma por tabela (`select auth.uid()`), só para `authenticated` |
+| `anon` | sem nenhum privilégio nas tabelas (passo 14) |
+| Bucket `edgecontrol-prints` | privado, 50 MB, só imagens |
+| Login | e-mail (magic link) habilitado, confirmação de e-mail na primeira entrada |
+| Site URL | `https://yuuv1.github.io/dashboard/` |
+| Redirects permitidos | `https://yuuv1.github.io/dashboard/**`, `http://localhost:8080/**`, `http://localhost:3000/**` |
+
+O app envia `emailRedirectTo` igual à página onde o link foi pedido, então o login volta
+para o mesmo endereço (Pages, Netlify ou servidor local). **Ao trocar de domínio,
+atualize a Site URL e a lista de redirects** em *Authentication → URL Configuration*,
+senão o link do e-mail cai em `localhost`.
 
 ## Integração do app
 
