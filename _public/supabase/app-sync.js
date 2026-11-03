@@ -100,7 +100,9 @@
     const code = document.getElementById('sbAccountCode');
     if (login) login.style.display = paired ? 'none' : 'block';
     if (account) account.style.display = paired ? 'block' : 'none';
-    if (email) email.textContent = (session && session.user && session.user.email) || 'aparelho conectado';
+    if (email) email.textContent = isSharedDevice()
+      ? 'conectado — tudo o que você alterar vai para os outros aparelhos'
+      : ((session && session.user && session.user.email) || 'aparelho conectado');
     if (auto) auto.checked = options().auto !== false;
     if (owner) owner.style.display = (logged && !paired) ? 'block' : 'none';
     if (code) code.textContent = displayCode || '••••';
@@ -110,8 +112,30 @@
   /* Sessão do aparelho: cada aparelho tem a própria conta técnica (sem e-mail
      visível ao usuário). Ela só dá acesso depois de um pareamento com
      código + PIN — o vínculo vive em ec_members e é checado pelas políticas. */
+  function sharedDeviceCred() {
+    const shared = CONFIG.deviceLogin || {};
+    return shared.email && shared.password ? { email: shared.email, password: shared.password } : null;
+  }
+  function isSharedDevice() {
+    const shared = sharedDeviceCred();
+    return !!(shared && session && session.user && session.user.email === shared.email);
+  }
   async function ensureDeviceSession(sb) {
     if (session && session.user) return session;
+    /* 1º caminho: o aparelho do site — entra sem digitar nada e já enxerga os
+       dados da conta (é membro dela). Se um dia essa senha for trocada, o app
+       cai nos caminhos de baixo, sem quebrar. */
+    const shared = sharedDeviceCred();
+    if (shared && typeof sb.auth.signInWithPassword === 'function') {
+      try {
+        const attempt = await sb.auth.signInWithPassword({ email: shared.email, password: shared.password });
+        if (!attempt.error && attempt.data && attempt.data.session) {
+          session = attempt.data.session;
+          paintAccount();
+          return session;
+        }
+      } catch (_) { /* segue para as outras opções */ }
+    }
     const cred = readDeviceCred();
     if (cred && cred.email && cred.password && typeof sb.auth.signInWithPassword === 'function') {
       try {
@@ -498,14 +522,20 @@
       if (stateError) throw stateError;
       if (opError) throw opError;
       const remoteState = stateRows && stateRows[0] || null;
-      const merged = mergeOperationRows(localOps, remoteOps || [], started);
+      /* Aparelho que abriu com os dados publicados (seed): o que está na nuvem
+         é a verdade. Sem isso, um navegador novo empurraria ajustes antigos e
+         ressuscitaria operação apagada em outro aparelho. */
+      const seededBaseline = !started.lastSyncAt && !!started.seededAt;
+      const remoteHasData = (remoteOps || []).length > 0 || !!remoteState;
+      const adoptRemote = seededBaseline && remoteHasData;
+      const merged = mergeOperationRows(adoptRemote ? [] : localOps, remoteOps || [], started);
       if (merged.writes.length) {
         const rows = merged.writes.map(row => Object.assign({ user_id: userId }, row));
         const { error: writeError } = await sb.from('ec_operations').upsert(rows, { onConflict: 'user_id,operation_id' });
         if (writeError) throw writeError;
       }
 
-      const localHasOps = localOps.length > 0;
+      const localHasOps = localOps.length > 0 && !adoptRemote;
       const localStateChanged = !!started.lastSyncAt && !!started.stateAt && parseTime(started.stateAt) > parseTime(started.lastSyncAt);
       const firstLocalImport = localHasOps && !started.lastSyncAt;
       let chosenState = stripOperations(localState);
@@ -567,7 +597,7 @@
       const mobile = !!(root.matchMedia && root.matchMedia('(max-width: 820px)').matches);
       root.setInterval(() => {
         if (!document.hidden && navigator.onLine && session && options().auto !== false) sync(false);
-      }, mobile ? 180000 : 60000);
+      }, mobile ? 60000 : 45000);
     }
     if (!authSubscription) {
       const result = sb.auth.onAuthStateChange((event, nextSession) => {
@@ -581,9 +611,10 @@
       const { data, error } = await sb.auth.getSession();
       if (error) throw error;
       session = data && data.session || null;
-      /* Sem sessão salva, tenta as credenciais do próprio aparelho (pareado antes). */
+      /* Sem sessão salva, entra com o aparelho do site (sem digitar nada) ou
+         com a credencial deste aparelho, se ele já foi pareado antes. */
       if (!session) {
-        const cred = readDeviceCred();
+        const cred = readDeviceCred() || sharedDeviceCred();
         if (cred && cred.email) {
           try { session = await ensureDeviceSession(sb); } catch (_) { session = null; }
         }
@@ -591,7 +622,7 @@
       paintAccount();
       const home = await resolveHome(sb);
       if (session && home) {
-        if (session.user && session.user.id === home) loadAccountCode();
+        if (session.user) loadAccountCode();
         if (options().auto !== false) await sync(false);
         else showStatus('Pronto para sincronizar. Toque em “Sincronizar agora”.');
       } else if (session) {
@@ -616,6 +647,14 @@
     signOut,
     updateOptions,
     syncNow() { return sync(true); },
+    /* Chamado quando o painel abriu com os dados publicados no site: a nuvem
+       passa a ser a fonte da verdade nessa primeira sincronização. */
+    markSeeded() {
+      const meta = readMeta();
+      if (meta.lastSyncAt) return;
+      meta.seededAt = nowIso();
+      writeMeta(meta);
+    },
     _mergeOperationRows: mergeOperationRows
   };
   root.sbSendLoginLink = sendLoginLink;

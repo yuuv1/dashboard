@@ -18,7 +18,8 @@ instalável e sincronização Supabase ligada. No celular: abra o link e escolha
 | PWA | `manifest.webmanifest` + `sw.js` (pré-cache do app, gráficos e módulos Supabase) → abre offline |
 | Nuvem | Supabase `muktpljlzzavcvhqdxco` (us-east-1): pareamento por **código + PIN**, RLS por conta e Storage privado |
 | Abrir | o site **abre já com os dados** (operações, ajustes e prints) — `dados/padrao*.json` (público) |
-| Sincronizar | *Configurações → ☁️ Nuvem*: código `EC-7K4M-9Q2X` (já preenchido) + **PIN de 6 números** — sem e-mail |
+| Sincronizar | automático: qualquer navegador entra como *aparelho do site* e envia/recebe operações, ajustes e prints sozinho |
+| Trocar de conta/PIN | *Configurações → ☁️ Nuvem*: código `EC-7K4M-9Q2X` (já preenchido) + **PIN de 6 números** |
 
 ---
 

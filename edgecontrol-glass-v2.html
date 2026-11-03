@@ -10323,6 +10323,8 @@ async function seedDefaultData(){
     if(!THEMES.some(t=>t.id===S.theme)) S.theme='default';
     save();
     try{ localStorage.setItem('ecSeeded','1'); }catch(e){}
+    /* avisa o sincronizador: nesta primeira sincronização quem manda é a nuvem */
+    try{ if(window.ECSupabaseApp&&window.ECSupabaseApp.markSeeded) window.ECSupabaseApp.markSeeded(); }catch(e){}
     applyTheme(S.theme,{silent:true});
     setTimeout(()=>{ seedDefaultShots(); },900);
     return true;
