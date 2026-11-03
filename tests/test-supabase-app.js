@@ -60,6 +60,22 @@ const at = value => new Date(value).toISOString();
   assert.ok(meta.opChanges.x, 'local edits are queued with a timestamp');
   assert.equal(meta.stateAt, '', 'an operation-only edit does not mark settings dirty');
 }
+/* Entrada por senha: caminho PWA-safe, sem depender do link do e-mail. */
+{
+  assert.equal(typeof sync.passwordSignIn, 'function', 'o app expõe entrada por senha');
+  assert.equal(typeof sync.savePassword, 'function', 'o app expõe a criação de senha');
+  assert.equal(win.sbPasswordSignIn, sync.passwordSignIn, 'botão da tela chama a mesma função');
+  assert.equal(win.sbSavePassword, sync.savePassword, 'botão de salvar senha chama a mesma função');
+}
+
+{
+  const html = fs.readFileSync(path.join(__dirname, '..', 'edgecontrol-glass-v2.html'), 'utf8');
+  assert.match(html, /id="sbPassword"/, 'o card Supabase tem campo de senha');
+  assert.match(html, /id="sbNewPassword"/, 'o card Supabase permite criar senha');
+  assert.match(html, /onclick="sbPasswordSignIn\(\)"/, 'botão de entrar com senha está ligado');
+  assert.match(html, /onclick="sbSavePassword\(\)"/, 'botão de salvar senha está ligado');
+}
+
 async function endToEndCloudRoundTrip() {
   const db = { ec_user_state: [], ec_operations: [], ec_shots: [] };
   const files = new Map();

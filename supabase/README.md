@@ -52,7 +52,18 @@ senão o link do e-mail cai em `localhost`.
 
 O app usa `runtime-config.js` com a Project URL e a publishable key (chave pública, própria para frontend). Nunca coloque `service_role` neste arquivo. `app-sync.js` usa a biblioteca oficial Supabase JS local em `vendor/`, para que o shell do PWA continue abrindo sem depender de um CDN.
 
-No app publicado, abra **Configurações → Supabase — sincronização online**, informe seu e-mail e solicite o link de acesso. Ao abrir o link no mesmo aparelho, o app sincroniza o estado, operações e arquivos dos prints. A sincronização também tenta novamente ao salvar, ao voltar à internet, ao retornar para a aba e periodicamente enquanto o app está aberto. Falhas mantêm os dados locais e aparecem no status.
+No app publicado, abra **Configurações → Supabase — sincronização online**, informe seu e-mail e solicite o link de acesso.
+
+### Entrar em cada aparelho (importante no app instalado)
+
+1. **Primeiro aparelho:** link do e-mail → conectado. Abra *“Definir/trocar senha deste e-mail”* e salve uma senha.
+2. **Demais aparelhos:** informe o mesmo e-mail + a senha em *“Já tenho senha”* e toque em **Entrar com senha**.
+
+Por que a senha: no iPhone o app instalado (PWA) guarda a sessão separada do Safari — o link do
+e-mail abre no Safari e o app instalado continua deslogado. E-mail + senha entra direto no app.
+No Android o app instalado compartilha a sessão do Chrome, então o link também funciona.
+
+Depois de entrar, o app baixa as operações e os prints da nuvem e envia o que só existe nele. Ao abrir o link no mesmo aparelho, o app sincroniza o estado, operações e arquivos dos prints. A sincronização também tenta novamente ao salvar, ao voltar à internet, ao retornar para a aba e periodicamente enquanto o app está aberto. Falhas mantêm os dados locais e aparecem no status.
 
 Na primeira conexão, se a conta estiver vazia, os dados locais são enviados. Se já houver dados na nuvem, operações diferentes são mescladas por ID; edições e exclusões locais pendentes usam timestamps para resolver o conflito, e prints ausentes são transferidos. O bucket de prints permanece privado por usuário.
 

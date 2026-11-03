@@ -389,6 +389,12 @@ tbody tr:last-child td{border-bottom:none;}
 /* ══ SETTINGS ══ */
 #page-settings{flex-direction:column;overflow-y:auto;padding:0 4px 4px 0;}
 .set-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px;}
+.sb-pass{margin-top:10px;}
+.sb-pass>summary{cursor:pointer;font-size:11px;color:var(--lgray);list-style:none;}
+.sb-pass>summary::-webkit-details-marker{display:none;}
+.sb-pass>summary::before{content:'▸ ';color:var(--accent);}
+.sb-pass[open]>summary::before{content:'▾ ';}
+.sb-hint{font-size:10px;color:var(--dim);line-height:1.5;margin-top:7px;}
 .set-card{background:var(--card);backdrop-filter:blur(22px) saturate(170%);-webkit-backdrop-filter:blur(22px) saturate(170%);
   border:1px solid var(--border);border-radius:18px;padding:15px;box-shadow:var(--sh),inset 0 1px 0 var(--glass-inset);}
 .set-tit{font-family:'Space Grotesk',sans-serif;font-size:12.5px;font-weight:700;color:var(--white);padding-bottom:9px;border-bottom:1px solid var(--hair);margin-bottom:12px;display:flex;align-items:center;gap:6px;}
@@ -2612,13 +2618,21 @@ body.rpt-open{overflow:hidden;}
           <div class="set-card" id="sbCloudCard">
             <div class="set-tit">☁️ Supabase — sincronização online</div>
             <div style="font-size:11px;color:var(--lgray);line-height:1.6;margin-bottom:10px;">
-              Entre com seu e-mail para manter operações e prints na sua nuvem privada. O app continua salvando neste aparelho se ficar offline e tenta sincronizar quando a conexão voltar.
+              Entre com seu e-mail para manter operações e prints na sua nuvem privada. No primeiro aparelho use o <strong>link do e-mail</strong> e salve uma <strong>senha</strong>; nos outros, entre com e-mail + senha e tudo aparece na hora. O app continua salvando neste aparelho se ficar offline e sincroniza quando a conexão voltar.
             </div>
             <div id="sbLoginBox">
               <div class="fg"><label class="fl" for="sbEmail">Seu e-mail</label>
                 <input class="fi" id="sbEmail" type="email" autocomplete="email" placeholder="voce@exemplo.com">
               </div>
               <button class="btn-o xs" onclick="sbSendLoginLink()">✉️ Enviar link de acesso</button>
+              <details class="sb-pass">
+                <summary>Já tenho senha — entrar sem e-mail</summary>
+                <div class="fg" style="margin-top:9px;"><label class="fl" for="sbPassword">Senha</label>
+                  <input class="fi" id="sbPassword" type="password" autocomplete="current-password" placeholder="sua senha">
+                </div>
+                <button class="btn-s xs" onclick="sbPasswordSignIn()">🔑 Entrar com senha</button>
+                <div class="sb-hint">Funciona dentro do app instalado, onde o link do e-mail às vezes abre fora.</div>
+              </details>
             </div>
             <div id="sbAccountBox" style="display:none;">
               <div style="font-size:11px;color:var(--green);margin:5px 0 9px;">Conectado como <strong id="sbAccountEmail"></strong></div>
@@ -2630,6 +2644,14 @@ body.rpt-open{overflow:hidden;}
                 <button class="btn-o xs" onclick="sbSyncNow(true)">🔄 Sincronizar agora</button>
                 <button class="btn-s xs" onclick="sbSignOut()">Sair</button>
               </div>
+              <details class="sb-pass">
+                <summary>Definir/trocar senha deste e-mail</summary>
+                <div class="fg" style="margin-top:9px;"><label class="fl" for="sbNewPassword">Nova senha (mínimo 6)</label>
+                  <input class="fi" id="sbNewPassword" type="password" autocomplete="new-password" placeholder="••••••">
+                </div>
+                <button class="btn-s xs" onclick="sbSavePassword()">💾 Salvar senha</button>
+                <div class="sb-hint">Com a senha salva, o próximo aparelho entra sem esperar e-mail.</div>
+              </details>
             </div>
             <div id="sbStatus" role="status" aria-live="polite" style="font-size:10.5px;color:var(--dim);line-height:1.5;margin-top:9px;">Pronto para conectar. Os dados atuais permanecem neste aparelho.</div>
           </div>

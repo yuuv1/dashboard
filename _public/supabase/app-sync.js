@@ -102,6 +102,48 @@
       showStatus('Não consegui enviar o link: ' + normalizeError(error), true);
     }
   }
+  /* Entrar com senha: caminho que funciona dentro do app instalado (PWA), onde
+     o link do e-mail pode abrir em outro navegador e a sessão não é herdada. */
+  async function passwordSignIn() {
+    const emailEl = document.getElementById('sbEmail');
+    const passEl = document.getElementById('sbPassword');
+    const email = (emailEl && emailEl.value || '').trim();
+    const password = (passEl && passEl.value || '');
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      showStatus('Digite seu e-mail antes de entrar com senha.', true);
+      return;
+    }
+    if (!password) { showStatus('Digite a senha.', true); return; }
+    const sb = getClient();
+    if (!sb) { showStatus('O módulo Supabase não carregou. Recarregue o app quando estiver online.', true); return; }
+    showStatus('Entrando com senha…');
+    try {
+      const { error } = await sb.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      if (passEl) passEl.value = '';
+      showStatus('Conectado. Sincronizando os dados…');
+    } catch (error) {
+      showStatus('Não consegui entrar: ' + normalizeError(error), true);
+    }
+  }
+  /* Primeira vez: entra pelo link do e-mail e salva uma senha neste e-mail.
+     Depois disso, todo aparelho novo entra só com e-mail + senha. */
+  async function savePassword() {
+    const el = document.getElementById('sbNewPassword');
+    const password = (el && el.value || '');
+    if (password.length < 6) { showStatus('A senha precisa ter pelo menos 6 caracteres.', true); return; }
+    const sb = getClient();
+    if (!sb) { showStatus('O módulo Supabase não carregou. Recarregue o app quando estiver online.', true); return; }
+    if (!session) { showStatus('Entre com o link do e-mail primeiro para poder definir a senha.', true); return; }
+    try {
+      const { error } = await sb.auth.updateUser({ password });
+      if (error) throw error;
+      if (el) el.value = '';
+      showStatus('Senha salva. Agora você entra com e-mail + senha em qualquer aparelho.');
+    } catch (error) {
+      showStatus('Não consegui salvar a senha: ' + normalizeError(error), true);
+    }
+  }
   async function signOut() {
     const sb = getClient();
     if (!sb) return;
@@ -415,12 +457,16 @@
     trackLocalChanges(previousRaw, nextState) { stampLocalChanges(previousRaw, nextState); },
     onLocalSave,
     sendLoginLink,
+    passwordSignIn,
+    savePassword,
     signOut,
     updateOptions,
     syncNow() { return sync(true); },
     _mergeOperationRows: mergeOperationRows
   };
   root.sbSendLoginLink = sendLoginLink;
+  root.sbPasswordSignIn = passwordSignIn;
+  root.sbSavePassword = savePassword;
   root.sbSignOut = signOut;
   root.sbSaveOptions = updateOptions;
   root.sbSyncNow = () => sync(true);
