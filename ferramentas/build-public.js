@@ -18,7 +18,9 @@ const files = [
   ['vendor/supabase.min.js', 'vendor/supabase.min.js'],
   ['vendor/supabase-LICENSE.txt', 'vendor/supabase-LICENSE.txt'],
   ['supabase/runtime-config.js', 'supabase/runtime-config.js'],
-  ['supabase/app-sync.js', 'supabase/app-sync.js']
+  ['supabase/app-sync.js', 'supabase/app-sync.js'],
+  ['dados/padrao.json', 'dados/padrao.json'],
+  ['dados/padrao-estado.json', 'dados/padrao-estado.json']
 ];
 for (const name of ['favicon.png', 'icon-180.png', 'icon-192.png', 'icon-256.png', 'icon-384.png', 'icon-512.png', 'maskable-192.png', 'maskable-512.png']) {
   files.push([`icones-app/${name}`, `icones-app/${name}`]);

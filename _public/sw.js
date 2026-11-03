@@ -41,6 +41,12 @@ self.addEventListener('fetch',e=>{
     e.respondWith(fetch(req));
     return;
   }
+  /* Dados padrão do site (backup de MB): o app já guarda tudo no IndexedDB,
+     então não faz sentido inflar o Cache Storage com eles. */
+  if(url.pathname.indexOf('/dados/')!==-1){
+    e.respondWith(fetch(req));
+    return;
+  }
 
   e.respondWith((async()=>{
     try{

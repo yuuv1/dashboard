@@ -7544,6 +7544,12 @@ self.addEventListener('fetch',e=>{
     e.respondWith(fetch(req));
     return;
   }
+  /* Dados padrão do site (backup de MB): o app já guarda tudo no IndexedDB,
+     então não faz sentido inflar o Cache Storage com eles. */
+  if(url.pathname.indexOf('/dados/')!==-1){
+    e.respondWith(fetch(req));
+    return;
+  }
 
   e.respondWith((async()=>{
     try{
@@ -10258,6 +10264,8 @@ async function init(){
   console.info('EdgeControl build: '+EC_BUILD);
   configureMobileCharts();
   load();
+  /* Primeira visita deste navegador: abre já com os dados publicados no site. */
+  await seedDefaultData();
   /* Mostra o painel com os dados locais primeiro; a manutenção antiga de prints
      pode levar tempo em aparelhos modestos e não deve deixar a tela em branco. */
   rptInitFromState();
@@ -10279,6 +10287,75 @@ async function init(){
   try{ await cloudBoot(); }catch(e){ console.warn('nuvem:',e); }
   try{ await emailBoot(); }catch(e){ console.warn('email:',e); }
 }
+/* ══════════════════════════════════════
+   DADOS PADRÃO DO SITE
+   O painel publicado abre preenchido.
+   - `dados/padrao-estado.json` (~30 KB) traz operações e ajustes e entra
+     antes da primeira pintura;
+   - `dados/padrao.json` (backup completo) entra em segundo plano e leva os
+     prints para o IndexedDB.
+   Só roda quando este navegador nunca usou o app: nada é sobrescrito.
+══════════════════════════════════════ */
+const SEED_STATE_URL='dados/padrao-estado.json';
+const SEED_FULL_URL='dados/padrao.json';
+function panelAlreadyUsed(){
+  try{
+    if(localStorage.getItem('ecSeeded')) return true;   /* já abriu com o padrão uma vez */
+    const raw=localStorage.getItem('ec7');
+    if(!raw) return false;                              /* navegador novo: abre preenchido */
+    try{
+      const st=JSON.parse(raw);
+      return !!(st&&Array.isArray(st.operations)&&st.operations.length);   /* painel com dados: respeita */
+    }catch(e){ return true; }
+  }catch(e){ return true; }
+}
+async function seedDefaultData(){
+  if(panelAlreadyUsed()) return false;
+  if(typeof fetch!=='function') return false;
+  try{
+    const res=await fetch(SEED_STATE_URL,{cache:'no-cache'});
+    if(!res.ok) return false;
+    const raw=parseBackupJSON(await res.text());
+    const st=raw&&raw.state&&typeof raw.state==='object'?raw.state:raw;
+    if(!st||!st.settings||!Array.isArray(st.operations)) return false;
+    S=migrateState(st);
+    ensureChartState();
+    if(!THEMES.some(t=>t.id===S.theme)) S.theme='default';
+    save();
+    try{ localStorage.setItem('ecSeeded','1'); }catch(e){}
+    applyTheme(S.theme,{silent:true});
+    setTimeout(()=>{ seedDefaultShots(); },900);
+    return true;
+  }catch(e){ console.warn('dados padrão:',e); return false; }
+}
+async function seedDefaultShots(){
+  if(typeof fetch!=='function') return;
+  try{
+    const existing=await IMGDB.keys();
+    if(existing.length) return;
+    const res=await fetch(SEED_FULL_URL,{cache:'force-cache'});
+    if(!res.ok) return;
+    const raw=parseBackupJSON(await res.text());
+    const pics=(raw&&raw.shots)||{};
+    let ok=0;
+    for(const [id,value] of Object.entries(pics)){
+      try{
+        const o=value&&typeof value==='object'?value:{d:value};
+        const dataUrl=String(o.d||'');
+        if(!dataUrl.startsWith('data:image/')) continue;
+        if(await IMGDB.get(id)) continue;
+        const blob=await dataURLtoBlob(dataUrl);
+        if(!blob.size||!blob.type.startsWith('image/')) continue;
+        await IMGDB.put({id,dataUrl,note:o.note||'',name:o.name||'',opId:o.opId||null,
+          at:o.at||'',size:blob.size,w:0,h:0,marks:stuValidate(o.marks),crop:stuValidCrop(o.crop),
+          marksAt:o.marksAt||'',parentId:o.parentId||null,kind:o.kind||''});
+        ok++;
+      }catch(e){ console.warn('print padrão',id,e); }
+    }
+    if(ok){ try{ updateDash(); renderOps(); refreshAssetUI(); badge(); mtApplyAll(); }catch(e){} }
+  }catch(e){ console.warn('prints padrão:',e); }
+}
+
 /* ?demo=1 — carrega o backup de exemplo que mora na própria pasta (mesma
    origem), só para experimentar o estúdio sem dados próprios. Nunca roda no
    uso normal e nunca sobrepõe um painel que já tenha operações. */

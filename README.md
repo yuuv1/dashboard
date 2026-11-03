@@ -17,7 +17,8 @@ instalável e sincronização Supabase ligada. No celular: abra o link e escolha
 | App | `edgecontrol-glass-v2.html` publicado no Pages a cada push |
 | PWA | `manifest.webmanifest` + `sw.js` (pré-cache do app, gráficos e módulos Supabase) → abre offline |
 | Nuvem | Supabase `muktpljlzzavcvhqdxco` (us-east-1): pareamento por **código + PIN**, RLS por conta e Storage privado |
-| Entrar | *Configurações → ☁️ Nuvem*: código `EC-7K4M-9Q2X` (já preenchido) + **PIN de 6 números** — sem e-mail, sem link |
+| Abrir | o site **abre já com os dados** (operações, ajustes e prints) — `dados/padrao*.json` (público) |
+| Sincronizar | *Configurações → ☁️ Nuvem*: código `EC-7K4M-9Q2X` (já preenchido) + **PIN de 6 números** — sem e-mail |
 
 ---
 
@@ -70,6 +71,7 @@ npm test             # 15 suítes: app/DOM, impressão, importação, PWA
                      # (manifest + service worker), sincronização Supabase
                      # e desempenho móvel
 npm run build:public # refaz _public/ (pacote do Netlify) a partir do app
+npm run build:seed   # regera dados/padrao*.json a partir de um backup exportado
 npm run test:email   # só a suíte de e-mail (fetch dublado, nada é enviado)
 node ferramentas/preview-serve.js   # servidor local em http://0.0.0.0:8080
 ```
