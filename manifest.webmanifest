@@ -1,0 +1,32 @@
+{
+  "name": "EdgeControl — Gestão de Capital",
+  "short_name": "EdgeControl",
+  "description": "Painel de operações, gestão de risco e sincronização privada entre aparelhos.",
+  "lang": "pt-BR",
+  "dir": "ltr",
+  "start_url": "./edgecontrol-glass-v2.html",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "any",
+  "background_color": "#dfe3f2",
+  "theme_color": "#dfe3f2",
+  "categories": ["finance", "productivity", "business"],
+  "prefer_related_applications": false,
+  "icons": [
+    { "src": "./icones-app/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "./icones-app/icon-256.png", "sizes": "256x256", "type": "image/png", "purpose": "any" },
+    { "src": "./icones-app/icon-384.png", "sizes": "384x384", "type": "image/png", "purpose": "any" },
+    { "src": "./icones-app/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "./icones-app/maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "./icones-app/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    {
+      "name": "Nova operação",
+      "short_name": "Nova",
+      "url": "./edgecontrol-glass-v2.html#dashboard",
+      "icons": [{ "src": "./icones-app/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    }
+  ]
+}

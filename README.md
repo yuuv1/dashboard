@@ -6,6 +6,19 @@ no navegador, funciona offline (PWA) e guarda tudo no próprio aparelho.
 - **`edgecontrol-glass-v2.html`** — o app que você usa (v2, com Estúdio de Prints, relatório, backup por e-mail).
 - **`edgecontrol-glass.html`** — a v1, mantida **intacta** de propósito (contrato dos testes).
 
+### 🔗 Online agora
+
+**<https://yuuv1.github.io/dashboard/>** — site publicado pelo GitHub Pages, com PWA
+instalável e sincronização Supabase ligada. No celular: abra o link e escolha
+*“Adicionar à tela inicial”*.
+
+| Peça | Estado |
+|---|---|
+| App | `edgecontrol-glass-v2.html` publicado no Pages a cada push |
+| PWA | `manifest.webmanifest` + `sw.js` (pré-cache do app, gráficos e módulos Supabase) → abre offline |
+| Nuvem | Supabase `muktpljlzzavcvhqdxco` (região us-east-1), login por e-mail e Storage privado |
+| Login | *Configurações → ☁️ Supabase* → informe o e-mail → abra o link recebido no mesmo aparelho |
+
 ---
 
 ## Mapa do repositório
@@ -15,7 +28,8 @@ no navegador, funciona offline (PWA) e guarda tudo no próprio aparelho.
 | `edgecontrol-glass-v2.html` | **o app** (v2). É este arquivo que você abre/instala |
 | `edgecontrol-glass.html` | v1 intacta (não mexer) |
 | `index.html` · `404.html` · `sw.js` | entrada do site e service worker (PWA/offline) |
-| `icones-app/` | ícones do PWA |
+| `manifest.webmanifest` | manifest do PWA (instalação na tela inicial) |
+| `icones-app/` | ícones do PWA (192/512, maskable e ícone do iOS) |
 | `vendor/` | Chart.js e Supabase JS locais, usados pelo app sem depender de CDN |
 | `supabase/` | configuração pública, sincronização e guia do setup/auth privado |
 | `EdgeControl.bat` | **instalador/servidor local no Windows** (duplo clique) |
@@ -51,8 +65,10 @@ PIN, crie a nuvem e entre com o código no outro aparelho.
 
 ```bash
 npm install          # jsdom + fake-indexeddb (só para os testes)
-npm test             # 14 suítes: app/DOM, impressão, importação, PWA,
-                     # sincronização Supabase e desempenho móvel
+npm test             # 15 suítes: app/DOM, impressão, importação, PWA
+                     # (manifest + service worker), sincronização Supabase
+                     # e desempenho móvel
+npm run build:public # refaz _public/ (pacote do Netlify) a partir do app
 npm run test:email   # só a suíte de e-mail (fetch dublado, nada é enviado)
 node ferramentas/preview-serve.js   # servidor local em http://0.0.0.0:8080
 ```
@@ -74,11 +90,27 @@ O backup semanal usa o **núcleo puro do relatório que mora dentro do app**
 
 ## Publicar
 
-- **GitHub Pages:** o workflow `.github/workflows/pages.yml` publica `index.html`,
-  `edgecontrol-glass-v2.html`, `edgecontrol-glass.html`, `sw.js`, `404.html`, os assets
-  locais em `vendor/` e o runtime em `supabase/` a cada push na `main`.
-- **Netlify:** arraste `_public/`.
-- Ao mudar o app, atualize também `_public/index.html` (é a cópia usada no Netlify).
+- **GitHub Pages (oficial):** `.github/workflows/pages.yml` publica `index.html`,
+  `edgecontrol-glass-v2.html`, `edgecontrol-glass.html`, `sw.js`, `manifest.webmanifest`,
+  `404.html`, os ícones em `icones-app/`, os assets locais em `vendor/` e o runtime em
+  `supabase/` a cada push na `main`. O passo *Conferir publicação* falha o deploy se
+  faltar algum arquivo do PWA ou do Supabase.
+- **Netlify:** arraste `_public/` (gerado por `npm run build:public`, já com PWA e Supabase).
+- Ao mudar o app, rode `npm run build:public` — o teste `test:pwa` compara `_public/index.html`
+  com o app e falha se você esquecer.
+
+## PWA (offline de verdade)
+
+- `manifest.webmanifest` é um **arquivo real** (manifest em Blob não permite instalar):
+  `start_url` abre a v2, `scope` cobre a pasta publicada, ícones PNG 192/512 + maskable.
+- `index.html`, `404.html` e a v2 declaram `manifest`, `theme-color`, `apple-touch-icon`
+  e os metas do iOS.
+- `sw.js` faz **pré-cache** da casca (HTML, manifest, `vendor/`, `supabase/`, ícones) na
+  instalação e limpa caches antigos no `activate`; a navegação cai no app salvo quando
+  não há rede. O app registra o worker com `updateViaCache:'none'` e recarrega uma vez
+  quando uma versão nova assume.
+- Fora da rede, o app abre e continua salvando no aparelho; ao voltar a conexão, a
+  sincronização Supabase é retomada automaticamente.
 
 ## Arquivo morto
 

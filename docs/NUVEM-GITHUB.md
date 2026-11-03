@@ -1,18 +1,24 @@
 # App online + dados iguais no PC e no celular
 
-## Site (grátis, 2 minutos)
+## Site oficial (já publicado)
 
-Pasta pronta: **`_public/`**
+**https://yuuv1.github.io/dashboard/** — GitHub Pages, com PWA instalável e Supabase ligado.
 
-1. https://app.netlify.com/drop
-2. Arraste `_public`
-3. Use o link `https://….netlify.app` no PC e no celular
+### Alternativa: Netlify Drop
+
+1. Rode `npm run build:public` (refaz `_public/` a partir do app atual).
+2. Abra https://app.netlify.com/drop
+3. Arraste a pasta `_public`
+4. Use o link `https://….netlify.app` no PC e no celular
 
 Detalhe: `_public/LEIA-ME.txt`
 
 ## Dados (nuvem)
 
-O Netlify só hospeda o programa. O diário vai para `cloud/edgecontrol-sync.json` neste repositório.
+Recomendado hoje: **Configurações → ☁️ Supabase** (login por e-mail, prints em Storage privado).
+Veja `supabase/README.md`.
+
+Alternativa antiga (GitHub): o site só hospeda o programa. O diário vai para `cloud/edgecontrol-sync.json` neste repositório.
 
 No app: **Configurações → Nuvem GitHub** → token `repo` nos dois aparelhos → **Enviar** no PC → **Trazer** no celular.
 

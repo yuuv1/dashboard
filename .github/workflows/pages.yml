@@ -1,7 +1,7 @@
 name: github-pages
 on:
   push:
-    branches: [main, arena/01a0fd1a-dashboard]
+    branches: [main, arena/a4f1dcb6-dashboard]
   workflow_dispatch:
 permissions:
   contents: read
@@ -20,12 +20,24 @@ jobs:
       - uses: actions/checkout@v4
       - name: Preparar site
         run: |
-          mkdir -p _site
-          cp index.html edgecontrol-glass-v2.html edgecontrol-glass.html sw.js _site/
-          mkdir -p _site/vendor _site/supabase
+          mkdir -p _site/vendor _site/supabase _site/icones-app
+          cp index.html edgecontrol-glass-v2.html edgecontrol-glass.html sw.js manifest.webmanifest _site/
           cp vendor/chart.umd.min.js vendor/chartjs-LICENSE.txt vendor/supabase.min.js vendor/supabase-LICENSE.txt _site/vendor/
           cp supabase/runtime-config.js supabase/app-sync.js _site/supabase/
+          cp icones-app/*.png _site/icones-app/
           cp -f 404.html _site/ 2>/dev/null || cp index.html _site/404.html
+      - name: Conferir publicação (PWA + Supabase)
+        run: |
+          set -e
+          for f in _site/index.html _site/edgecontrol-glass-v2.html _site/sw.js _site/manifest.webmanifest \
+                   _site/vendor/supabase.min.js _site/supabase/runtime-config.js _site/supabase/app-sync.js \
+                   _site/icones-app/icon-192.png _site/icones-app/icon-512.png _site/icones-app/maskable-512.png; do
+            test -s "$f" || { echo "faltando: $f"; exit 1; }
+          done
+          grep -q 'manifest.webmanifest' _site/index.html
+          grep -q 'manifest.webmanifest' _site/edgecontrol-glass-v2.html
+          node -e "const fs=require('fs');const m=JSON.parse(fs.readFileSync('_site/manifest.webmanifest','utf8'));if(!m.start_url||!m.scope||!m.icons||m.icons.length<2)process.exit(1)"
+          node -e "const fs=require('fs');const c=fs.readFileSync('_site/supabase/runtime-config.js','utf8');if(!/EC_SUPABASE_CONFIG/.test(c)||/service_role/.test(c))process.exit(1)"
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

@@ -4,7 +4,7 @@ const assert = require('node:assert/strict');
 
 const dir = path.join(__dirname, '..', 'supabase', 'setup');
 const files = fs.readdirSync(dir).filter(name => name.endsWith('.sql')).sort();
-assert.equal(files.length, 13, 'setup contains the 13 ordered SQL steps');
+assert.equal(files.length, 14, 'setup contains the 14 ordered SQL steps');
 
 for (const [i, file] of files.entries()) {
   assert.equal(file.slice(0, 2), String(i + 1).padStart(2, '0'), `step ${i + 1} is numbered in order`);
@@ -22,4 +22,4 @@ for (const policy of ['ec_user_state_own', 'ec_operations_own', 'ec_shots_own', 
   assert.ok(all.includes(policy), `setup includes RLS policy ${policy}`);
 }
 assert.match(all, /public\s*=\s*false/i, 'prints bucket is private');
-console.log('✅ Supabase setup: 13 passos, uma instrução por query, RLS e bucket privado');
+console.log('✅ Supabase setup: 14 passos, uma instrução por query, RLS, bucket privado e anon sem acesso');
